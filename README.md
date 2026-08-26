@@ -16,5 +16,3 @@ CrimeTracker est une application web destinée aux corps policiers nationaux pou
 - [Organisation de l'équipe](docs/05-equipe.md)
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
-
-
