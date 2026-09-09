@@ -1,6 +1,6 @@
 # CrimeTracker
 
-CrimeTracker est une application web destinée aux corps policiers nationaux pour gérer les avis de recherche de criminels. Les agents consultent le registre et signalent des observations sur le terrain, tandis que les superviseurs administrent les dossiers et diffusent des alertes instantanées à tous les effectifs connectés en temps réel.
+CrimeTracker est une application web destinée aux policiers nationaux pour gérer les avis de recherche de criminels. Les agents consultent le registre et signalent des observations sur le terrain, tandis que les superviseurs administrent les dossiers et diffusent des alertes instantanées à tous les effectifs connectés en temps réel.
 
 **Équipe** : Massyle, Eric, Chrysler, Michael
 
