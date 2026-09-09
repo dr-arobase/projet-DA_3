@@ -15,7 +15,7 @@
 | 1 | S'authentifier avec badge et mot de passe | 5 |
 | 2 | Consulter la liste des personnes recherchées | 2 |
 | 3 | Voir le profil complet d'un dossier | 3 |
-| 4 | Ajouter un nouveau dossier (superviseur) | 5 |
+| 4 | Ajouter un nouveau dossier (policier) | 5 |
 | 5 | Retirer un dossier (superviseur) | 3 |
 | 6 | Mettre à jour le statut d'un dossier | 3 |
 | 7 | Filtrer et rechercher les dossiers | 3 |
@@ -36,7 +36,7 @@ Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 
 **Objectif** : Les rôles et autorisations sont réellement appliqués, et la première version du tableau de bord temps réel est fonctionnelle — les agents voient les changements en direct.
 
-**Incrément démontrable** : deux navigateurs ouverts côte à côte — quand un superviseur ajoute un dossier dans l'un, il apparaît dans l'autre en moins d'une seconde. Une alerte urgente diffusée dans l'un s'affiche dans l'autre instantanément.
+**Incrément démontrable** : deux navigateurs ouverts côte à côte — quand un policier ajoute un dossier dans l'un, il apparaît dans l'autre en moins d'une seconde. Une alerte urgente diffusée dans l'un s'affiche dans l'autre instantanément.
 
 ### Récits prévus
 
