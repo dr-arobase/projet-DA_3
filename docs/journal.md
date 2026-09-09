@@ -41,9 +41,9 @@
 - Argumentaire présenté au prof
 - *(compléter après la rencontre)*
 
-**Ce qui bloque** : *(à compléter)*
+**Ce qui bloque** : rien ne bloque
 
-**Décisions prises** : *(à compléter — sujet approuvé ? corrections demandées ?)*
+**Décisions prises** : figurent deja dans notre vision et backlog, rien n'a ete changer, on doit travailler sur le site et finir dans les temps , faire quelque chose de realisable mais tout en etant ambicieux
 
 ---
 
