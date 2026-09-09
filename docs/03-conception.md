@@ -84,7 +84,7 @@ erDiagram
 |---|---|---|---|
 | `POST` | `/auth/login` | Authentification, retourne cookie de session | — |
 | `POST` | `/auth/logout` | Invalidation de session | Authentifié |
-| `GET` | `/api/criminals` | Liste paginée, filtrable | `agent` |
+| `GET` | `/api/criminals` | Liste paginée, filtrable | `agent`|
 | `POST` | `/api/criminals` | Créer un dossier | `superviseur` |
 | `GET` | `/api/criminals/:id` | Détail d'un dossier | `agent` |
 | `PATCH` | `/api/criminals/:id` | Mettre à jour statut (avec `version`) | `agent` |
@@ -114,7 +114,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 |---|---|
 | `01-login.png` | Page de connexion |
 | `02-dashboard.png` | Tableau de bord temps réel (alertes, présence agents) |
-| `03-criminals-list.png` | Liste des dossiers avec filtres |
+| `03-criminals-list.png` | Liste des dossiers de criminels avec filtres |
 | `04-criminal-profile.png` | Profil complet d'un dossier |
 | `05-add-criminal.png` | Formulaire d'ajout (superviseur) |
 
