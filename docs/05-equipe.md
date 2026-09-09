@@ -17,7 +17,7 @@ Le rôle de **Product Owner** est partagé par toute l'équipe : c'est l'équipe
 
 | Rituel | Quand | Durée | Comment |
 |---|---|---|---|
-| **Mêlée quotidienne** | Chaque jour de cours (en classe) + un soir par semaine (en ligne) | 10 min | Discord vocal, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |
+| **Mêlée quotidienne** | Chaque jour de cours ensembles (en classe) + Pendant la pause commune le mardi pendant environ 1h, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |
 | **Planification de sprint** | Premier bloc de chaque sprint | 30–45 min | En classe, on découpe les récits en tâches GitHub et on s'assigne |
 | **Revue de sprint** | Dernier bloc de chaque sprint | 20 min | Démo de l'incrément au prof |
 | **Rétrospective** | Juste après la revue | 15 min | Format : ce qui a bien marché / ce qu'on change / une action concrète |
@@ -46,20 +46,23 @@ Un récit est **terminé** si et seulement si :
 - Pas de commit direct sur `main` — toujours passer par une PR
 
 ### Messages de commit
-Format : `<type>(<scope>): <description courte en français>`
+Chaque message doit suivre la formule : type(partie-du-projet): explications
 
-Types : `feat`, `fix`, `test`, `chore`, `docs`  
-Exemples :
-```
-feat(criminal): ajouter formulaire d'ajout de dossier
-fix(auth): corriger la vérification du rôle sur la route /criminals/new
-test(criminal): ajouter tests unitaires pour la mise à jour de statut
-```
+feat : pour une nouvelle fonctionnalité (ex: feat(criminel): ajouter le formulaire)
 
-Lier les commits et PR aux tickets : `Closes #4` dans le corps du message ou la description de la PR.
+fix : pour corriger un bug (ex: fix(auth): corriger la connexion)
+
+test : pour ajouter ou modifier des tests
+
+docs : pour modifier de la documentation (README, etc.)
+
+chore : pour les tâches de configuration ou de nettoyage
+
+Fermer un ticket automatiquement :
+Écris Closes #numéro dans ton message pour fermer la tâche GitHub correspondante (ex: Closes #4).
 
 ### Revue de code
-- Toute PR doit avoir **1 approbation** avant fusion
+- Toute Pull Request doit avoir **1 approbation** avant fusion
 - Le relecteur vérifie : logique, sécurité (pas d'injection, pas de secrets exposés), conformité à la DoD
 - On ne fusionne pas sa propre PR sauf urgence documentée dans le journal
 
@@ -75,3 +78,4 @@ Lier les commits et PR aux tickets : `Closes #4` dans le corps du message ou la 
 | Eric | |
 | Chrysler | |
 | Michael | |
+ 
