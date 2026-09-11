@@ -53,6 +53,7 @@
 | # | Récit |
 |---|---|
 | 18 | Tableau de statistiques globales (dossiers ouverts, captures ce mois, etc.) |
+| 19 | Une maps permettant de localiser visuellement le lieu où sont prises les photos|
 
 ---
 
@@ -60,10 +61,11 @@
 
 | # | Récit | Raison |
 |---|---|---|
-| 19 | Intégration avec Interpol ou bases externes | API payante, hors contrôle |
-| 20 | Reconnaissance faciale | Complexité technique hors programme |
-| 21 | Application mobile native | Hors portée du projet (optionnel non retenu) |
-| 22 | Export PDF du registre | Valeur faible face à l'effort |
+| 20 | Intégration avec Interpol ou bases externes | API payante, hors contrôle |
+| 21 | Reconnaissance faciale | Complexité technique hors programme |
+| 22 | Application mobile native | Hors portée du projet (optionnel non retenu) |
+| 23 | Export PDF du registre | Valeur faible face à l'effort |
+|24 | Empreintes digital | Complexité technique hors programme|
 
 ---
 
