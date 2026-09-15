@@ -1,6 +1,6 @@
 # CrimeTracker
 
-CrimeTracker est une application web destinée aux policiers nationaux pour gérer les avis de recherche de criminels. Les agents consultent le registre et signalent des observations sur le terrain, tandis que les superviseurs administrent les dossiers et diffusent des alertes instantanées à tous les effectifs connectés en temps réel.
+CrimeTracker est une application web dédiée aux policiers nationaux pour centraliser le registre des personnes recherchées et améliorer la coordination sur le terrain. Elle permet de consulter, mettre à jour et diffuser les informations rapidement, avec une visibilité en temps réel pour tous les effectifs connectés. L’objectif est de réduire les erreurs, accélérer les interventions et sécuriser la gestion des dossiers sensibles.
 
 **Équipe** : Massyle, Eric, Chrysler, Michael
 
@@ -8,7 +8,8 @@ CrimeTracker est une application web destinée aux policiers nationaux pour gér
 
 ## Liens
 
-- [Backlog (GitHub Projects)](../../projects/1) ← *à mettre à jour après création du projet GitHub*
+- [Backlog GitHub (Project)](https://github.com/users/dr-arobase/projects/1)
+- [Issues GitHub](https://github.com/dr-arobase/projet-DA_3/issues)
 - [Vision et portée](docs/01-vision.md)
 - [Backlog produit](docs/02-backlog.md)
 - [Conception technique](docs/03-conception.md)
@@ -16,3 +17,4 @@ CrimeTracker est une application web destinée aux policiers nationaux pour gér
 - [Organisation de l'équipe](docs/05-equipe.md)
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
+- [Maquettes](docs/maquettes/README.md)

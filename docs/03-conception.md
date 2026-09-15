@@ -141,12 +141,10 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 | Fichier | Écran |
 |---|---|
-| `CrimeTracker(mobile).pdf` | Tableau de bord policier — version mobile |
-| `CrimeTracker(mobile) 2ieme choix.pdf` | Variante alternative du tableau de bord mobile |
-| `CrimeTracker(mobile) 3ieme choix.pdf` | Variante alternative du tableau de bord mobile |
-| `CrimeTracker(ordi).pdf` | Tableau de bord et liste des dossiers sur ordinateur |
-
-> ⚠️ À vérifier : trois fichiers sont des variantes du même écran mobile (« 2ieme choix », « 3ieme choix »). L'énoncé demande 4 à 5 **écrans distincts** (connexion, tableau de bord temps réel, liste des dossiers, profil d'un dossier, ajout). Gardez une seule variante par écran et ajoutez les écrans manquants (connexion, liste, profil) plutôt que plusieurs versions du même écran.
+| `CrimeTracker-mobile-connexion.pdf` | Connexion par matricule et mot de passe |
+| `CrimeTracker-mobile-ajout-personne-recherchee.pdf` | Ajout d'un dossier de personne recherchée |
+| `CrimeTracker-mobile-alertes-temps-reel.pdf` | Alertes et communiqués diffusés en temps réel |
+| `CrimeTracker-mobile-gestion-utilisateurs.pdf` | Gestion des utilisateurs et activation des comptes |
 
 ---
 
