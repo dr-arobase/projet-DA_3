@@ -2,14 +2,14 @@
 
 ## Membres
 
-| Prénom | Rôle Scrum Master |
+| Prénom | Rôle |
 |---|---|
-| Massyle | Sprint 1 |
-| Eric | Sprint 2 |
-| Chrysler | Sprint 3 |
-| Michael | *Product Owner collectif* (tout le monde, voir ci-dessous) |
+| Massyle | Product Owner |
+| Eric | Scrum Master |
+| Chrysler | Testeur |
+| Michael | Testeur |
 
-Le rôle de **Product Owner** est partagé par toute l'équipe : c'est l'équipe qui possède et ordonne le backlog. Le professeur joue le rôle de client.
+**Massyle** est Product Owner : il priorise et ordonne le backlog en concertation avec l'équipe. **Eric** est Scrum Master : il anime la mêlée quotidienne, la planification et la rétrospective. **Chrysler** et **Michael** agissent comme testeurs : ils valident les critères d'acceptation et les tests avant chaque revue de sprint. Le professeur joue le rôle de client.
 
 ---
 
