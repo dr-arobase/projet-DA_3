@@ -70,12 +70,14 @@ Fermer un ticket automatiquement :
 
 ## Contributions individuelles — Sprint 0
 
-*À compléter au fur et à mesure, avec des liens vers les commits et tickets.*
+*À compléter au fur et à mesure avec les liens vers les tickets GitHub une fois le backlog créé (ex. `Closes #4`).*
 
-| Membre | Contributions |
-|---|---|
-| Massyle | |
-| Eric | |
-| Chrysler | |
-| Michael | |
+| Membre | Contributions | Commits |
+|---|---|---|
+| Massyle | Création initiale du dépôt (`dr-arobase`), rédaction et mise à jour de la vision, du backlog, de la conception et des sprints, ajout des maquettes | `bf2f7aa`, `209dd08`, `34cffc7`, `e0a0983`, `800b785`, `68a777f`, `c016794`, `7d009d7`, `854902d`, `ad2feeb` |
+| Eric (Lenrics-01) | Mises à jour du backlog, fusions de branches | `6af7e77`, `9da702c`, `33e686a`, `811680c`, `e4ff297` |
+| Chrysler (nleukeu) | Rédaction et correction du journal de bord | `3933be4`, `7911f58`, `8d7ba2f` |
+| Michael (MichaelLaurore) | Rédaction de l'organisation de l'équipe (`05-equipe.md`) | `f8e3f34` |
+
+> ⚠️ Deux commits d'Eric portent le message « rien » (`6af7e77`, `9da702c`) — à corriger dans les futurs commits : un message doit toujours suivre la convention `type(partie): explication` définie ci-dessus.
  
