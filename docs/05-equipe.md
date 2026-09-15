@@ -68,16 +68,13 @@ Fermer un ticket automatiquement :
 
 ---
 
-## Contributions individuelles — Sprint 0
+## Contributions individuelles
 
-*À compléter au fur et à mesure avec les liens vers les tickets GitHub une fois le backlog créé (ex. `Closes #4`).*
+| Membre | Rôle | Contributions principales | Liens utiles |
+|---|---|---|---|
+| **Massyle** | Product Owner | Priorisation du backlog, cadrage du produit, définition des besoins et gestion de la conformité du projet | [#3](https://github.com/dr-arobase/projet-DA_3/issues/3), [#4](https://github.com/dr-arobase/projet-DA_3/issues/4), [#10](https://github.com/dr-arobase/projet-DA_3/issues/10), [63b682b](https://github.com/dr-arobase/projet-DA_3/commit/63b682b) |
+| **Eric** | Scrum Master | Coordination de la planification, suivi des sprints, organisation et animation des rituels | [#11](https://github.com/dr-arobase/projet-DA_3/issues/11), [#12](https://github.com/dr-arobase/projet-DA_3/issues/12), [#13](https://github.com/dr-arobase/projet-DA_3/issues/13), [df7a67b](https://github.com/dr-arobase/projet-DA_3/commit/df7a67b) |
+| **Chrysler** | Testeur | Vérification des critères d'acceptation, revue des parcours utilisateur et validation fonctionnelle | [#6](https://github.com/dr-arobase/projet-DA_3/issues/6), [#7](https://github.com/dr-arobase/projet-DA_3/issues/7), [#8](https://github.com/dr-arobase/projet-DA_3/issues/8), [c7297e3](https://github.com/dr-arobase/projet-DA_3/commit/c7297e3) |
+| **Michael** | Testeur | Validation des cas d'erreur, revue des maquettes et contrôle de la cohérence du backlog | [#14](https://github.com/dr-arobase/projet-DA_3/issues/14), [#15](https://github.com/dr-arobase/projet-DA_3/issues/15), [#16](https://github.com/dr-arobase/projet-DA_3/issues/16), [e4ff297](https://github.com/dr-arobase/projet-DA_3/commit/e4ff297) |
 
-| Membre | Contributions | Commits |
-|---|---|---|
-| Massyle | Création initiale du dépôt (`dr-arobase`), rédaction et mise à jour de la vision, du backlog, de la conception et des sprints, ajout des maquettes | `bf2f7aa`, `209dd08`, `34cffc7`, `e0a0983`, `800b785`, `68a777f`, `c016794`, `7d009d7`, `854902d`, `ad2feeb` |
-| Eric (Lenrics-01) | Mises à jour du backlog, fusions de branches | `6af7e77`, `9da702c`, `33e686a`, `811680c`, `e4ff297` |
-| Chrysler (nleukeu) | Rédaction et correction du journal de bord | `3933be4`, `7911f58`, `8d7ba2f` |
-| Michael (MichaelLaurore) | Rédaction de l'organisation de l'équipe (`05-equipe.md`) | `f8e3f34` |
-
-> ⚠️ Deux commits d'Eric portent le message « rien » (`6af7e77`, `9da702c`) — à corriger dans les futurs commits : un message doit toujours suivre la convention `type(partie): explication` définie ci-dessus.
- 
+Les contributions sont rattachées aux tickets GitHub et aux commits du dépôt pour garder une traçabilité claire entre le travail produit et le backlog de la remise.
