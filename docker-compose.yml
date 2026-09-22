@@ -1,0 +1,33 @@
+services:
+  db:
+    image: postgres:16
+    container_name: crimetracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crimetracker
+      POSTGRES_USER: crimetracker
+      POSTGRES_PASSWORD: crimetracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - crimetracker-db-data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+
+  api:
+    build: .
+    container_name: crimetracker-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DATABASE_URL: postgres://crimetracker:crimetracker@db:5432/crimetracker
+      JWT_SECRET: super_secret_key_change_me
+    depends_on:
+      - db
+    volumes:
+      - ./src:/app/src
+
+volumes:
+  crimetracker-db-data:
