@@ -43,7 +43,7 @@ jobs:
         run: npm ci
 
       - name: Set DATABASE_URL for tests
-        run: ${GITHUB_ENV}
+        run: echo "DATABASE_URL=postgresql://crimetracker:crimetracker@localhost:5432/crimetracker" >> $GITHUB_ENV
 
       - name: Run tests if present
         run: |
@@ -52,6 +52,8 @@ jobs:
           else
             echo "No test script defined; skipping tests."
           fi
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
   build_and_publish:
     name: Build Docker image and publish (main only)
