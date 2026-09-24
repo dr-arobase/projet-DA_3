@@ -1,0 +1,8 @@
+# Ce que docker build ne doit PAS envoyer au démon : les dépendances (elles
+# sont réinstallées dans l'image), les builds locaux, les secrets.
+node_modules
+**/node_modules
+**/build
+**/.react-router
+**/.env
+.git
