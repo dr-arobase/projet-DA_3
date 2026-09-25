@@ -141,11 +141,10 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 | Fichier | Écran |
 |---|---|
-| `SentinelleRP - Maquette Police.pdf` | Connexion et tableau de bord policier |
-| `SentinelleRP-maquette-ordinateur.pdf` | Tableau de bord et liste des dossiers sur ordinateur |
-| `SentinelleRPmaquette 222.pdf` | Profil d'un dossier et historique des signalements |
-| `SentinelleRPmaquette.pdf` | Gestion des comptes et permissions de la hiérarchie |
-| `sentinellerppolicemobile.html` | Version mobile du tableau de bord policier |
+| `CrimeTracker-mobile-connexion.pdf` | Connexion par matricule et mot de passe |
+| `CrimeTracker-mobile-ajout-personne-recherchee.pdf` | Ajout d'un dossier de personne recherchée |
+| `CrimeTracker-mobile-alertes-temps-reel.pdf` | Alertes et communiqués diffusés en temps réel |
+| `CrimeTracker-mobile-gestion-utilisateurs.pdf` | Gestion des utilisateurs et activation des comptes |
 
 ---
 
