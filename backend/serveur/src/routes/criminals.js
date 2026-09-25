@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import { pool as db } from '../config/db.js';
+
 const router = express.Router();
-const db = require('../config/db');
 
 // GET /api/criminals : Liste paginée
 router.get('/', async (req, res) => {
@@ -38,4 +39,4 @@ router.post('/', async (req, res) => {
 // TODO: Ajouter PATCH /:id (mise à jour statut + vérification version)
 // TODO: Ajouter DELETE /:id (retrait par un superviseur)
 
-module.exports = router;
+export default router;
