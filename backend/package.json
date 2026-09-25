@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node serveur/src/server.js",
     "dev": "nodemon serveur/src/server.js",
-    "kill-port": "for /f \"tokens=5\" %a in ('netstat -aon ^| find \":3000\"') do taskkill /F /PID %a 2>nul & echo Port 3000 libere"
+    "kill-port": "for /f \"tokens=5\" %a in ('netstat -aon ^| find \":3000\"') do taskkill /F /PID %a 2>nul & echo Port 3000 libere",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
