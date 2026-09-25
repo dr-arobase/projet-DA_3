@@ -2,64 +2,103 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// GET /api/dossier/:id : Récupérer un dossier par ID
+// Statuts valides autorisés
+const VALID_STATUSES = ['WANTED', 'CAPTURED', 'IN_PRISON', 'RELEASED', 'ARCHIVED'];
+
+// Route GET /api/dossier/:id
 router.get('/:id', async (req, res) => {
   const { id } = req.params; 
-  const dossier = await db.query('SELECT * FROM dossiers WHERE id = ?', [id]);
-  if (dossier.length === 0) {
-    return res.status(404).json({ message: 'Dossier non trouvé' });
+  try {
+    const result = await db.query('SELECT * FROM criminal WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Dossier non trouvé' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erreur lors de la récupération du dossier:', error);
+    res.status(500).json({ message: 'Erreur serveur' });
   }
-  res.json(dossier[0]);
 });
 
-// POST /api/dossier : Créer un nouveau dossier
+// Route POST /api/dossier
 router.post('/', async (req, res) => {
-  const { title, description, created_by } = req.body;
+  const { first_name, last_name, description, status, added_by } = req.body;
+
   try {
-    const result = await db.query(
-      'INSERT INTO dossiers (title, description, created_by) VALUES (?, ?, ?)',
-      [title, description, created_by]
-    );
-    res.status(201).json({ message: 'Dossier créé', id: result.insertId });
+    const query = `
+      INSERT INTO criminal (first_name, last_name, description, status, added_by) 
+      VALUES ($1, $2, $3, $4, $5) 
+      RETURNING id, added_at
+    `;
+    const values = [first_name, last_name, description, status || 'WANTED', added_by];
+    
+    const result = await db.query(query, values);
+    const createdRecord = result.rows[0];
+
+    res.status(201).json({ 
+      message: 'Dossier créé avec succès', 
+      id: createdRecord.id,
+      added_at: createdRecord.added_at
+    });
   } catch (error) {
     console.error('Erreur lors de la création du dossier:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   } 
 });
 
-// PUT /api/dossier/:id : Mettre à jour un dossier existant
+// Route PUT /api/dossier/:id
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { title, description, created_by } = req.body;
+  const { first_name, last_name, description, status } = req.body;
 
   try {
-    const result = await db.query(
-      'UPDATE dossiers SET title = ?, description = ?, created_by = ? WHERE id = ?',
-      [title, description, created_by, id]
-    );
+    const query = `
+      UPDATE criminal 
+      SET first_name = $1, last_name = $2, description = $3, status = $4, updated_at = NOW() 
+      WHERE id = $5
+    `;
+    const result = await db.query(query, [first_name, last_name, description, status, id]);
 
-    if (result.affectedRows === 0) {
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Dossier non trouvé' });
     }
 
-    res.json({ message: 'Dossier mis à jour' });
+    res.json({ message: 'Dossier mis à jour avec succès' });
   } catch (error) {
     console.error('Erreur lors de la mise à jour du dossier:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 
-// DELETE /api/dossier/:id : Supprimer un dossier
-router.delete('/:id', async (req, res) => {
+// Route PATCH /api/dossier/:id/status (Remplace la suppression)
+router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status || !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ 
+      message: `Statut invalide. Les statuts autorisés sont: ${VALID_STATUSES.join(', ')}` 
+    });
+  }
+
   try {
-    const result = await db.query('DELETE FROM dossiers WHERE id = ?', [id]);
-    if (result.affectedRows === 0) {
+    const query = `
+      UPDATE criminal 
+      SET status = $1, updated_at = NOW() 
+      WHERE id = $2 
+      RETURNING *
+    `;
+    const result = await db.query(query, [status, id]);
+
+    if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Dossier non trouvé' });
     }
-    res.json({ message: 'Dossier supprimé' });
+
+    res.json({ message: `Statut mis à jour à : ${status}`, criminal: result.rows[0] });
   } catch (error) {
-    console.error('Erreur lors de la suppression du dossier:', error);
+    console.error('Erreur lors du changement de statut:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 });
