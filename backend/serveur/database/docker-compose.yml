@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:16
+    container_name: crimetracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crimetracker
+      POSTGRES_USER: crimetracker
+      POSTGRES_PASSWORD: crimetracker
+    ports:
+      - "5432:5432"
+    volumes:
+      - crimetracker-db-data:/var/lib/postgresql/data
+
+volumes:
+  crimetracker-db-data:

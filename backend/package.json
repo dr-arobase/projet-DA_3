@@ -1,0 +1,25 @@
+{
+  "name": "crimetracker-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "serveur/src/server.js",
+  "scripts": {
+    "start": "node serveur/src/server.js",
+    "dev": "nodemon serveur/src/server.js",
+    "kill-port": "for /f \"tokens=5\" %a in ('netstat -aon ^| find \":3000\"') do taskkill /F /PID %a 2>nul & echo Port 3000 libere"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.5",
+    "socket.io": "^4.7.5",
+    "swagger-ui-express": "^5.0.0"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "nodemon": "^3.1.0",
+    "supertest": "^7.3.0"
+  }
+}
