@@ -2,14 +2,14 @@
 
 ## Membres
 
-| Prénom | Rôle Scrum Master |
+| Prénom | Rôle |
 |---|---|
-| Massyle | Sprint 1 |
-| Eric | Sprint 2 |
-| Chrysler | Sprint 3 |
-| Michael | *Product Owner collectif* (tout le monde, voir ci-dessous) |
+| Massyle | Product Owner |
+| Eric | Scrum Master |
+| Chrysler | Testeur |
+| Michael | Testeur |
 
-Le rôle de **Product Owner** est partagé par toute l'équipe : c'est l'équipe qui possède et ordonne le backlog. Le professeur joue le rôle de client.
+**Massyle** est Product Owner : il priorise et ordonne le backlog en concertation avec l'équipe. **Eric** est Scrum Master : il anime la mêlée quotidienne, la planification et la rétrospective. **Chrysler** et **Michael** agissent comme testeurs : ils valident les critères d'acceptation et les tests avant chaque revue de sprint. Le professeur joue le rôle de client.
 
 ---
 
@@ -17,7 +17,7 @@ Le rôle de **Product Owner** est partagé par toute l'équipe : c'est l'équipe
 
 | Rituel | Quand | Durée | Comment |
 |---|---|---|---|
-| **Mêlée quotidienne** | Chaque jour de cours (en classe) + un soir par semaine (en ligne) | 10 min | Discord vocal, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |
+| **Mêlée quotidienne** | Chaque jour de cours ensembles (en classe) + Pendant la pause commune le mardi pendant environ 1h, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |
 | **Planification de sprint** | Premier bloc de chaque sprint | 30–45 min | En classe, on découpe les récits en tâches GitHub et on s'assigne |
 | **Revue de sprint** | Dernier bloc de chaque sprint | 20 min | Démo de l'incrément au prof |
 | **Rétrospective** | Juste après la revue | 15 min | Format : ce qui a bien marché / ce qu'on change / une action concrète |
@@ -46,32 +46,35 @@ Un récit est **terminé** si et seulement si :
 - Pas de commit direct sur `main` — toujours passer par une PR
 
 ### Messages de commit
-Format : `<type>(<scope>): <description courte en français>`
+Chaque message doit suivre la formule : type(partie-du-projet): explications
 
-Types : `feat`, `fix`, `test`, `chore`, `docs`  
-Exemples :
-```
-feat(criminal): ajouter formulaire d'ajout de dossier
-fix(auth): corriger la vérification du rôle sur la route /criminals/new
-test(criminal): ajouter tests unitaires pour la mise à jour de statut
-```
+feat : pour une nouvelle fonctionnalité (ex: feat(criminel): ajouter le formulaire)
 
-Lier les commits et PR aux tickets : `Closes #4` dans le corps du message ou la description de la PR.
+fix : pour corriger un bug (ex: fix(auth): corriger la connexion)
+
+test : pour ajouter ou modifier des tests
+
+docs : pour modifier de la documentation (README, etc.)
+
+chore : pour les tâches de configuration ou de nettoyage
+
+Fermer un ticket automatiquement :
+Écris Closes #numéro dans ton message pour fermer la tâche GitHub correspondante (ex: Closes #4).
 
 ### Revue de code
-- Toute PR doit avoir **1 approbation** avant fusion
+- Toute Pull Request doit avoir **1 approbation** avant fusion
 - Le relecteur vérifie : logique, sécurité (pas d'injection, pas de secrets exposés), conformité à la DoD
 - On ne fusionne pas sa propre PR sauf urgence documentée dans le journal
 
 ---
 
-## Contributions individuelles — Sprint 0
+## Contributions individuelles
 
-*À compléter au fur et à mesure, avec des liens vers les commits et tickets.*
+| Membre | Rôle | Contributions principales | Liens utiles |
+|---|---|---|---|
+| **Massyle** | Product Owner | Priorisation du backlog, cadrage du produit, définition des besoins et gestion de la conformité du projet | [#3](https://github.com/dr-arobase/projet-DA_3/issues/3), [#4](https://github.com/dr-arobase/projet-DA_3/issues/4), [#10](https://github.com/dr-arobase/projet-DA_3/issues/10), [63b682b](https://github.com/dr-arobase/projet-DA_3/commit/63b682b) |
+| **Eric** | Scrum Master | Coordination de la planification, suivi des sprints, organisation et animation des rituels | [#11](https://github.com/dr-arobase/projet-DA_3/issues/11), [#12](https://github.com/dr-arobase/projet-DA_3/issues/12), [#13](https://github.com/dr-arobase/projet-DA_3/issues/13), [df7a67b](https://github.com/dr-arobase/projet-DA_3/commit/df7a67b) |
+| **Chrysler** | Testeur | Vérification des critères d'acceptation, revue des parcours utilisateur et validation fonctionnelle | [#6](https://github.com/dr-arobase/projet-DA_3/issues/6), [#7](https://github.com/dr-arobase/projet-DA_3/issues/7), [#8](https://github.com/dr-arobase/projet-DA_3/issues/8), [c7297e3](https://github.com/dr-arobase/projet-DA_3/commit/c7297e3) |
+| **Michael** | Testeur | Validation des cas d'erreur, revue des maquettes et contrôle de la cohérence du backlog | [#14](https://github.com/dr-arobase/projet-DA_3/issues/14), [#15](https://github.com/dr-arobase/projet-DA_3/issues/15), [#16](https://github.com/dr-arobase/projet-DA_3/issues/16), [e4ff297](https://github.com/dr-arobase/projet-DA_3/commit/e4ff297) |
 
-| Membre | Contributions |
-|---|---|
-| Massyle | |
-| Eric | |
-| Chrysler | |
-| Michael | |
+Les contributions sont rattachées aux tickets GitHub et aux commits du dépôt pour garder une traçabilité claire entre le travail produit et le backlog de la remise.
