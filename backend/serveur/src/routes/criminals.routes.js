@@ -1,1 +1,1 @@
-module.exports = require('./criminals');
+export { default } from './criminals.js';

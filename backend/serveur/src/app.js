@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -20,8 +20,8 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Chargement de la documentation OpenAPI / Swagger depuis docs/api.yaml
-const swaggerDocument = YAML.load(path.join(__dirname, '../docs/api.yaml'));
+// Chargement de la documentation OpenAPI / Swagger depuis swagger.json
+const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, 'swagger.json'), 'utf8'));
 
 const app = express();
 
