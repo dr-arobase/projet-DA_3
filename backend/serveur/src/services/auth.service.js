@@ -48,3 +48,11 @@ export const loginUser = async (badge_number, password) => {
     }
   };
 };
+
+export const logoutUser = async (userId) => {
+  // Les tokens JWT sont stateless (sans état côté serveur).
+  // La déconnexion valide que l'agent est authentifié et lui indique de supprimer le token.
+  return {
+    message: 'Déconnexion réussie. Le jeton doit être supprimé côté client.'
+  };
+};
