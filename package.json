@@ -5,5 +5,8 @@
   "scripts": {
     "start": "npm run start --prefix backend",
     "dev": "npm run dev --prefix backend"
+  },
+  "dependencies": {
+    "yamljs": "^0.3.0"
   }
 }
