@@ -13,6 +13,11 @@ services:
       - crimetracker-db-data:/var/lib/postgresql/data
       - ./serveur/database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
       - ./serveur/database/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build: .
@@ -22,12 +27,13 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in backend/.env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in backend/.env}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     volumes:
-      - ./src:/app/src
+      - ./serveur/src:/app/serveur/src
 
 volumes:
   crimetracker-db-data:

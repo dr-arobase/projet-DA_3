@@ -4,7 +4,7 @@ import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { authenticate } from './middleware/auth.middleware.js';
+import {authenticate} from './middleware/auth.middleware.js';
 import { requireRole } from './middleware/rbac.middleware.js';
 
 // Import des routes
@@ -25,9 +25,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes de l'API
 app.use('/auth', authRoutes);
-app.get('/auth/me', authenticate, (req, res)=> res.json({user: req.use}));
+app.get('/auth/me', authenticate, (req, res)=> res.json({user: req.user}));
 app.use('/api/criminals', criminalsRoutes);
-app.use('/api/criminals', authenticate, criminalsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Serveur CrimeTracker opérationnel ! Allez sur /api-docs pour voir le Swagger.');
