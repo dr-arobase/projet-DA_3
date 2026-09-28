@@ -1,0 +1,27 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "CrimeTracker API",
+    "version": "1.0.0",
+    "description": "API REST pour le registre national des personnes recherchées"
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Authentification d'un policier",
+        "responses": {
+          "200": { "description": "Succès" },
+          "401": { "description": "Identifiants invalides" }
+        }
+      }
+    },
+    "/api/criminals": {
+      "get": {
+        "summary": "Consulter la liste paginée des personnes recherchées",
+        "responses": {
+          "200": { "description": "Liste récupérée avec succès" }
+        }
+      }
+    }
+  }
+}

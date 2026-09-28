@@ -1,0 +1,63 @@
+CrimeTracker — État des API (23 septembre 2026)
+
+===========================================
+1. API documentées dans src/swagger.json
+===========================================
+(fichier incomplet par rapport au code reel)
+
+POST /auth/login
+  - Authentification d'un policier
+
+GET /api/criminals
+  - Liste paginee des personnes recherchees
+
+
+===========================================
+2. API reellement codees dans src/routes/
+===========================================
+
+auth.js
+  POST /login (-> /auth/login)
+    - Partiel : verifie le badge en base
+    - TODO : comparer le mot de passe avec bcrypt
+    - TODO : generer un jeton JWT
+    - TODO : renvoyer le jeton (body ou cookie HTTP-only)
+
+criminals.js
+  GET / (-> /api/criminals)
+    - Fonctionnelle : pagination avec page/limit
+  POST / (-> /api/criminals)
+    - Squelette seulement, pas d'INSERT reel
+    - TODO : valider les champs obligatoires
+    - TODO : INSERT dans la table criminal
+    - TODO : emettre l'evenement Socket.IO "criminal:added"
+  PATCH /:id
+    - Non commencee (TODO seulement)
+  DELETE /:id
+    - Non commencee (TODO seulement)
+
+
+===========================================
+3. Routes prevues dans docs/03-conception.md
+   mais sans aucun fichier de code
+===========================================
+
+POST   /auth/logout
+GET    /api/criminals/:id
+PATCH  /api/criminals/:id
+DELETE /api/criminals/:id
+POST   /api/sightings
+GET    /api/criminals/:id/sightings
+GET    /api/users
+POST   /api/users
+PATCH  /api/users/:id/status
+PATCH  /api/users/:id/promotion
+GET    /api/audit-logs
+
+
+===========================================
+4. Blocage actuel
+===========================================
+
+src/app.js est vide : aucune route n'est montee sur le
+serveur Express, l'API ne demarre pas encore.
