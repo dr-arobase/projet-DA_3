@@ -2,7 +2,6 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { pool as db } from '../config/db.js';
-import { signToken } from '../utils/jwt.js';
 const router = express.Router();
 
 // Route POST /auth/login
@@ -33,13 +32,20 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Identifiants invalides ou compte inactif' });
     }
 
-    // 4. Génération du jeton JWT (expire après 8 h)
-      const token = signToken({
+    // 4. Clé secrète JWT (à définir dans le fichier .env)
+    const jwtSecret = process.env.JWT_SECRET || 'super_secret_key_change_me';
+
+    // 5. Génération du jeton JWT avec le payload (id, role, grade)
+    const token = jwt.sign(
+      {
         id: user.id,
         badge_number: user.badge_number,
         role: user.role,
         grade: user.grade
-      });
+      },
+      jwtSecret,
+      { expiresIn: '8h' } // Expiration à 8 heures (durée d'un quart de travail)
+    );
 
     // 6. Réponse avec le jeton et les infos de profil de l'agent
     return res.json({
