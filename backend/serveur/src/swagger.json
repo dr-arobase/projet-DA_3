@@ -1,26 +1,288 @@
 {
-  "openapi": "3.0.0",
+  "openapi": "3.0.3",
   "info": {
     "title": "CrimeTracker API",
-    "version": "1.0.0",
-    "description": "API REST pour le registre national des personnes recherchées"
+    "version": "1.0.0-alpha",
+    "description": "API REST du registre des personnes recherchées (sprint 1 — version alpha).\n\n**Pour essayer** : exécutez d'abord `POST /auth/login` (ex. matricule `PL-003`, mot de passe `Demo1234!`). Le navigateur conserve le cookie de session `session` et l'envoie aux requêtes suivantes."
+  },
+  "servers": [{ "url": "/" }],
+  "tags": [
+    { "name": "Authentification", "description": "Session par cookie HTTP-only (récit #1)" },
+    { "name": "Registre", "description": "Dossiers de personnes recherchées (récits #2 à #7)" },
+    { "name": "Système" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "session" }
+    },
+    "parameters": {
+      "CriminalId": {
+        "name": "id", "in": "path", "required": true,
+        "description": "Identifiant du dossier (entier positif)",
+        "schema": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "schemas": {
+      "Status": { "type": "string", "enum": ["recherche", "capture", "libere"] },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "errors": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Message par champ invalide" }
+        },
+        "required": ["message"]
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "badge_number": { "type": "string" },
+          "role": { "type": "string", "enum": ["policier", "superviseur", "direction"] },
+          "grade": { "type": "string" }
+        }
+      },
+      "CriminalSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "photo_url": { "type": "string", "nullable": true },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Criminal": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "first_name": { "type": "string" },
+          "last_name": { "type": "string" },
+          "date_of_birth": { "type": "string", "format": "date", "nullable": true },
+          "nationality": { "type": "string", "nullable": true },
+          "photo_url": { "type": "string", "nullable": true },
+          "status": { "$ref": "#/components/schemas/Status" },
+          "description": { "type": "string", "nullable": true },
+          "crimes": { "type": "string" },
+          "added_by": { "type": "integer" },
+          "updated_by": { "type": "integer", "nullable": true },
+          "version": { "type": "integer", "description": "Incrémentée à chaque modification (verrouillage optimiste)" },
+          "added_at": { "type": "string", "format": "date-time" },
+          "updated_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CriminalDetail": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Criminal" },
+          {
+            "type": "object",
+            "properties": {
+              "added_by_name": { "type": "string" },
+              "updated_by_name": { "type": "string", "nullable": true },
+              "status_history": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "$ref": "#/components/schemas/Status" },
+                    "changed_at": { "type": "string", "format": "date-time" },
+                    "changed_by_name": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "CriminalInput": {
+        "type": "object",
+        "required": ["first_name", "last_name", "crimes"],
+        "properties": {
+          "first_name": { "type": "string", "maxLength": 100, "example": "Jean" },
+          "last_name": { "type": "string", "maxLength": 100, "example": "Tremblay" },
+          "date_of_birth": { "type": "string", "format": "date", "example": "1990-05-01" },
+          "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
+          "photo_url": { "type": "string", "format": "uri", "maxLength": 500, "description": "Adresse http(s) d'une photo" },
+          "description": { "type": "string", "example": "Cheveux bruns, 1,75 m." },
+          "crimes": { "type": "string", "example": "Vol qualifié" }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": { "description": "Entrée invalide", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Unauthorized": { "description": "Non connecté", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "Forbidden": { "description": "Rôle insuffisant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+      "NotFound": { "description": "Dossier inexistant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+    }
   },
   "paths": {
     "/auth/login": {
       "post": {
-        "summary": "Authentification d'un policier",
+        "tags": ["Authentification"],
+        "summary": "Se connecter avec son matricule et son mot de passe",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["badge_number", "password"],
+                "properties": {
+                  "badge_number": { "type": "string", "example": "PL-003" },
+                  "password": { "type": "string", "format": "password", "example": "Demo1234!" }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "200": { "description": "Succès" },
-          "401": { "description": "Identifiants invalides" }
+          "200": {
+            "description": "Connexion réussie ; le cookie `session` (HTTP-only, 8 h) est posé",
+            "headers": { "Set-Cookie": { "schema": { "type": "string" } } },
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "description": "Matricule ou mot de passe invalide (sans préciser lequel)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "403": { "description": "Compte désactivé", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Se déconnecter (efface le cookie de session)",
+        "responses": { "204": { "description": "Déconnecté" } }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Authentification"],
+        "summary": "Le compte actuellement connecté",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Compte connecté", "content": { "application/json": { "schema": { "type": "object", "properties": { "user": { "$ref": "#/components/schemas/User" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
     "/api/criminals": {
       "get": {
-        "summary": "Consulter la liste paginée des personnes recherchées",
+        "tags": ["Registre"],
+        "summary": "Liste paginée, recherche par nom et filtre par statut",
+        "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1, "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 } },
+          { "name": "q", "in": "query", "description": "Recherche dans le prénom et le nom", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "$ref": "#/components/schemas/Status" } }
+        ],
         "responses": {
-          "200": { "description": "Liste récupérée avec succès" }
+          "200": {
+            "description": "Une page de dossiers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "page": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "total": { "type": "integer" },
+                    "totalPages": { "type": "integer" },
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/CriminalSummary" } }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
+      },
+      "post": {
+        "tags": ["Registre"],
+        "summary": "Ajouter un dossier (statut initial : recherche)",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CriminalInput" } } } },
+        "responses": {
+          "201": { "description": "Dossier créé", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "criminal": { "$ref": "#/components/schemas/Criminal" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/criminals/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/CriminalId" }],
+      "get": {
+        "tags": ["Registre"],
+        "summary": "Profil complet d'un dossier, avec l'historique des statuts",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "Dossier", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CriminalDetail" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "patch": {
+        "tags": ["Registre"],
+        "summary": "Changer le statut d'un dossier (avec sa version courante)",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status", "version"],
+                "properties": {
+                  "status": { "$ref": "#/components/schemas/Status" },
+                  "version": { "type": "integer", "minimum": 1, "description": "Version lue avec le dossier" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Statut modifié ; la version est incrémentée", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "criminal": { "$ref": "#/components/schemas/Criminal" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Version périmée : le dossier a été modifié entre-temps",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "current": { "type": "object", "properties": { "status": { "$ref": "#/components/schemas/Status" }, "version": { "type": "integer" } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Registre"],
+        "summary": "Retirer un dossier (superviseur ou direction)",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "204": { "description": "Dossier retiré (action inscrite au journal d'audit)" },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["Système"],
+        "summary": "Le serveur répond",
+        "responses": { "200": { "description": "OK" } }
       }
     }
   }

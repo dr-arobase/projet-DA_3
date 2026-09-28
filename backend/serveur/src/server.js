@@ -1,35 +1,32 @@
+import 'dotenv/config';
 import app from './app.js';
-import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
-
-dotenv.config();
+import { logger } from './utils/logger.js';
 
 const PORT = process.env.PORT || 3000;
 
 async function startServer() {
-  try {
-    if (initializeDatabase) {
-      await initializeDatabase();
-    }
-
-    const server = app.listen(PORT, () => {
-      console.log(`Serveur démarré sur http://localhost:${PORT}`);
-    });
-    
-    server.on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Le port ${PORT} est déjà utilisé.`);
-        console.error(`→ Fermez l'autre serveur ou changez PORT= dans .env`);
-      } else {
-        console.error('Erreur serveur:', err);
-      }
-      process.exit(1);
-    });
-
-  } catch (error) {
-    console.error('Erreur au démarrage du serveur:', error);
-    process.exit(1);
+  if (!process.env.JWT_SECRET) {
+    throw new Error('La variable d\'environnement JWT_SECRET est requise (voir .env.example).');
   }
+
+  await initializeDatabase();
+
+  const server = app.listen(PORT, () => {
+    logger.info(`CrimeTracker démarré sur http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      logger.error(`Le port ${PORT} est déjà utilisé : fermez l'autre serveur ou changez PORT dans .env.`);
+    } else {
+      logger.error('Erreur serveur :', err);
+    }
+    process.exit(1);
+  });
 }
 
-startServer();
+startServer().catch((err) => {
+  logger.error('Échec du démarrage :', err);
+  process.exit(1);
+});

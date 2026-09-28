@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Ajouter un dossier — CrimeTracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <nav class="navbar is-dark" id="navbar" aria-label="navigation principale"></nav>
+  <section class="section">
+    <div class="container" style="max-width: 640px">
+      <h1 class="title">Ajouter un dossier</h1>
+      <div id="message"></div>
+
+      <form id="criminal-form" class="box" novalidate>
+        <div class="columns is-mobile is-multiline">
+          <div class="column is-full-mobile">
+            <div class="field">
+              <label class="label" for="first_name">Prénom *</label>
+              <input class="input" id="first_name" name="first_name" maxlength="100" autocomplete="off">
+              <p class="help is-danger" data-error="first_name"></p>
+            </div>
+          </div>
+          <div class="column is-full-mobile">
+            <div class="field">
+              <label class="label" for="last_name">Nom *</label>
+              <input class="input" id="last_name" name="last_name" maxlength="100" autocomplete="off">
+              <p class="help is-danger" data-error="last_name"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="date_of_birth">Date de naissance</label>
+          <input class="input" id="date_of_birth" name="date_of_birth" type="date">
+          <p class="help is-danger" data-error="date_of_birth"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="nationality">Nationalité</label>
+          <input class="input" id="nationality" name="nationality" maxlength="100">
+          <p class="help is-danger" data-error="nationality"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="photo_url">Photo (adresse web)</label>
+          <input class="input" id="photo_url" name="photo_url" type="url" placeholder="https://…">
+          <p class="help">
+            <span class="tag is-warning is-light">À venir — sprint 2</span>
+            Téléversement d'un fichier photo depuis l'appareil.
+          </p>
+          <p class="help is-danger" data-error="photo_url"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="crimes">Crimes reprochés *</label>
+          <textarea class="textarea" id="crimes" name="crimes" rows="2"></textarea>
+          <p class="help is-danger" data-error="crimes"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="description">Description (signes distinctifs, dernier lieu connu…)</label>
+          <textarea class="textarea" id="description" name="description" rows="3"></textarea>
+        </div>
+
+        <p class="help mb-4">* Champ requis</p>
+        <div class="buttons is-stacked-mobile">
+          <button class="button is-primary" type="submit">Ajouter au registre</button>
+          <a class="button is-light" href="/criminals">Annuler</a>
+        </div>
+      </form>
+    </div>
+  </section>
+  <script type="module" src="/assets/criminal-new.js"></script>
+</body>
+</html>

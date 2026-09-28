@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Registre — CrimeTracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <nav class="navbar is-dark" id="navbar" aria-label="navigation principale"></nav>
+  <section class="section">
+    <div class="container">
+      <h1 class="title">Registre des personnes recherchées</h1>
+
+      <p class="demo-banner">
+        <span class="tag is-warning is-light">Données de démonstration</span>
+        Les dossiers chargés au démarrage sont fictifs.
+      </p>
+
+      <div id="message"></div>
+
+      <form id="filters" class="field is-grouped is-grouped-mobile" role="search">
+        <div class="control is-expanded">
+          <input class="input" type="search" name="q" placeholder="Rechercher par nom" aria-label="Rechercher par nom">
+        </div>
+        <div class="control">
+          <div class="select is-fullwidth">
+            <select name="status" aria-label="Filtrer par statut">
+              <option value="">Tous les statuts</option>
+              <option value="recherche">Recherché</option>
+              <option value="capture">Capturé</option>
+              <option value="libere">Libéré</option>
+            </select>
+          </div>
+        </div>
+        <div class="control">
+          <button class="button is-link is-fullwidth" type="submit">Rechercher</button>
+        </div>
+      </form>
+
+      <div class="box p-0" id="list" aria-live="polite"></div>
+
+      <nav class="pager" aria-label="pagination">
+        <button class="button" id="prev" aria-label="Page précédente">←</button>
+        <span id="page-info" class="has-text-centered"></span>
+        <button class="button" id="next" aria-label="Page suivante">→</button>
+      </nav>
+    </div>
+  </section>
+  <script type="module" src="/assets/criminals.js"></script>
+</body>
+</html>

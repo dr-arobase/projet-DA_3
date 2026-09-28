@@ -1,20 +1,10 @@
 /**
- * L'aiguilleur vers le moteur de base de données. DATABASE_URL décide :
- *
- *   postgres://…   PostgreSQL, le moteur du cours (db-postgres.js). C'est le
- *                  défaut : le service postgres de compose.yml.
- *   sqlite:…       SQLite, un simple fichier, pour un poste SANS Docker
- *                  (db-sqlite.js). Rien à installer : il est dans Node.
- *
- * Les deux modules offrent la même interface : `pool.query(sql, [valeurs])`
- * qui retourne { rows, rowCount }, et `pool.connect()` pour une transaction.
- * Le reste de repository/ ne sait pas lequel des deux répond.
+ * Point d'entrée unique vers la base de données (PostgreSQL, voir db-postgres.js).
+ * `pool.query(sql, [valeurs])` retourne { rows, rowCount }.
  */
-const engine = process.env.DATABASE_URL?.startsWith('sqlite:')
-  ? await import('./db-sqlite.js')
-  : await import('./db-postgres.js');
+import { pool } from './db-postgres.js';
 
-export const { pool, initializeDatabase, closeDatabase } = engine;
+export { pool, initializeDatabase, closeDatabase } from './db-postgres.js';
 
 /**
  * Enveloppe des écritures qui doivent réussir ENSEMBLE. Une transaction vit

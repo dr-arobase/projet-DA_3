@@ -26,7 +26,7 @@ erDiagram
         date date_of_birth
         string nationality
         string photo_url
-        enum status "recherché | capturé | libéré"
+        enum status "recherche | capture | libere"
         text description
         text crimes
         int added_by FK
@@ -34,6 +34,13 @@ erDiagram
         int version
         timestamp added_at
         timestamp updated_at
+    }
+    CRIMINAL_STATUS_HISTORY {
+        int id PK
+        int criminal_id FK
+        enum status "recherche | capture | libere"
+        int changed_by FK
+        timestamp changed_at
     }
     SIGHTING {
         int id PK
@@ -66,11 +73,15 @@ erDiagram
     USER ||--o{ ALERT : "émet"
     USER ||--o{ AUDIT_LOG : "effectue"
     CRIMINAL ||--o{ SIGHTING : "concerne"
+    CRIMINAL ||--o{ CRIMINAL_STATUS_HISTORY : "a eu le statut"
+    USER ||--o{ CRIMINAL_STATUS_HISTORY : "change"
     CRIMINAL ||--o{ ALERT : "concerne (optionnel)"
 ```
 
 ### Notes sur le sprint 1
-- `CRIMINAL.version` : entier incrémenté à chaque mise à jour — sert au verrouillage optimiste (sprint 3, récit #13). En sprint 1, on le stocke sans l'exploiter encore.
+- Le schéma réel est [`backend/serveur/database/schema.sql`](../backend/serveur/database/schema.sql) ; la table SQL des comptes s'appelle `app_user` (`user` est un mot réservé de PostgreSQL).
+- `CRIMINAL.version` : entier incrémenté par un déclencheur à chaque mise à jour. Dès le sprint 1, `PATCH /api/criminals/:id` exige la version lue et refuse (409) une version périmée — critère du récit #6 qui prépare le récit #13.
+- `CRIMINAL_STATUS_HISTORY` : ajoutée au sprint 1 (décision 7) — une ligne par statut pris par un dossier, avec son auteur et sa date.
 - `CRIMINAL.crimes` : stocké en texte libre pour le sprint 1 ; normalisé en table séparée si besoin au sprint 2.
 - `SIGHTING` et `ALERT` : entités créées au sprint 1 au niveau du schéma, fonctionnellement activées au sprint 2.
 - `AUDIT_LOG` : conserve les actions sensibles (promotion, désactivation de compte, retrait de dossier et diffusion d'alerte) avec leur auteur, leur cible et la date; sa consultation est prévue au sprint 3.
@@ -80,17 +91,20 @@ erDiagram
 
 ## Principales routes
 
-### Pages (React Router v7 — rendu serveur)
+### Pages (Express + HTML/Bulma — voir décision 4)
 
-| Route | Rôle | Rendu |
+| Route | Rôle | Accès |
 |---|---|---|
-| `GET /login` | Formulaire de connexion | SSR |
-| `GET /` | Tableau de bord (alertes temps réel) | SSR + hydratation client |
-| `GET /criminals` | Liste paginée avec filtres | SSR |
-| `GET /criminals/:id` | Profil complet d'un dossier | SSR |
-| `GET /criminals/new` | Formulaire d'ajout (policier) | SSR |
+| `GET /login` | Formulaire de connexion | Public |
+| `GET /` | Tableau de bord (compteurs par statut ; alertes temps réel au sprint 2) | Connecté, sinon redirection vers `/login` |
+| `GET /criminals` | Liste paginée avec recherche et filtre | Connecté |
+| `GET /criminals/:id` | Profil complet, changement de statut, retrait | Connecté |
+| `GET /criminals/new` | Formulaire d'ajout | Connecté |
+| `GET /api-docs` | Documentation Swagger de l'API | Public |
 
-### API (actions React Router / endpoints)
+### API REST
+
+Livrées au sprint 1 : `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` (compte connecté) et les cinq routes `/api/criminals`. Les autres lignes du tableau sont prévues aux sprints 2 et 3. Tous les rôles authentifiés (`policier`, `superviseur`, `direction`) ont les droits d'un policier ; `direction` a aussi ceux d'un superviseur.
 
 | Méthode | Route | Description | Rôle requis |
 |---|---|---|---|
@@ -205,3 +219,53 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 **Déconnexion et erreurs** : Socket.IO tente automatiquement de se reconnecter. Une alerte qui n'est pas enregistrée n'est pas diffusée.
 
 **Prix de ce choix** : Socket.IO ajoute une dépendance et une configuration supplémentaire avec Docker, mais il est plus adapté que SSE à la communication bidirectionnelle.
+
+---
+
+### Décision 4 — Pages HTML servies par Express plutôt que React Router v7 (sprint 1)
+
+**Question** : avec quelle technologie construire l'interface de l'alpha ?
+
+**Options envisagées** :
+- React Router v7 en rendu serveur (prévu à la soumission) : un second projet Node, une étape de construction et une image Docker de plus.
+- Pages HTML statiques servies par le même serveur Express, avec Bulma et un peu de JavaScript qui appelle l'API.
+
+**Choix retenu** : pages HTML + Bulma servies par Express (`backend/serveur/public/`).
+
+**Raison** : au point de contrôle 2, aucun écran n'existait encore. Un seul serveur et une seule image gardent la commande `docker compose up` simple, et l'interface consomme exactement l'API REST documentée dans Swagger — celle que réutilisera un éventuel client mobile. Les pages restent en couche séparée (`public/`) de la logique serveur (`routes/`, `controllers/`) et de l'accès aux données (`models/`).
+
+**Prix de ce choix** : pas de rendu serveur ni de composants réutilisables ; si l'interface grossit au sprint 2 (temps réel), la migration vers React reste possible sans toucher à l'API.
+
+---
+
+### Décision 5 — Session par cookie HTTP-only contenant un JWT
+
+**Question** : comment garder un policier connecté jusqu'à sa déconnexion (critère du récit #1) ?
+
+**Choix retenu** : à la connexion, le serveur pose un cookie `session` HTTP-only (`SameSite=Lax`, 8 h, la durée d'un quart) qui contient un JWT signé. À chaque requête, le compte est relu en base : un compte désactivé perd l'accès immédiatement. La déconnexion efface le cookie.
+
+**Raison** : un cookie HTTP-only n'est pas lisible par JavaScript (protection contre le vol de session par injection de script), et le navigateur l'envoie tout seul, y compris depuis Swagger.
+
+**Prix de ce choix** : la double authentification (décision 1) est reportée au sprint 2, où l'authentification externe est au programme ; c'est annoncé à l'écran et dans le README. Les mots de passe sont hachés avec bcrypt (`bcryptjs`, pur JavaScript, pour éviter une compilation native dans l'image Alpine).
+
+---
+
+### Décision 6 — Création de la base au démarrage et stratégie de tests
+
+**Question** : comment créer la base automatiquement et la tester ?
+
+**Choix retenu** :
+- Au démarrage, le serveur exécute `schema.sql` si la table `app_user` n'existe pas, puis `seed.sql` si aucun compte n'existe. Pas d'outil de migration pour l'alpha : un seul script, rejoué seulement sur une base vide.
+- Tests Jest + Supertest à deux niveaux : unitaires (validateurs) et intégration contre un **vrai PostgreSQL** (base `crimetracker_test`, vidée et recréée à chaque exécution ; le code refuse de vider une base dont le nom ne finit pas par `_test`). Ils tournent dans GitHub Actions à chaque poussée, puis la CI vérifie que `docker compose up` démarre l'application.
+
+**Prix de ce choix** : une modification du schéma après le sprint 1 exigera un vrai outil de migration (ou `docker compose down --volumes`).
+
+---
+
+### Décision 7 — Table d'historique des statuts
+
+**Question** : le récit #3 demande que « l'historique de statut (dates de changement) » soit visible ; le modèle de la soumission ne garde que le dernier statut.
+
+**Choix retenu** : une table `criminal_status_history` (statut, auteur, date), alimentée dans la même transaction que la création ou le changement de statut.
+
+**Raison** : `updated_at` ne garde que la dernière modification ; le journal d'audit est réservé aux actions sensibles et à la direction.
