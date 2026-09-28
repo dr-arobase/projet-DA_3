@@ -1,0 +1,73 @@
+/* Compléments à Bulma : vignettes et ajustements pour le téléphone. */
+
+.avatar {
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #dbe4f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-weight: 700;
+  color: #34495e;
+}
+
+.criminal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-bottom: 1px solid #ededed;
+  color: inherit;
+}
+
+.criminal-row:hover {
+  background: #f5f7fa;
+}
+
+.criminal-row .name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.demo-banner {
+  margin-bottom: 1rem;
+}
+
+.pre-line {
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+/* Au pouce : boutons et champs pleine largeur sur petit écran. */
+@media (max-width: 768px) {
+  .section {
+    padding: 1.5rem 1rem;
+  }
+
+  .buttons.is-stacked-mobile .button,
+  .field.is-grouped-mobile .control {
+    width: 100%;
+  }
+
+  .field.is-grouped-mobile {
+    flex-direction: column;
+  }
+}

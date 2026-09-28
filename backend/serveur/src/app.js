@@ -1,32 +1,37 @@
 import express from 'express';
-import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 
-// Import des routes
-import authRoutes from './routes/auth.js';
-import criminalsRoutes from './routes/criminals.js';
+import authRoutes from './routes/auth.routes.js';
+import criminalsRoutes from './routes/criminals.routes.js';
+import pagesRoutes, { pageNotFound } from './routes/pages.routes.js';
+import { apiNotFound, errorHandler } from './middleware/error.middleware.js';
 
-dotenv.config();
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, 'swagger.json'), 'utf8'));
+const swaggerDocument = JSON.parse(fs.readFileSync(new URL('./swagger.json', import.meta.url), 'utf8'));
+const ASSETS_DIR = fileURLToPath(new URL('../public/assets/', import.meta.url));
 
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
-// Routes Swagger
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Documentation interactive de l'API
+app.get('/api-docs.json', (req, res) => res.json(swaggerDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, { swaggerOptions: { withCredentials: true } }));
 
-// Routes de l'API
+// API
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/auth', authRoutes);
 app.use('/api/criminals', criminalsRoutes);
+app.use(['/api', '/auth'], apiNotFound);
 
-app.get('/', (req, res) => {
-  res.send('Serveur CrimeTracker opérationnel ! Allez sur /api-docs pour voir le Swagger.');
-});
+// Interface web
+app.use('/assets', express.static(ASSETS_DIR));
+app.use(pagesRoutes);
+app.use(pageNotFound);
+
+app.use(errorHandler);
 
 export default app;

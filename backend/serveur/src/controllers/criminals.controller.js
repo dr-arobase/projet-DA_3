@@ -1,140 +1,128 @@
-const criminalModel = require('../models/criminal.model');
+import { withTransaction } from '../config/db.js';
+import * as auditLogModel from '../models/auditLog.model.js';
+import * as criminalModel from '../models/criminal.model.js';
+import {
+  parsePositiveInt,
+  validateCriminal,
+  validateListQuery,
+  validateStatusChange,
+} from '../utils/validators.js';
 
-// Statuts valides autorisés
-const VALID_STATUSES = ['WANTED', 'CAPTURED', 'IN_PRISON', 'RELEASED', 'ARCHIVED'];
+const hasErrors = (errors) => Object.keys(errors).length > 0;
 
-// Route GET /api/criminals
-const getCriminals = async (req, res) => {
+const invalidId = (res) => res.status(400).json({ message: 'L\'identifiant du dossier doit être un entier positif.' });
+const notFound = (res) => res.status(404).json({ message: 'Aucun dossier ne correspond à cet identifiant.' });
+
+// GET /api/criminals?page=&limit=&q=&status=
+export async function list(req, res, next) {
+  const { value, errors } = validateListQuery(req.query);
+  if (hasErrors(errors)) return res.status(400).json({ message: 'Filtre invalide.', errors });
+
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const status = req.query.status;
-    const offset = (page - 1) * limit;
-
-    const [criminals, total] = await Promise.all([
-      criminalModel.findAll({ limit, offset, status }),
-      criminalModel.countAll(status)
+    const { page, limit, search, status } = value;
+    const [data, total] = await Promise.all([
+      criminalModel.findAll({ limit, offset: (page - 1) * limit, search, status }),
+      criminalModel.countAll({ search, status }),
     ]);
-
-    return res.json({
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-      data: criminals
-    });
-  } catch (error) {
-    console.error('Erreur lors de la récupération des criminels:', error);
-    return res.status(500).json({ message: 'Erreur serveur lors de la récupération' });
+    return res.json({ page, limit, total, totalPages: Math.ceil(total / limit), data });
+  } catch (err) {
+    return next(err);
   }
-};
+}
 
-// Route GET /api/criminals/:id
-const getCriminalById = async (req, res) => {
-  const { id } = req.params;
+// GET /api/criminals/:id
+export async function getById(req, res, next) {
+  const id = parsePositiveInt(req.params.id);
+  if (!id) return invalidId(res);
 
   try {
     const criminal = await criminalModel.findById(id);
-    if (!criminal) {
-      return res.status(404).json({ message: 'Dossier criminel non trouvé' });
-    }
-    return res.json(criminal);
-  } catch (error) {
-    console.error('Erreur lors de la recherche du criminel:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    if (!criminal) return notFound(res);
+    const status_history = await criminalModel.findStatusHistory(id);
+    return res.json({ ...criminal, status_history });
+  } catch (err) {
+    return next(err);
   }
-};
+}
 
-// Route POST /api/criminals
-const createCriminal = async (req, res) => {
-  const { first_name, last_name, description, status, photo_url } = req.body;
-
-  if (!first_name || !last_name) {
-    return res.status(400).json({ message: 'Le prénom et le nom sont obligatoires' });
+// POST /api/criminals
+export async function create(req, res, next) {
+  const { value, errors } = validateCriminal(req.body);
+  if (hasErrors(errors)) {
+    return res.status(400).json({ message: 'Le dossier contient des champs manquants ou invalides.', errors });
   }
 
   try {
-    const added_by = req.user ? req.user.id : req.body.added_by;
-
-    const newCriminal = await criminalModel.create({
-      first_name,
-      last_name,
-      description,
-      status: status || 'WANTED',
-      photo_url,
-      added_by
+    const criminal = await withTransaction(async (client) => {
+      const created = await criminalModel.create(client, value, req.user.id);
+      await criminalModel.addStatusHistory(client, created.id, created.status, req.user.id);
+      return created;
     });
-
-    return res.status(201).json({
-      message: 'Dossier criminel créé avec succès',
-      criminal: newCriminal
-    });
-  } catch (error) {
-    console.error('Erreur lors de la création du criminel:', error);
-    return res.status(500).json({ message: 'Erreur serveur lors de la création' });
+    return res.status(201).location(`/api/criminals/${criminal.id}`).json({ message: 'Dossier créé.', criminal });
+  } catch (err) {
+    return next(err);
   }
-};
+}
 
-// Route PUT /api/criminals/:id
-const updateCriminal = async (req, res) => {
-  const { id } = req.params;
-  const { first_name, last_name, description, status, photo_url } = req.body;
+// PATCH /api/criminals/:id  { status, version }
+export async function changeStatus(req, res, next) {
+  const id = parsePositiveInt(req.params.id);
+  if (!id) return invalidId(res);
+
+  const { value, errors } = validateStatusChange(req.body);
+  if (hasErrors(errors)) return res.status(400).json({ message: 'Changement de statut invalide.', errors });
 
   try {
-    const updatedCriminal = await criminalModel.update(id, {
-      first_name,
-      last_name,
-      description,
-      status,
-      photo_url
-    });
+    const current = await criminalModel.findById(id);
+    if (!current) return notFound(res);
 
-    if (!updatedCriminal) {
-      return res.status(404).json({ message: 'Dossier criminel non trouvé' });
+    const conflict = () =>
+      res.status(409).json({
+        message: 'Ce dossier a été modifié par quelqu\'un d\'autre depuis votre lecture. Rechargez-le avant de réessayer.',
+        current: { status: current.status, version: current.version },
+      });
+
+    if (current.version !== value.version) return conflict();
+    if (current.status === value.status) {
+      return res.status(400).json({ message: `Le dossier a déjà le statut « ${value.status} ».` });
     }
 
-    return res.json({
-      message: 'Dossier mis à jour avec succès',
-      criminal: updatedCriminal
+    const updated = await withTransaction(async (client) => {
+      // La condition sur la version protège aussi d'une écriture concurrente entre la lecture et l'écriture.
+      const row = await criminalModel.updateStatus(client, id, value, req.user.id);
+      if (row) await criminalModel.addStatusHistory(client, id, row.status, req.user.id);
+      return row;
     });
-  } catch (error) {
-    console.error('Erreur lors de la mise à jour du criminel:', error);
-    return res.status(500).json({ message: 'Erreur serveur lors de la mise à jour' });
-  }
-};
+    if (!updated) return conflict();
 
-// Route PATCH /api/criminals/:id/status
-const changeCriminalStatus = async (req, res) => {
-  const { id } = req.params;
-  const { status } = req.body;
-
-  if (!status || !VALID_STATUSES.includes(status)) {
-    return res.status(400).json({ 
-      message: `Statut invalide. Les statuts autorisés sont: ${VALID_STATUSES.join(', ')}` 
-    });
+    return res.json({ message: 'Statut mis à jour.', criminal: updated });
+  } catch (err) {
+    return next(err);
   }
+}
+
+// DELETE /api/criminals/:id  (superviseur ou direction)
+export async function remove(req, res, next) {
+  const id = parsePositiveInt(req.params.id);
+  if (!id) return invalidId(res);
 
   try {
-    const updatedCriminal = await criminalModel.updateStatus(id, status);
-
-    if (!updatedCriminal) {
-      return res.status(404).json({ message: 'Dossier criminel non trouvé' });
-    }
-
-    return res.json({
-      message: `Statut du dossier mis à jour à : ${status}`,
-      criminal: updatedCriminal
+    const removed = await withTransaction(async (client) => {
+      const row = await criminalModel.remove(client, id);
+      if (row) {
+        await auditLogModel.insert(client, {
+          actorId: req.user.id,
+          action: 'criminal.remove',
+          targetType: 'criminal',
+          targetId: id,
+          details: { first_name: row.first_name, last_name: row.last_name },
+        });
+      }
+      return row;
     });
-  } catch (error) {
-    console.error('Erreur lors du changement de statut:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    if (!removed) return notFound(res);
+    return res.status(204).end();
+  } catch (err) {
+    return next(err);
   }
-};
-
-module.exports = {
-  getCriminals,
-  getCriminalById,
-  createCriminal,
-  updateCriminal,
-  changeCriminalStatus
-};
+}

@@ -1,0 +1,56 @@
+# CrimeTracker — démarrage complet : docker compose up --build
+# Puis ouvrir http://localhost:3000
+# Tests : docker compose run --rm tests
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: crimetracker
+      POSTGRES_USER: crimetracker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crimetracker}
+    volumes:
+      # Les données survivent à l'arrêt et au redémarrage des conteneurs.
+      - crimetracker-db-data:/var/lib/postgresql/data
+      # Crée la base séparée des tests (au premier démarrage seulement).
+      - ./backend/serveur/database/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crimetracker -d crimetracker"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build:
+      context: ./backend
+      target: production
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD:-crimetracker}@postgres:5432/crimetracker
+      # Valeur de développement local : définir JWT_SECRET dans .env pour tout autre usage.
+      JWT_SECRET: ${JWT_SECRET:-dev-local-seulement-a-remplacer}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  tests:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    environment:
+      DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD:-crimetracker}@postgres:5432/crimetracker_test
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  crimetracker-db-data:

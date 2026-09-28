@@ -1,0 +1,74 @@
+# Intégration continue : à chaque poussée, sur toutes les branches, et à chaque demande de tirage.
+name: Intégration Continue
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests (Jest + PostgreSQL)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crimetracker
+          POSTGRES_PASSWORD: crimetracker
+          POSTGRES_DB: crimetracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crimetracker"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://crimetracker:crimetracker@localhost:5432/crimetracker_test
+      JWT_SECRET: secret-reserve-a-la-ci
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Exécuter les tests
+        run: npm test
+
+  docker:
+    name: Démarrage Docker (docker compose up)
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construire et démarrer
+        run: docker compose up --build --detach --wait
+
+      - name: Vérifier que l'application répond
+        run: |
+          curl --fail --silent http://localhost:3000/health
+          curl --fail --silent --output /dev/null http://localhost:3000/login
+          curl --fail --silent --output /dev/null http://localhost:3000/api-docs/
+
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs
+
+      - name: Arrêter
+        if: always()
+        run: docker compose down --volumes

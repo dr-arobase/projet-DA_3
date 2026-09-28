@@ -2,46 +2,41 @@
  * La connexion à PostgreSQL.
  */
 import pg from 'pg';
+import { readFile } from 'node:fs/promises';
 
 const { Pool, types } = pg;
 
-const DATABASE_URL = process.env.DATABASE_URL ?? 'postgres://crimetracker:crimetracker@localhost:5432/crimetracker';
+const DATABASE_URL = process.env.DATABASE_URL || 'postgres://crimetracker:crimetracker@localhost:5432/crimetracker';
 
-// Conversion des BIGINT
+// COUNT(*) retourne un BIGINT : on le lit comme un nombre JavaScript.
 types.setTypeParser(types.builtins.INT8, Number);
+// Une colonne DATE reste une chaîne « AAAA-MM-JJ » (pas de décalage de fuseau horaire).
+types.setTypeParser(types.builtins.DATE, (value) => value);
 
 export const pool = new Pool({ connectionString: DATABASE_URL });
 
-/** Vérifie que les tables existent (idempotent), puis insère les données initiales si vide. */
+/**
+ * Crée les tables au premier démarrage (schema.sql), puis charge les données
+ * de démonstration (seed.sql) si aucun compte n'existe. Sans effet ensuite :
+ * les données survivent aux redémarrages.
+ */
 export async function initializeDatabase() {
-  // On tente d'exécuter le schéma ; s'il existe déjà on ignore l'erreur
-  try {
+  const { rows: tables } = await pool.query("SELECT to_regclass('public.app_user') AS name");
+  if (tables[0].name === null) {
     await pool.query(await readSql('schema.sql'));
-  } catch (err) {
-    // Code 42710 = type déjà existant, 42P07 = table déjà existante : c'est normal
-    if (err.code !== '42710' && err.code !== '42P07') throw err;
   }
 
   const { rows } = await pool.query('SELECT COUNT(*) AS n FROM app_user');
   if (rows[0].n === 0) {
     await pool.query(await readSql('seed.sql'));
-
-    // S'assurer que les séquences sont à jour après l'insertion initiale
-    await pool.query(`
-      SELECT setval(pg_get_serial_sequence('app_user', 'id'), (SELECT MAX(id) FROM app_user));
-      SELECT setval(pg_get_serial_sequence('criminal', 'id'), (SELECT MAX(id) FROM criminal));
-      SELECT setval(pg_get_serial_sequence('sighting', 'id'), (SELECT MAX(id) FROM sighting));
-      SELECT setval(pg_get_serial_sequence('alert', 'id'), (SELECT MAX(id) FROM alert));
-    `);
   }
 }
 
-async function readSql(name) {
-  const { readFile } = await import('node:fs/promises');
+function readSql(name) {
   return readFile(new URL(`../../database/${name}`, import.meta.url), 'utf8');
 }
 
-/** Ferme les connexions */
+/** Ferme les connexions. */
 export function closeDatabase() {
   return pool.end();
 }

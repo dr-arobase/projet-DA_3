@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Connexion — CrimeTracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <section class="section">
+    <div class="container" style="max-width: 420px">
+      <h1 class="title">CrimeTracker</h1>
+      <p class="subtitle is-6">Registre des personnes recherchées</p>
+
+      <div id="message"></div>
+
+      <form id="login-form" class="box" novalidate>
+        <div class="field">
+          <label class="label" for="badge_number">Matricule</label>
+          <div class="control">
+            <input class="input" id="badge_number" name="badge_number" autocomplete="username" placeholder="PL-003" autofocus>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="password">Mot de passe</label>
+          <div class="control">
+            <input class="input" id="password" name="password" type="password" autocomplete="current-password">
+          </div>
+        </div>
+        <button class="button is-link is-fullwidth" type="submit">Se connecter</button>
+      </form>
+
+      <p class="help">
+        <span class="tag is-warning is-light">À venir — sprint 2</span>
+        Double authentification par code (application TOTP).
+      </p>
+    </div>
+  </section>
+  <script type="module" src="/assets/login.js"></script>
+</body>
+</html>

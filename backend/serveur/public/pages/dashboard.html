@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Tableau de bord — CrimeTracker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css">
+  <link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+  <nav class="navbar is-dark" id="navbar" aria-label="navigation principale"></nav>
+  <section class="section">
+    <div class="container">
+      <h1 class="title" id="welcome">Tableau de bord</h1>
+
+      <div class="columns is-mobile is-multiline" id="counters">
+        <div class="column is-half-mobile"><div class="box has-text-centered"><p class="heading">Recherchés</p><p class="title" data-status="recherche">…</p></div></div>
+        <div class="column is-half-mobile"><div class="box has-text-centered"><p class="heading">Capturés</p><p class="title" data-status="capture">…</p></div></div>
+        <div class="column is-half-mobile"><div class="box has-text-centered"><p class="heading">Libérés</p><p class="title" data-status="libere">…</p></div></div>
+      </div>
+
+      <div class="buttons is-stacked-mobile">
+        <a class="button is-link" href="/criminals">Consulter le registre</a>
+        <a class="button is-primary" href="/criminals/new">Ajouter un dossier</a>
+      </div>
+
+      <div class="box">
+        <h2 class="title is-5">
+          Alertes en temps réel
+          <span class="tag is-warning is-light">À venir — sprint 2</span>
+        </h2>
+        <p>La diffusion des alertes urgentes et des changements de statut en direct arrive au sprint 2 (récits #9 et #10).</p>
+      </div>
+    </div>
+  </section>
+  <script type="module" src="/assets/dashboard.js"></script>
+</body>
+</html>
