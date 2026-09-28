@@ -21,3 +21,14 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
+export const logout = async (req, res) => {
+  try {
+    // req.user est disponible grâce au middleware verifyToken
+    const result = await authService.logoutUser(req.user.id);
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('Erreur lors du logout:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};

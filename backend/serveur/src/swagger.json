@@ -201,15 +201,37 @@
       }
     },
     "/api/auth/logout": {
-      "post": {
-        "tags": ["Auth"],
-        "summary": "Déconnexion [À implémenter]",
-        "description": "Invalide la session de l'utilisateur connecté.\n\n**Rôle requis :** authentifié",
-        "responses": {
-          "204": { "description": "Session invalidée" },
-          "401": { "$ref": "#/components/responses/Unauthorized" }
-        }
+  "post": {
+    "tags": ["Auth"],
+    "summary": "Déconnexion de l'agent",
+    "description": "Déconnecte l'agent authentifié. Le jeton doit être supprimé côté client.",
+    "security": [
+      {
+        "bearerAuth": []
       }
+    ],
+    "responses": {
+      "200": {
+        "description": "Déconnexion réussie",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string",
+                  "example": "Déconnexion réussie. Le jeton doit être supprimé côté client."
+                }
+              }
+            }
+          }
+        }
+      },
+      "401": {
+        "$ref": "#/components/responses/Unauthorized"
+      }
+    }
+  }
     },
     "/api/criminals": {
       "get": {
