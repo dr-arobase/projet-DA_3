@@ -1,11 +1,12 @@
-const express = require('express');
-const router = express.Router();
-const db = require('../config/db');
+import express from 'express';
+import { pool } from '../config/db.js';
 
-// Route GET /api/dossiers (Récupérer tous les criminels pour que le front-end les trie)
+const router = express.Router();
+
+// Route GET /api/dossiers (Récupérer tous les criminels)
 router.get('/', async (req, res) => {
   try {
-    const result = await db.query('SELECT * FROM criminal ORDER BY added_at DESC');
+    const result = await pool.query('SELECT * FROM criminal ORDER BY added_at DESC');
     res.json(result.rows);
   } catch (error) {
     console.error('Erreur lors de la récupération des dossiers:', error);
@@ -17,7 +18,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await db.query('SELECT * FROM criminal WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM criminal WHERE id = $1', [id]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Dossier non trouvé' });
@@ -40,10 +41,9 @@ router.post('/', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5) 
       RETURNING *
     `;
-    // Le statut par défaut peut être 'WANTED' si non précisé
     const values = [first_name, last_name, description, status || 'WANTED', added_by];
     
-    const result = await db.query(query, values);
+    const result = await pool.query(query, values);
 
     res.status(201).json({ 
       message: 'Dossier créé avec succès', 
@@ -63,11 +63,11 @@ router.put('/:id', async (req, res) => {
   try {
     const query = `
       UPDATE criminal 
-      SET first_name = $1, last_name = $2, description = $3, status = $4, updated_at = NOW() 
+      SET first_name = $1, last_name = $2, description = $3, status = $4, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $5
       RETURNING *
     `;
-    const result = await db.query(query, [first_name, last_name, description, status, id]);
+    const result = await pool.query(query, [first_name, last_name, description, status, id]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Dossier non trouvé' });
@@ -83,7 +83,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Route PATCH /api/dossiers/:id/status (Changer uniquement le statut si besoin)
+// Route PATCH /api/dossiers/:id/status (Changer uniquement le statut)
 router.patch('/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -95,11 +95,11 @@ router.patch('/:id/status', async (req, res) => {
   try {
     const query = `
       UPDATE criminal 
-      SET status = $1, updated_at = NOW() 
+      SET status = $1, updated_at = CURRENT_TIMESTAMP 
       WHERE id = $2 
       RETURNING *
     `;
-    const result = await db.query(query, [status, id]);
+    const result = await pool.query(query, [status, id]);
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Dossier non trouvé' });
@@ -115,4 +115,4 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
