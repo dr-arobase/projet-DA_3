@@ -1,42 +1,32 @@
 import express from 'express';
-import { pool as db } from '../config/db.js';
+import {
+  getCriminals,
+  getCriminalById,
+  createCriminal,
+  updateCriminal,
+  changeCriminalStatus,
+  deleteCriminal
+} from '../controllers/criminals.controller.js';
+import { requireRole } from '../middleware/rbac.middleware.js';
 
 const router = express.Router();
 
-// GET /api/criminals : Liste paginée
-router.get('/', async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const offset = (page - 1) * limit;
+// GET /api/criminals : liste paginée
+router.get('/', getCriminals);
 
-    const result = await db.query(
-      'SELECT id, first_name, last_name, status, photo_url FROM criminal ORDER BY added_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset]
-    );
+// GET /api/criminals/:id : détail d'un dossier
+router.get('/:id', getCriminalById);
 
-    return res.json({ page, data: result.rows });
-  } catch (error) {
-    return res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
+// POST /api/criminals : ajouter un dossier
+router.post('/', createCriminal);
 
-// POST /api/criminals : Ajouter un dossier
-router.post('/', async (req, res) => {
-  const { first_name, last_name, date_of_birth, nationality, description, crimes, added_by } = req.body;
+// PUT /api/criminals/:id : mettre à jour les informations d'un dossier
+router.put('/:id', updateCriminal);
 
-  try {
-    // TODO: Valider les champs obligatoires
-    // TODO: Effectuer l'INSERT dans la table criminal (version par défaut = 1)
-    // TODO: Émettre l'événement Socket.IO "criminal:added" aux clients connectés
+// PATCH /api/criminals/:id/status : changer le statut (avec version)
+router.patch('/:id/status', changeCriminalStatus);
 
-    return res.status(201).json({ message: 'Création à implémenter' });
-  } catch (error) {
-    return res.status(500).json({ message: 'Erreur serveur' });
-  }
-});
-
-// TODO: Ajouter PATCH /:id (mise à jour statut + vérification version)
-// TODO: Ajouter DELETE /:id (retrait par un superviseur)
+// DELETE /api/criminals/:id : retirer un dossier (superviseur ou direction)
+router.delete('/:id', requireRole('superviseur'), deleteCriminal);
 
 export default router;

@@ -22,7 +22,7 @@ CREATE TYPE user_grade AS ENUM (
     'directeur_general'
 );
 
-CREATE TYPE criminal_status AS ENUM ('recherche', 'capture', 'libere');
+CREATE TYPE criminal_status AS ENUM ('RECHERCHE', 'CAPTURE', 'EN_PRISON', 'LIBERE', 'ARCHIVE');
 
 CREATE TYPE alert_severity AS ENUM ('info', 'urgent');
 
@@ -54,7 +54,7 @@ CREATE TABLE criminal (
     date_of_birth   DATE,
     nationality     VARCHAR(100),
     photo_url       VARCHAR(500),
-    status          criminal_status NOT NULL DEFAULT 'recherche',
+    status          criminal_status NOT NULL DEFAULT 'RECHERCHE',
     description     TEXT,
     crimes          TEXT,
     added_by        INTEGER NOT NULL REFERENCES app_user(id),

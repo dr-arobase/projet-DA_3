@@ -1,10 +1,10 @@
-const criminalModel = require('../models/criminal.model');
+import * as criminalModel from '../models/criminal.model.js';
 
-// Statuts valides autorisés
-const VALID_STATUSES = ['WANTED', 'CAPTURED', 'IN_PRISON', 'RELEASED', 'ARCHIVED'];
+// Statuts valides autorisés (alignés sur le type criminal_status du schéma SQL)
+const VALID_STATUSES = ['RECHERCHE', 'CAPTURE', 'EN_PRISON', 'LIBERE', 'ARCHIVE'];
 
 // Route GET /api/criminals
-const getCriminals = async (req, res) => {
+export const getCriminals = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 10;
@@ -30,7 +30,7 @@ const getCriminals = async (req, res) => {
 };
 
 // Route GET /api/criminals/:id
-const getCriminalById = async (req, res) => {
+export const getCriminalById = async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -46,24 +46,24 @@ const getCriminalById = async (req, res) => {
 };
 
 // Route POST /api/criminals
-const createCriminal = async (req, res) => {
-  const { first_name, last_name, description, status, photo_url } = req.body;
+export const createCriminal = async (req, res) => {
+  const { first_name, last_name, date_of_birth, nationality, description, crimes, status, photo_url } = req.body;
 
   if (!first_name || !last_name) {
     return res.status(400).json({ message: 'Le prénom et le nom sont obligatoires' });
   }
+  if (status && !VALID_STATUSES.includes(status)) {
+    return res.status(400).json({ message: `Statut invalide. Les statuts autorisés sont: ${VALID_STATUSES.join(', ')}` });
+  }
 
   try {
-    const added_by = req.user ? req.user.id : req.body.added_by;
+    const added_by = req.user.id;
 
-    const newCriminal = await criminalModel.create({
-      first_name,
-      last_name,
-      description,
-      status: status || 'WANTED',
-      photo_url,
-      added_by
+    const created = await criminalModel.create({
+      first_name, last_name, date_of_birth, nationality,
+      description, crimes, status, photo_url, added_by
     });
+    const newCriminal = await criminalModel.findById(created.id);
 
     return res.status(201).json({
       message: 'Dossier criminel créé avec succès',
@@ -76,18 +76,16 @@ const createCriminal = async (req, res) => {
 };
 
 // Route PUT /api/criminals/:id
-const updateCriminal = async (req, res) => {
+export const updateCriminal = async (req, res) => {
   const { id } = req.params;
-  const { first_name, last_name, description, status, photo_url } = req.body;
+  const { first_name, last_name, date_of_birth, nationality, description, crimes, photo_url } = req.body;
 
   try {
-    const updatedCriminal = await criminalModel.update(id, {
-      first_name,
-      last_name,
-      description,
-      status,
-      photo_url
+    const updated_by = req.user.id;
+    const updated = await criminalModel.update(id, {
+      first_name, last_name, date_of_birth, nationality, description, crimes, photo_url, updated_by
     });
+    const updatedCriminal = updated ? await criminalModel.findById(id) : null;
 
     if (!updatedCriminal) {
       return res.status(404).json({ message: 'Dossier criminel non trouvé' });
@@ -104,21 +102,33 @@ const updateCriminal = async (req, res) => {
 };
 
 // Route PATCH /api/criminals/:id/status
-const changeCriminalStatus = async (req, res) => {
+export const changeCriminalStatus = async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, version } = req.body;
 
   if (!status || !VALID_STATUSES.includes(status)) {
-    return res.status(400).json({ 
-      message: `Statut invalide. Les statuts autorisés sont: ${VALID_STATUSES.join(', ')}` 
+    return res.status(400).json({
+      message: `Statut invalide. Les statuts autorisés sont: ${VALID_STATUSES.join(', ')}`
     });
+  }
+  if (version === undefined) {
+    return res.status(400).json({ message: 'Le champ version est obligatoire' });
   }
 
   try {
-    const updatedCriminal = await criminalModel.updateStatus(id, status);
-
+    const updated_by = req.user.id;
+    const updatedRaw = await criminalModel.updateStatus(id, status, version, updated_by);
+    const updatedCriminal = updatedRaw ? await criminalModel.findById(id) : null;
+    
     if (!updatedCriminal) {
-      return res.status(404).json({ message: 'Dossier criminel non trouvé' });
+      const current = await criminalModel.findById(id);
+      if (!current) {
+        return res.status(404).json({ message: 'Dossier criminel non trouvé' });
+      }
+      return res.status(409).json({
+        message: 'Conflit de version : ce dossier a été modifié entre-temps',
+        criminal: current
+      });
     }
 
     return res.json({
@@ -131,10 +141,18 @@ const changeCriminalStatus = async (req, res) => {
   }
 };
 
-module.exports = {
-  getCriminals,
-  getCriminalById,
-  createCriminal,
-  updateCriminal,
-  changeCriminalStatus
+// Route DELETE /api/criminals/:id
+export const deleteCriminal = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const removed = await criminalModel.remove(id);
+    if (!removed) {
+      return res.status(404).json({ message: 'Dossier criminel non trouvé' });
+    }
+    return res.json({ message: 'Dossier retiré avec succès', id: removed.id });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du criminel:', error);
+    return res.status(500).json({ message: 'Erreur serveur lors de la suppression' });
+  }
 };

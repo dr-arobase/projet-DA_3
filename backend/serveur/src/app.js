@@ -25,8 +25,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes de l'API
 app.use('/auth', authRoutes);
-app.get('/auth/me', authenticate, (req, res)=> res.json({user: req.use}));
-app.use('/api/criminals', criminalsRoutes);
+app.get('/auth/me', authenticate, (req, res)=> res.json({user: req.user}));
 app.use('/api/criminals', authenticate, criminalsRoutes);
 
 app.get('/', (req, res) => {
@@ -34,8 +33,8 @@ app.get('/', (req, res) => {
 });
 
 // TEMPORAIRE : uniquement pour tester le contrôle des rôles, à supprimer ensuite
-app.get('/api/test-direction', authenticate, requireRole('direction'), (req, res) => {
+/*app.get('/api/test-direction', authenticate, requireRole('direction'), (req, res) => {
   res.json({ message: 'Accès direction OK' });
-});
+});*/
 
 export default app;
