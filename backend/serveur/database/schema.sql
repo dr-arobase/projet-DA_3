@@ -65,18 +65,6 @@ CREATE TABLE criminal (
 );
 
 -- ============================================================
--- CRIMINAL_STATUS_HISTORY — chaque statut pris par un dossier (récit #5 et #6)
--- ============================================================
-
-CREATE TABLE criminal_status_history (
-    id              SERIAL PRIMARY KEY,
-    criminal_id     INTEGER NOT NULL REFERENCES criminal(id) ON DELETE CASCADE,
-    status          criminal_status NOT NULL,
-    changed_by      INTEGER NOT NULL REFERENCES app_user(id),
-    changed_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- ============================================================
 -- SIGHTING — signalements d'observation sur le terrain
 -- ============================================================
 
@@ -122,7 +110,6 @@ CREATE TABLE audit_log (
 
 CREATE INDEX idx_criminal_status ON criminal(status);
 CREATE INDEX idx_criminal_last_name ON criminal(last_name);
-CREATE INDEX idx_status_history_criminal_id ON criminal_status_history(criminal_id);
 CREATE INDEX idx_sighting_criminal_id ON sighting(criminal_id);
 CREATE INDEX idx_alert_criminal_id ON alert(criminal_id);
 CREATE INDEX idx_audit_log_actor_id ON audit_log(actor_id);
