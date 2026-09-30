@@ -30,14 +30,9 @@ app.use(express.urlencoded({ extended: true }));
 // Serveur Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-<<<<<<< HEAD
 // Routes de l'API
 app.use('/auth', authRoutes);
 app.get('/auth/me', authenticate, (req, res)=> res.json({user: req.user}));
-=======
-// Enregistrement des routes de l'API
-app.use('/api/auth', authRoutes);
->>>>>>> main
 app.use('/api/criminals', criminalsRoutes);
 
 // Route d'accueil / de test
@@ -48,16 +43,9 @@ app.get('/', (req, res) => {
   });
 });
 
-<<<<<<< HEAD
 // TEMPORAIRE : uniquement pour tester le contrôle des rôles, à supprimer ensuite
 app.get('/api/test-direction', authenticate, requireRole('direction'), (req, res) => {
   res.json({ message: 'Accès direction OK' });
 });
 
 export default app;
-=======
-// Middleware global de gestion des erreurs
-app.use(errorHandler);
-
-export default app;
->>>>>>> main
