@@ -1,6 +1,7 @@
 import app from './app.js';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
+import registerSockets from './sockets/index.js';
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ async function startServer() {
       console.log(`Documentation Swagger disponible sur http://localhost:${PORT}/api-docs`);
     });
     
+    // Socket.IO partage le même serveur HTTP que l'API (suivi en temps réel)
+    registerSockets(server);
+
     // Gestion propre des erreurs d'écoute (ex: port déjà utilisé)
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {

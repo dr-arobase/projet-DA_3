@@ -5,9 +5,7 @@
     "version": "1.0.0",
     "description": "API REST du registre national des personnes recherchées.\n\nLes routes sont basées sur `docs/03-conception.md`. Les routes marquées **[À implémenter]** sont prévues dans la conception mais pas encore codées.\n\n### Authentification\nObtenir un jeton via `POST /api/auth/login`, puis cliquer sur **Authorize** et coller le jeton.\n\n### Rôles\n- `policier` : grade `sergent_autres_fonctions`\n- `superviseur` : grades `sergent_gestionnaire` à `inspecteur_chef`\n- `direction` : grades `directeur_general_adjoint` et `directeur_general`\n\n### Événements Socket.IO (sprints 2–3)\n| Direction | Événement | Payload | Déclencheur |\n|---|---|---|---|\n| Serveur → clients | `criminal:added` | `{ criminal }` | Nouveau dossier créé |\n| Serveur → clients | `criminal:updated` | `{ id, status, updated_by, updated_at }` | Statut modifié |\n| Serveur → clients | `criminal:removed` | `{ id }` | Dossier retiré |\n| Serveur → clients | `alert:broadcast` | `{ id, message, severity, issued_by, created_at }` | Alerte urgente émise |\n| Serveur → clients | `presence:update` | `{ online_users[] }` | Connexion / déconnexion |\n| Client → serveur | `alert:send` | `{ message, severity, criminal_id? }` | Superviseur diffuse une alerte |"
   },
-  "servers": [
-    { "url": "http://localhost:3000", "description": "Serveur local" }
-  ],
+  "servers": [{ "url": "http://localhost:3000", "description": "Serveur local" }],
   "tags": [
     { "name": "Auth", "description": "Connexion et déconnexion" },
     { "name": "Criminals", "description": "Registre des personnes recherchées" },
@@ -15,7 +13,8 @@
     { "name": "Users", "description": "Gestion des comptes policiers et superviseurs" },
     { "name": "Audit", "description": "Journal des actions sensibles" },
     { "name": "Dossiers", "description": "Routes codées dans routes/dossier.js — **non montées dans app.js** (répondent 404 pour l'instant) et en doublon avec /api/criminals" },
-    { "name": "Système", "description": "Vérification de l'état de l'API" }
+    { "name": "Système", "description": "Vérification de l'état de l'API" },
+    { "name": "Alerts", "description": "Alertes diffusées en temps réel" }
   ],
   "security": [{ "bearerAuth": [] }],
   "paths": {
@@ -211,11 +210,7 @@
         "tags": ["Auth"],
         "summary": "Déconnexion de l'agent",
         "description": "Déconnecte l'agent authentifié. Le jeton doit être supprimé côté client.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
             "description": "Déconnexion réussie",
@@ -233,9 +228,7 @@
               }
             }
           },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
+          "401": { "$ref": "#/components/responses/Unauthorized" }
         }
       }
     },
@@ -243,27 +236,48 @@
       "get": {
         "tags": ["Criminals"],
         "summary": "Liste des personnes recherchées",
-        "description": "Récupère l'ensemble des dossiers criminels enregistrés.",
+        "description": "Liste paginée des dossiers, avec filtre optionnel sur le statut. Les champs added_by / updated_by contiennent le nom de l'agent.",
         "responses": {
           "200": {
-            "description": "Liste des dossiers récupérée avec succès",
+            "description": "Page de dossiers",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Criminal" }
+                  "allOf": [
+                    { "$ref": "#/components/schemas/Paginated" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Criminal" }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
           },
+          "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "500": { "$ref": "#/components/responses/ServerError" }
-        }
+        },
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "$ref": "#/components/schemas/CriminalStatus" }
+          }
+        ]
       },
       "post": {
         "tags": ["Criminals"],
         "summary": "Créer un dossier",
-        "description": "Ajoute un nouveau criminel au registre.",
+        "description": "Crée un dossier au nom de l'agent connecté et diffuse l'événement Socket.IO `criminal:added`.\n\n**Rôle requis :** `policier`",
         "requestBody": {
           "required": true,
           "content": {
@@ -287,6 +301,7 @@
               }
             }
           },
+          "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -315,7 +330,7 @@
       "put": {
         "tags": ["Criminals"],
         "summary": "Mettre à jour un dossier",
-        "description": "Met à jour les informations générales d'un criminel.",
+        "description": "Met à jour les informations du dossier (sans le statut) et diffuse `criminal:updated`.\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
           "content": {
@@ -340,6 +355,32 @@
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "delete": {
+        "tags": ["Criminals"],
+        "summary": "Retirer un dossier",
+        "description": "Supprime le dossier, l'inscrit au journal d'audit et diffuse `criminal:removed`.\n\n**Rôle requis :** `superviseur`",
+        "responses": {
+          "200": {
+            "description": "Dossier retiré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Dossier retiré avec succès" },
+                    "id": { "type": "integer", "example": 1 }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -350,18 +391,12 @@
       "patch": {
         "tags": ["Criminals"],
         "summary": "Changer le statut d'un dossier",
-        "description": "Met à jour le statut du dossier (ex: WANTED, ARRESTED).",
+        "description": "Verrouillage optimiste : le client envoie la `version` qu'il a lue. Si le dossier a changé entre-temps, la requête est refusée (409) avec l'état courant. Diffuse `criminal:updated`.\n\n**Rôle requis :** `policier`",
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["status"],
-                "properties": {
-                  "status": { "type": "string", "example": "ARRESTED" }
-                }
-              }
+              "schema": { "$ref": "#/components/schemas/CriminalStatusUpdate" }
             }
           }
         },
@@ -383,6 +418,14 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Conflit de version",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/VersionConflict" }
+              }
+            }
+          },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -390,7 +433,7 @@
     "/api/sightings": {
       "post": {
         "tags": ["Sightings"],
-        "summary": "Signaler une observation [À implémenter]",
+        "summary": "Signaler une observation",
         "description": "Enregistre une observation terrain (lieu, heure, notes) d'une personne recherchée (récit #11).\n\n**Rôle requis :** `policier`",
         "requestBody": {
           "required": true,
@@ -405,7 +448,13 @@
             "description": "Signalement enregistré",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Sighting" }
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "sighting": { "$ref": "#/components/schemas/Sighting" }
+                  }
+                }
               }
             }
           },
@@ -413,12 +462,42 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "404": { "$ref": "#/components/responses/NotFound" }
         }
+      },
+      "get": {
+        "tags": ["Sightings"],
+        "summary": "Historique des signalements d'un dossier",
+        "description": "Du plus récent au plus ancien.\n\n**Rôle requis :** `superviseur`",
+        "parameters": [
+          {
+            "name": "criminal_id",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signalements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Sighting" }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
       }
     },
     "/api/users": {
       "get": {
         "tags": ["Users"],
-        "summary": "Liste des comptes [À implémenter]",
+        "summary": "Liste des comptes",
         "description": "Liste des comptes policiers et superviseurs.\n\n**Rôle requis :** `superviseur` ou `direction`",
         "responses": {
           "200": {
@@ -438,7 +517,7 @@
       },
       "post": {
         "tags": ["Users"],
-        "summary": "Créer un compte policier [À implémenter]",
+        "summary": "Créer un compte policier",
         "description": "Crée le compte d'un nouveau policier (récit #8). Le rôle est `policier` et le grade `sergent_autres_fonctions`.\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
@@ -461,7 +540,7 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "409": {
-            "description": "Matricule ou courriel déjà utilisé",
+            "description": "Matricule déjà utilisé",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -471,48 +550,116 @@
         }
       }
     },
-    "/api/users/{id}/status": {
-      "parameters": [{ "$ref": "#/components/parameters/Id" }],
-      "patch": {
-        "tags": ["Users"],
-        "summary": "Désactiver ou réactiver un compte policier [À implémenter]",
-        "description": "Ajoute une entrée au journal d'audit.\n\n**Rôle requis :** `superviseur`",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["is_active"],
-                "properties": {
-                  "is_active": { "type": "boolean", "example": false }
+    "/api/audit-logs": {
+      "get": {
+        "tags": ["Audit"],
+        "summary": "Consulter le journal des actions sensibles",
+        "description": "Promotions, désactivations de compte, retraits de dossier et diffusions d'alerte, avec leur auteur, leur cible et la date.\n\n**Rôle requis :** `direction`",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entrées du journal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/AuditLog" }
                 }
               }
             }
-          }
-        },
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "get": {
+        "tags": ["Users"],
+        "summary": "Détail d'un compte",
+        "description": "**Rôle requis :** `superviseur`",
         "responses": {
           "200": {
-            "description": "Statut du compte modifié",
+            "description": "Compte",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/User" }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
-    "/api/users/{id}/promotion": {
+    "/api/users/{id}/deactivate": {
       "parameters": [{ "$ref": "#/components/parameters/Id" }],
       "patch": {
         "tags": ["Users"],
-        "summary": "Promouvoir un policier [À implémenter]",
-        "description": "Accepte un grade supérieur, change le rôle vers `superviseur`, invalide les anciennes permissions de policier et ajoute une entrée au journal d'audit. Un policier ne peut pas modifier son propre rôle.\n\n**Rôle requis :** `direction`",
+        "summary": "Désactiver un compte",
+        "description": "Inscrit `USER_DEACTIVATED` au journal d'audit.\n\n**Rôle requis :** `superviseur`",
+        "responses": {
+          "200": {
+            "description": "Compte modifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/users/{id}/reactivate": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Réactiver un compte",
+        "description": "Inscrit `USER_REACTIVATED` au journal d'audit.\n\n**Rôle requis :** `superviseur`",
+        "responses": {
+          "200": {
+            "description": "Compte modifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/users/{id}/promote": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Promouvoir un policier",
+        "description": "Change le rôle et le grade. Inscrit `USER_PROMOTED` au journal d'audit.\n\n**Rôle requis :** `direction`",
         "requestBody": {
           "required": true,
           "content": {
@@ -523,10 +670,16 @@
         },
         "responses": {
           "200": {
-            "description": "Promotion effectuée",
+            "description": "Compte promu",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/User" }
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
               }
             }
           },
@@ -551,40 +704,76 @@
         }
       }
     },
-    "/api/audit-logs": {
+    "/api/alerts": {
       "get": {
-        "tags": ["Audit"],
-        "summary": "Consulter le journal des actions sensibles [À implémenter]",
-        "description": "Promotions, désactivations de compte, retraits de dossier et diffusions d'alerte, avec leur auteur, leur cible et la date.\n\n**Rôle requis :** `direction`",
+        "tags": ["Alerts"],
+        "summary": "Liste des alertes",
+        "description": "Les plus récentes en premier (20 par page par défaut).\n\n**Rôle requis :** `policier`",
         "parameters": [
           { "$ref": "#/components/parameters/Page" },
           { "$ref": "#/components/parameters/Limit" }
         ],
         "responses": {
           "200": {
-            "description": "Entrées du journal",
+            "description": "Page d'alertes",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/AuditLog" }
+                  "type": "object",
+                  "properties": {
+                    "page": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "data": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Alert" }
+                    }
+                  }
                 }
               }
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "post": {
+        "tags": ["Alerts"],
+        "summary": "Diffuser une alerte",
+        "description": "Enregistre l'alerte, l'inscrit au journal d'audit et la diffuse à tous les agents connectés (`alert:broadcast`).\n\n**Rôle requis :** `superviseur`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AlertCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Alerte diffusée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "alert": { "$ref": "#/components/schemas/Alert" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "JWT"
-      }
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
     },
     "parameters": {
       "Id": {
@@ -608,31 +797,41 @@
       "BadRequest": {
         "description": "Données invalides ou champs obligatoires manquants",
         "content": {
-          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
         }
       },
       "Unauthorized": {
         "description": "Jeton absent, invalide ou expiré",
         "content": {
-          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
         }
       },
       "Forbidden": {
         "description": "Rôle insuffisant pour cette action",
         "content": {
-          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
         }
       },
       "NotFound": {
         "description": "Ressource introuvable",
         "content": {
-          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
         }
       },
       "ServerError": {
         "description": "Erreur serveur",
         "content": {
-          "application/json": { "schema": { "$ref": "#/components/schemas/Error" } }
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" }
+          }
         }
       }
     },
@@ -717,7 +916,12 @@
           "first_name": { "type": "string", "maxLength": 100, "example": "Marie" },
           "last_name": { "type": "string", "maxLength": 100, "example": "Tremblay" },
           "badge_number": { "type": "string", "maxLength": 20, "example": "P-1001" },
-          "email": { "type": "string", "format": "email", "maxLength": 255, "example": "marie.tremblay@police.qc.ca" },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 255,
+            "example": "marie.tremblay@police.qc.ca"
+          },
           "password": { "type": "string", "format": "password", "example": "motdepasse" }
         }
       },
@@ -725,7 +929,11 @@
         "type": "object",
         "required": ["role", "grade"],
         "properties": {
-          "role": { "type": "string", "enum": ["superviseur"], "example": "superviseur" },
+          "role": {
+            "type": "string",
+            "enum": ["superviseur"],
+            "example": "superviseur"
+          },
           "grade": { "$ref": "#/components/schemas/Grade" }
         },
         "example": { "role": "superviseur", "grade": "lieutenant" }
@@ -746,15 +954,28 @@
           "id": { "type": "integer", "example": 1 },
           "first_name": { "type": "string", "example": "Jean" },
           "last_name": { "type": "string", "example": "Dupont" },
-          "date_of_birth": { "type": "string", "format": "date", "nullable": true, "example": "1985-04-12" },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "example": "1985-04-12"
+          },
           "nationality": { "type": "string", "nullable": true, "example": "Canadienne" },
           "photo_url": { "type": "string", "nullable": true, "example": "/uploads/photos/1.jpg" },
           "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "description": { "type": "string", "nullable": true, "example": "Cicatrice sur la joue gauche" },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Cicatrice sur la joue gauche"
+          },
           "crimes": { "type": "string", "nullable": true, "example": "Vol à main armée" },
           "added_by": { "type": "integer", "example": 1 },
           "updated_by": { "type": "integer", "nullable": true, "example": 2 },
-          "version": { "type": "integer", "example": 1, "description": "Incrémentée à chaque mise à jour (verrouillage optimiste)" },
+          "version": {
+            "type": "integer",
+            "example": 1,
+            "description": "Incrémentée à chaque mise à jour (verrouillage optimiste)"
+          },
           "added_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
         }
@@ -787,14 +1008,21 @@
         "required": ["status", "version"],
         "properties": {
           "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "version": { "type": "integer", "example": 1, "description": "Version lue par le client avant la modification" }
+          "version": {
+            "type": "integer",
+            "example": 1,
+            "description": "Version lue par le client avant la modification"
+          }
         }
       },
       "VersionConflict": {
         "type": "object",
         "properties": {
-          "message": { "type": "string", "example": "Le dossier a été modifié par un autre policier" },
-          "current": { "$ref": "#/components/schemas/Criminal" }
+          "message": {
+            "type": "string",
+            "example": "Conflit de version : ce dossier a été modifié entre-temps"
+          },
+          "criminal": { "$ref": "#/components/schemas/Criminal" }
         }
       },
       "DossierCreate": {
@@ -841,9 +1069,17 @@
         "required": ["criminal_id", "location"],
         "properties": {
           "criminal_id": { "type": "integer", "example": 1 },
-          "location": { "type": "string", "maxLength": 255, "example": "Station Berri-UQAM, Montréal" },
+          "location": {
+            "type": "string",
+            "maxLength": 255,
+            "example": "Station Berri-UQAM, Montréal"
+          },
           "notes": { "type": "string", "example": "Portait un manteau noir" },
-          "reported_at": { "type": "string", "format": "date-time", "description": "Heure de l'observation (par défaut : maintenant)" }
+          "reported_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Heure de l'observation (par défaut : maintenant)"
+          }
         }
       },
       "AuditLog": {
@@ -854,8 +1090,41 @@
           "action": { "type": "string", "example": "user.promotion" },
           "target_type": { "type": "string", "example": "user" },
           "target_id": { "type": "integer", "example": 3 },
-          "details": { "type": "object", "nullable": true, "example": { "grade": "lieutenant" } },
+          "details": {
+            "type": "object",
+            "nullable": true,
+            "example": { "grade": "lieutenant" }
+          },
           "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Paginated": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "example": 1 },
+          "limit": { "type": "integer", "example": 10 },
+          "total": { "type": "integer", "example": 42 },
+          "totalPages": { "type": "integer", "example": 5 }
+        }
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "criminal_id": { "type": "integer", "nullable": true, "example": 1 },
+          "message": { "type": "string", "example": "Individu dangereux aperçu au centre-ville" },
+          "severity": { "$ref": "#/components/schemas/Severity" },
+          "issued_by": { "type": "string", "example": "Marie Tremblay" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AlertCreate": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": { "type": "string", "example": "Individu dangereux aperçu au centre-ville" },
+          "severity": { "$ref": "#/components/schemas/Severity" },
+          "criminal_id": { "type": "integer", "nullable": true, "example": 1 }
         }
       }
     }

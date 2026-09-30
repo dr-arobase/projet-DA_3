@@ -1,6 +1,7 @@
 import express from 'express';
 import * as criminalController from '../controllers/criminals.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import { requireRole } from '../middleware/rbac.middleware.js';
 
 const router = express.Router();
 
@@ -11,7 +12,10 @@ router.use(verifyToken);
 router.get('/', criminalController.getAll);
 router.get('/:id', criminalController.getById);
 router.post('/', criminalController.create);
-router.put('/:id', criminalController.update);
 router.patch('/:id/status', criminalController.updateStatus);
+
+// Modifier ou retirer un dossier : superviseur ou direction
+router.put('/:id', requireRole('superviseur'), criminalController.update);
+router.delete('/:id', requireRole('superviseur'), criminalController.remove);
 
 export default router;

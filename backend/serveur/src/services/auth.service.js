@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import { signToken } from '../utils/jwt.js';
 import { pool as db } from '../config/db.js';
 
 export const loginUser = async (badge_number, password) => {
@@ -22,17 +22,12 @@ export const loginUser = async (badge_number, password) => {
   }
 
   // 3. Génération du jeton JWT
-  const jwtSecret = process.env.JWT_SECRET || 'super_secret_key_change_me';
-  const token = jwt.sign(
-    {
-      id: user.id,
-      badge_number: user.badge_number,
-      role: user.role,
-      grade: user.grade
-    },
-    jwtSecret,
-    { expiresIn: '8h' }
-  );
+  const token = signToken({
+    id: user.id,
+    badge_number: user.badge_number,
+    role: user.role,
+    grade: user.grade
+  });
 
   // 4. Retour des données structurées
   return {
