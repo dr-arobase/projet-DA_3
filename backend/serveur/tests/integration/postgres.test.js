@@ -7,7 +7,6 @@
  * Les tests créent leurs propres données (matricule TEST-JEST) et les suppriment à la fin.
  */
 import { jest, describe, test, expect, beforeAll, afterAll } from '@jest/globals';
-import express from 'express';
 import request from 'supertest';
 import bcrypt from 'bcrypt';
 
@@ -15,7 +14,6 @@ process.env.JWT_SECRET ??= 'test-secret';
 
 const { pool, initializeDatabase, closeDatabase } = await import('../../src/config/db.js');
 const { default: app } = await import('../../src/app.js');
-const { default: dossierRouter } = await import('../../src/routes/dossier.js');
 const { signToken } = await import('../../src/utils/jwt.js');
 
 const dbAvailable = await pool.query('SELECT 1').then(() => true, () => false);
@@ -28,10 +26,6 @@ let userId;
 // Jetons signés pour l'utilisateur de test, avec le rôle voulu (RBAC)
 const bearer = (role = 'policier') =>
   `Bearer ${signToken({ id: userId, badge_number: BADGE, role, grade: 'sergent_autres_fonctions' })}`;
-
-const dossierApp = express();
-dossierApp.use(express.json());
-dossierApp.use('/api/dossiers', dossierRouter);
 
 async function cleanUp() {
   const byTestUser = '(SELECT id FROM app_user WHERE badge_number = $1)';
@@ -123,77 +117,6 @@ describeDb('Intégration PostgreSQL', () => {
     });
   });
 
-  describe('dossiers criminels', () => {
-    let criminalId;
-
-    test('POST crée un dossier', async () => {
-      const res = await request(dossierApp).post('/api/dossiers').send({
-        first_name: 'Test',
-        last_name: 'Integration',
-        description: 'Créé par Jest',
-        status: 'recherche',
-        added_by: userId,
-      });
-
-      expect(res.status).toBe(201);
-      expect(res.body.criminal).toMatchObject({ last_name: 'Integration', status: 'recherche', version: 1 });
-      criminalId = res.body.criminal.id;
-    });
-
-    test('GET /api/criminals liste le nouveau dossier', async () => {
-      const res = await request(app)
-        .get('/api/criminals?limit=100')
-        .set('Authorization', bearer());
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.map((c) => c.id)).toContain(criminalId);
-    });
-
-    test('GET /api/dossiers/:id renvoie le dossier', async () => {
-      const res = await request(dossierApp).get(`/api/dossiers/${criminalId}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.description).toBe('Créé par Jest');
-    });
-
-    test('PUT met à jour le dossier et le trigger incrémente la version', async () => {
-      const res = await request(dossierApp).put(`/api/dossiers/${criminalId}`).send({
-        first_name: 'Test',
-        last_name: 'Integration',
-        description: 'Modifié',
-        status: 'capture',
-      });
-
-      expect(res.status).toBe(200);
-      expect(res.body.criminal).toMatchObject({ description: 'Modifié', status: 'capture', version: 2 });
-    });
-
-    test('PATCH change le statut et incrémente encore la version', async () => {
-      const res = await request(dossierApp)
-        .patch(`/api/dossiers/${criminalId}/status`)
-        .send({ status: 'libere' });
-
-      expect(res.status).toBe(200);
-      expect(res.body.criminal).toMatchObject({ status: 'libere', version: 3 });
-    });
-
-    test('PATCH avec un statut hors ENUM est refusé par la base (500)', async () => {
-      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      const res = await request(dossierApp)
-        .patch(`/api/dossiers/${criminalId}/status`)
-        .send({ status: 'INCONNU' });
-
-      expect(res.status).toBe(500);
-      spy.mockRestore();
-    });
-
-    test('GET d\'un dossier inexistant renvoie 404', async () => {
-      const res = await request(dossierApp).get('/api/dossiers/99999999');
-
-      expect(res.status).toBe(404);
-    });
-  });
   describe('API /api/criminals (verrouillage optimiste, rôles, temps réel)', () => {
     let criminalId;
     let version;
@@ -288,6 +211,14 @@ describeDb('Intégration PostgreSQL', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.alert).toMatchObject({ severity: 'urgent', issued_by: 'Test Jest' });
+    });
+
+    test('GET d\'un dossier inexistant renvoie 404', async () => {
+      const res = await request(app)
+        .get('/api/criminals/99999999')
+        .set('Authorization', bearer());
+
+      expect(res.status).toBe(404);
     });
 
     test('DELETE par un superviseur retire le dossier', async () => {

@@ -3,7 +3,7 @@
   "info": {
     "title": "CrimeTracker API",
     "version": "1.0.0",
-    "description": "API REST du registre national des personnes recherchées.\n\nLes routes sont basées sur `docs/03-conception.md`. Les routes marquées **[À implémenter]** sont prévues dans la conception mais pas encore codées.\n\n### Authentification\nObtenir un jeton via `POST /api/auth/login`, puis cliquer sur **Authorize** et coller le jeton.\n\n### Rôles\n- `policier` : grade `sergent_autres_fonctions`\n- `superviseur` : grades `sergent_gestionnaire` à `inspecteur_chef`\n- `direction` : grades `directeur_general_adjoint` et `directeur_general`\n\n### Événements Socket.IO (sprints 2–3)\n| Direction | Événement | Payload | Déclencheur |\n|---|---|---|---|\n| Serveur → clients | `criminal:added` | `{ criminal }` | Nouveau dossier créé |\n| Serveur → clients | `criminal:updated` | `{ id, status, updated_by, updated_at }` | Statut modifié |\n| Serveur → clients | `criminal:removed` | `{ id }` | Dossier retiré |\n| Serveur → clients | `alert:broadcast` | `{ id, message, severity, issued_by, created_at }` | Alerte urgente émise |\n| Serveur → clients | `presence:update` | `{ online_users[] }` | Connexion / déconnexion |\n| Client → serveur | `alert:send` | `{ message, severity, criminal_id? }` | Superviseur diffuse une alerte |"
+    "description": "API REST du registre national des personnes recherchées.\n\n### Authentification\n`POST /api/auth/login` pose un cookie de session httpOnly (utilisé par le frontend) et renvoie aussi un jeton. Pour tester ici : copier le jeton, cliquer sur **Authorize** et le coller.\n\n### Rôles\n- `policier` : grade `sergent_autres_fonctions`\n- `superviseur` : grades `sergent_gestionnaire` à `inspecteur_chef`\n- `direction` : grades `directeur_general_adjoint` et `directeur_general`\n\n### Événements Socket.IO (serveur → clients)\nLa connexion Socket.IO s'authentifie avec le même cookie ou jeton.\n\n| Événement | Contenu | Déclencheur |\n|---|---|---|\n| `criminal:added` | le dossier complet | `POST /api/criminals` |\n| `criminal:updated` | le dossier complet | `PUT /api/criminals/{id}`, `PATCH /api/criminals/{id}/status` |\n| `criminal:removed` | `{ id }` | `DELETE /api/criminals/{id}` |\n| `alert:broadcast` | l'alerte | `POST /api/alerts` |\n| `presence:update` | liste des agents connectés `[{ id, badge_number, role, grade }]` | connexion ou déconnexion d'un agent |"
   },
   "servers": [{ "url": "http://localhost:3000", "description": "Serveur local" }],
   "tags": [
@@ -12,7 +12,6 @@
     { "name": "Sightings", "description": "Signalements d'observation sur le terrain" },
     { "name": "Users", "description": "Gestion des comptes policiers et superviseurs" },
     { "name": "Audit", "description": "Journal des actions sensibles" },
-    { "name": "Dossiers", "description": "Routes codées dans routes/dossier.js — **non montées dans app.js** (répondent 404 pour l'instant) et en doublon avec /api/criminals" },
     { "name": "Système", "description": "Vérification de l'état de l'API" },
     { "name": "Alerts", "description": "Alertes diffusées en temps réel" }
   ],
@@ -38,134 +37,6 @@
               }
             }
           }
-        }
-      }
-    },
-    "/api/dossiers": {
-      "get": {
-        "tags": ["Dossiers"],
-        "summary": "Tous les dossiers, sans pagination",
-        "description": "Retourne tous les criminels (tri par date d'ajout décroissante) pour que le front-end les trie.",
-        "responses": {
-          "200": {
-            "description": "Liste complète",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Criminal" }
-                }
-              }
-            }
-          },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      },
-      "post": {
-        "tags": ["Dossiers"],
-        "summary": "Ajouter un dossier",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/DossierCreate" }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Dossier créé",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/DossierResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      }
-    },
-    "/api/dossiers/{id}": {
-      "parameters": [{ "$ref": "#/components/parameters/Id" }],
-      "get": {
-        "tags": ["Dossiers"],
-        "summary": "Récupérer un dossier",
-        "responses": {
-          "200": {
-            "description": "Dossier trouvé",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Criminal" }
-              }
-            }
-          },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      },
-      "put": {
-        "tags": ["Dossiers"],
-        "summary": "Mettre à jour les infos d'un criminel",
-        "description": "Remplace prénom, nom, description et statut. Aucune vérification de `version` (pas de verrouillage optimiste).",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/DossierUpdate" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Dossier mis à jour",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/DossierResponse" }
-              }
-            }
-          },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      }
-    },
-    "/api/dossiers/{id}/status": {
-      "parameters": [{ "$ref": "#/components/parameters/Id" }],
-      "patch": {
-        "tags": ["Dossiers"],
-        "summary": "Changer uniquement le statut",
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": ["status"],
-                "properties": {
-                  "status": { "$ref": "#/components/schemas/CriminalStatus" }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Statut mis à jour",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/DossierResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
@@ -1053,34 +924,6 @@
             "type": "string",
             "example": "Conflit de version : ce dossier a été modifié entre-temps"
           },
-          "criminal": { "$ref": "#/components/schemas/Criminal" }
-        }
-      },
-      "DossierCreate": {
-        "type": "object",
-        "required": ["first_name", "last_name", "added_by"],
-        "properties": {
-          "first_name": { "type": "string", "example": "Jean" },
-          "last_name": { "type": "string", "example": "Dupont" },
-          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "added_by": { "type": "integer", "example": 1 }
-        }
-      },
-      "DossierUpdate": {
-        "type": "object",
-        "properties": {
-          "first_name": { "type": "string", "example": "Jean" },
-          "last_name": { "type": "string", "example": "Dupont" },
-          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "photo_url": { "type": "string", "example": "/uploads/photos/1.jpg" }
-        }
-      },
-      "DossierResponse": {
-        "type": "object",
-        "properties": {
-          "message": { "type": "string", "example": "Dossier mis à jour avec succès" },
           "criminal": { "$ref": "#/components/schemas/Criminal" }
         }
       },

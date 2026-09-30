@@ -7,3 +7,6 @@ dist/
 # La base SQLite d'un poste sans Docker
 backend/serveur/*.sqlite
 backend/serveur/*.sqlite-*
+
+# Réglages personnels de l'éditeur
+.vscode/
