@@ -1,0 +1,9 @@
+node_modules/
+dist/
+
+# Les secrets : jamais dans le dépôt. Voir .env.example et deploy/.env.example.
+.env
+
+# La base SQLite d'un poste sans Docker
+backend/serveur/*.sqlite
+backend/serveur/*.sqlite-*

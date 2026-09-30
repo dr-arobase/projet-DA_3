@@ -1,12 +1,21 @@
-FROM node:20-alpine
+# Image de production de l'API CrimeTracker (Express + Socket.IO).
+# Construite par : docker compose up --build   (ou la CI, publiée sur ghcr.io)
+FROM node:22-alpine
 
 WORKDIR /app
+ENV NODE_ENV=production
 
+# Les dépendances d'abord : cette couche reste en cache tant que package*.json ne change pas
 COPY package*.json ./
-RUN npm install
+RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
+# Le serveur tourne sans les droits root
+USER node
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
+  CMD wget -qO- http://localhost:3000/ > /dev/null || exit 1
+
+CMD ["node", "serveur/src/server.js"]

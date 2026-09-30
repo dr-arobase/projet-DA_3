@@ -1,0 +1,45 @@
+# Configuration nginx du conteneur frontend.
+# ${API_URL} est remplacé au démarrage (image nginx officielle, dossier templates/).
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # API REST et documentation Swagger
+    location /api/ {
+        proxy_pass ${API_URL};
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api-docs {
+        proxy_pass ${API_URL};
+        proxy_set_header Host $host;
+    }
+
+    # Socket.IO : la connexion passe de HTTP à WebSocket (en-têtes Upgrade)
+    location /socket.io/ {
+        proxy_pass ${API_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 1h;
+    }
+
+    # Fichiers compilés par Vite : leur nom contient un hash, on peut les garder longtemps
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Application React : toute autre URL (ex. /connexion) renvoie index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}

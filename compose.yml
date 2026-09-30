@@ -1,0 +1,65 @@
+# CrimeTracker d'une seule commande, depuis un clone neuf :
+#
+#     docker compose up --build        puis ouvrir http://localhost:8080
+#
+# Trois services sur un réseau privé où chacun joint les autres par leur NOM :
+#   postgres  la base de données
+#   api       le backend Express + Socket.IO (joint la base sur postgres:5432)
+#   client    nginx : sert le frontend React et relaie /api et /socket.io vers api:3000
+#
+# En développement, on ne démarre que la base :   docker compose up -d postgres
+# puis `npm run dev` dans backend/ et frontend/ ; l'API la joint sur localhost:5432.
+#
+# Les valeurs par défaut suffisent en local. Pour les changer, créer un fichier
+# .env à côté de ce fichier (voir .env.example) : il n'est pas versionné.
+
+name: crimetracker
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: crimetracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crimetracker
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-crimetracker}
+      POSTGRES_DB: crimetracker
+    ports:
+      # 127.0.0.1 : la base n'est joignable que depuis ce poste, pas du réseau
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # Les données vivent dans ce volume, PAS dans le conteneur : elles survivent
+      # à docker compose down. (Nom repris de l'ancien compose pour garder les données.)
+      - crimetracker-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # « Prêt » veut dire : accepte des connexions, pas seulement démarré
+      test: ["CMD-SHELL", "pg_isready -U crimetracker"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD:-crimetracker}@postgres:5432/crimetracker
+      JWT_SECRET: ${JWT_SECRET:-secret-local-a-changer}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    # Pas de port publié : le navigateur passe par le client (nginx).
+    # Au démarrage, l'API crée les tables et insère les données de départ si la base est vide.
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  crimetracker-db-data:
+    name: database_crimetracker-db-data

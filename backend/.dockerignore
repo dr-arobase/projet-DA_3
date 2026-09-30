@@ -2,7 +2,9 @@
 # sont réinstallées dans l'image), les builds locaux, les secrets.
 node_modules
 **/node_modules
-**/build
-**/.react-router
+dist
 **/.env
 .git
+tests
+*.sqlite
+*.sqlite-*

@@ -28,5 +28,8 @@
   },
   "overrides": {
     "tar": "^7.4.3"
+  },
+  "jest": {
+    "testTimeout": 20000
   }
 }

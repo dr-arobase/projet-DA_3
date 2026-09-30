@@ -1,2 +1,8 @@
+# Fins de ligne normalisées (LF dans le dépôt), peu importe l'OS
+* text=auto
+*.png binary
+*.pdf binary
+*.sqlite binary
+
 # Les hooks git sont des scripts shell : toujours en LF, même sous Windows
 .githooks/* text eol=lf
