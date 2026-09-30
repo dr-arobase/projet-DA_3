@@ -1,3 +1,9 @@
-const express = require('express');
+import express from 'express';
+import { getAuditLogs } from '../controllers/auditLogs.controller.js';
+import { requireRole } from '../middleware/rbac.middleware.js';
 
-module.exports = express.Router();
+const router = express.Router();
+
+router.get('/', requireRole('direction'), getAuditLogs);
+
+export default router;

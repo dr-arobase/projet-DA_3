@@ -1,4 +1,5 @@
 import * as criminalModel from '../models/criminal.model.js';
+import * as auditLogModel from '../models/auditLog.model.js';
 
 // Statuts valides autorisés (alignés sur le type criminal_status du schéma SQL)
 const VALID_STATUSES = ['RECHERCHE', 'CAPTURE', 'EN_PRISON', 'LIBERE', 'ARCHIVE'];
@@ -146,10 +147,19 @@ export const deleteCriminal = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const removed = await criminalModel.remove(id);
+        const removed = await criminalModel.remove(id);
     if (!removed) {
       return res.status(404).json({ message: 'Dossier criminel non trouvé' });
     }
+
+    await auditLogModel.record({
+      actor_id: req.user.id,
+      action: 'CRIMINAL_REMOVED',
+      target_type: 'criminal',
+      target_id: removed.id,
+      details: { removed_by: req.user.badge_number }
+    });
+
     return res.json({ message: 'Dossier retiré avec succès', id: removed.id });
   } catch (error) {
     console.error('Erreur lors de la suppression du criminel:', error);
