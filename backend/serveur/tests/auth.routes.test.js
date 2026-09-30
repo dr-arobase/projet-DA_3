@@ -11,19 +11,12 @@ after(async () => {
   await api?.close();
 });
 
-test('GET / retourne un statut 200 et confirme que l’API fonctionne', async () => {
-  const response = await api.request('GET', '/');
-  assert.equal(response.status, 200);
-  assert.match(response.data.message, /API CrimeTracker opérationnelle|Serveur CrimeTracker opérationnel/);
+test('POST /auth/login refuse les champs manquants', async () => {
+  const response = await api.request('POST', '/auth/login', {});
+  assert.equal(response.status, 400);
 });
 
-test('GET /api-docs/ retourne la documentation Swagger', async () => {
-  const response = await api.request('GET', '/api-docs/');
-  assert.equal(response.status, 200);
-  assert.match(response.data, /swagger-ui/);
-});
-/*
-test('les comptes de test de chaque rôle peuvent se connecter', async () => {
+test('POST /auth/login authentifie les comptes temporaires de chaque rôle', async () => {
   for (const role of ['policier', 'superviseur', 'direction']) {
     const account = api.users[role];
     const response = await api.request('POST', '/auth/login', {
@@ -36,4 +29,11 @@ test('les comptes de test de chaque rôle peuvent se connecter', async () => {
     assert.equal(typeof response.data.token, 'string');
   }
 });
-*/
+
+test('GET /auth/me refuse un jeton absent et accepte un jeton valide', async () => {
+  assert.equal((await api.request('GET', '/auth/me')).status, 401);
+
+  const response = await api.request('GET', '/auth/me', undefined, api.tokenFor('policier'));
+  assert.equal(response.status, 200);
+  assert.equal(response.data.user.role, 'policier');
+});

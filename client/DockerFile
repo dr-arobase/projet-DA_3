@@ -1,0 +1,27 @@
+# Utilise Node.js 24 sur Alpine Linux pour construire le client.
+FROM node:24-alpine AS build
+
+# Definit /app comme repertoire de travail dans l'image.
+WORKDIR /app
+
+# Copie les manifestes npm racine avant le code pour permettre la mise en cache des dependances.
+COPY package.json package-lock.json ./
+# Copie le manifeste du backend a l'emplacement attendu par le workspace npm.
+COPY serveur/package.json serveur/
+# Copie le manifeste du client a l'emplacement attendu par le workspace npm.
+COPY client/package.json client/
+# Installe les dependances du workspace npm nomme "client".
+RUN npm ci -w client
+
+# Copie les fichiers sources du client dans l'image.
+COPY client/ client/
+# Compile l'application du client avec le script "build" de son package.json.
+RUN npm run build -w client
+
+# Definit la variable de port a 5173 pour le processus du conteneur.
+ENV PORT=5173
+# Declare le port 5173 comme port utilise par le conteneur; ne le publie pas sur l'hote.
+EXPOSE 5173
+
+# Lance le script "dev" du client au demarrage du conteneur.
+CMD ["npm", "run", "dev"]
