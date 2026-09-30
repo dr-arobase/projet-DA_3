@@ -11,6 +11,10 @@ dotenv.config();
 // Import des routes
 import authRoutes from './routes/auth.routes.js';
 import criminalsRoutes from './routes/criminals.routes.js';
+import usersRoutes from './routes/users.routes.js';
+import sightingsRoutes from './routes/sightings.routes.js';
+import alertsRoutes from './routes/alerts.routes.js';
+import auditLogsRoutes from './routes/auditLogs.routes.js';
 
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
@@ -32,6 +36,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Enregistrement des routes de l'API
 app.use('/api/auth', authRoutes);
 app.use('/api/criminals', criminalsRoutes);
+app.use('/api/users', usersRoutes);
+app.use('/api/sightings', sightingsRoutes);
+app.use('/api/alerts', alertsRoutes);
+app.use('/api/audit-logs', auditLogsRoutes);
 
 // Route d'accueil / de test
 app.get('/', (req, res) => {

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import { verifyToken as verifyJwt } from '../utils/jwt.js';
 
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -9,8 +9,7 @@ export const verifyToken = (req, res, next) => {
   }
 
   try {
-    const jwtSecret = process.env.JWT_SECRET || 'super_secret_key_change_me';
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = verifyJwt(token);
     
     // Attache les informations de l'agent connecté à la requête
     req.user = decoded; 
