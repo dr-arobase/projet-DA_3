@@ -1,0 +1,200 @@
+/* Page de connexion : vitrine sombre à gauche, formulaire clair à droite */
+.auth {
+  display: grid;
+  grid-template-columns: 56% 44%;
+  min-height: 100vh;
+}
+
+.auth-vitrine {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 54px;
+  background: linear-gradient(160deg, #0b172b 0%, #13233d 55%, #1a2d4c 100%);
+  color: #fff;
+}
+
+/* Badge de police en filigrane, fondu dans le bleu */
+.auth-vitrine::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: 12%;
+  width: min(70%, 560px);
+  aspect-ratio: 613 / 638;
+  transform: translateY(-50%);
+  background: url('../assets/badge-police.png') center / contain no-repeat;
+  filter: grayscale(1) sepia(1) hue-rotate(180deg) saturate(2.5) brightness(0.9);
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.auth-marque {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.auth-accroche {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 520px;
+}
+
+.auth-accroche h1 {
+  max-width: 440px;
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.auth-accroche p {
+  margin-top: 16px;
+  color: #a9b3c2;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.auth-stats {
+  display: flex;
+  gap: 28px;
+  margin: 36px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.auth-stats li { display: flex; flex-direction: column; }
+.auth-stats strong { font-size: 24px; font-weight: 700; }
+.auth-stats span { color: #8e99aa; font-size: 13px; }
+
+.auth-pied { color: #7c8799; font-size: 12px; }
+
+/* ---------- Formulaire ---------- */
+.auth-panneau {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+  background: var(--fond);
+}
+
+.auth-formulaire {
+  width: 100%;
+  max-width: 386px;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-formulaire h2 { font-size: 22px; font-weight: 700; }
+.auth-sous-titre { margin: 6px 0 24px; color: var(--texte-doux); font-size: 14px; }
+
+.auth-formulaire > label {
+  margin: 0 0 7px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #3f4855;
+}
+
+.champ {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 0 16px;
+  height: 46px;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  color: #6b7482;
+}
+.champ:focus-within { border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
+.champ input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--texte);
+  font-family: var(--mono);
+  font-size: 15px;
+}
+.champ input::placeholder { color: #8a93a0; }
+
+.auth-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: -4px 0 22px;
+  font-size: 13px;
+}
+.auth-options a { font-weight: 700; text-decoration: none; }
+.auth-options a:hover { text-decoration: underline; }
+
+.case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #3f4855;
+  cursor: pointer;
+}
+.case input { width: 15px; height: 15px; margin: 0; accent-color: var(--marine-700); }
+
+.bouton-principal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--marine-700);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bouton-principal:hover { background: var(--marine-600); }
+.bouton-principal:disabled { opacity: 0.7; cursor: progress; }
+
+.auth-erreur {
+  margin: -8px 0 14px;
+  padding: 10px 12px;
+  border-radius: 7px;
+  background: var(--danger-fond);
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.auth-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #e6e9ee;
+  color: #4a5361;
+  font-size: 13px;
+}
+
+.auth-mention {
+  margin-top: 26px;
+  text-align: center;
+  color: var(--texte-pale);
+  font-size: 12px;
+}
+
+@media (max-width: 860px) {
+  .auth { grid-template-columns: 1fr; }
+  .auth-vitrine { padding: 28px 16px; }
+  .auth-accroche { margin: 36px 0 24px; }
+  .auth-stats { gap: 20px; margin-top: 24px; }
+  .auth-panneau { padding: 36px 16px; }
+}
