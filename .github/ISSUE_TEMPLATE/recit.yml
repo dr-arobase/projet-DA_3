@@ -1,0 +1,45 @@
+name: Récit utilisateur
+description: Une fonctionnalité du backlog produit, vue par un utilisateur
+title: "[ÉPIQUE] "
+labels: ["type:récit"]
+body:
+  - type: textarea
+    id: recit
+    attributes:
+      label: Récit
+      description: « En tant que <rôle>, je veux <action> afin de <bénéfice>. »
+      placeholder: En tant que policier, je veux … afin de …
+    validations:
+      required: true
+  - type: dropdown
+    id: epique
+    attributes:
+      label: Épique
+      options: [AUTH, REGISTRE, REALTIME, TERRAIN, ADMIN]
+    validations:
+      required: true
+  - type: dropdown
+    id: priorite
+    attributes:
+      label: Priorité
+      options: [Must, Should, Could]
+    validations:
+      required: true
+  - type: input
+    id: points
+    attributes:
+      label: Points
+      description: Estimation relative (référence : consulter la liste paginée = 2 points)
+      placeholder: "3"
+    validations:
+      required: true
+  - type: textarea
+    id: criteres
+    attributes:
+      label: Critères d'acceptation
+      description: Vérifiables dans le navigateur, cas d'erreur compris
+      placeholder: |
+        - …
+        - …
+    validations:
+      required: true

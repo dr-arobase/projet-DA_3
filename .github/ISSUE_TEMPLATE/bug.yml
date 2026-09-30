@@ -1,0 +1,26 @@
+name: Bug
+description: Un comportement incorrect de l'application
+labels: ["bug"]
+body:
+  - type: textarea
+    id: etapes
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. Se connecter avec PL-003
+        2. …
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Résultat attendu
+    validations:
+      required: true
+  - type: textarea
+    id: obtenu
+    attributes:
+      label: Résultat obtenu
+      description: Message d'erreur, capture d'écran, journaux (docker compose logs api)
+    validations:
+      required: true
