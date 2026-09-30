@@ -14,7 +14,8 @@ export default function AuthProvider({ children }) {
     api.moi()
       .then(({ user }) => setUtilisateur(user))
       .catch((err) => {
-        if (err.status === 401) {
+        // 401 : pas de cookie ou compte inactif ; 403 : jeton expiré ou invalide
+        if (err.status === 401 || err.status === 403) {
           effacerSession();
           setUtilisateur(null);
         }
@@ -22,7 +23,7 @@ export default function AuthProvider({ children }) {
   }, []);
 
   async function seConnecter(matricule, motDePasse, seSouvenir) {
-    const { user } = await api.connexion(matricule, motDePasse);
+    const { user } = await api.connexion(matricule, motDePasse, seSouvenir);
     enregistrerSession(user, seSouvenir);
     setUtilisateur(user);
     return user;

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import { signToken } from '../utils/jwt.js';
+import * as userModel from '../models/user.model.js';
 import { pool as db } from '../config/db.js';
 
 export const loginUser = async (badge_number, password) => {
@@ -50,4 +51,15 @@ export const logoutUser = async (userId) => {
   return {
     message: 'Déconnexion réussie. Le jeton doit être supprimé côté client.'
   };
+};
+
+// Profil de l'agent connecté, relu en base : un compte désactivé depuis la
+// connexion perd sa session même si son jeton n'a pas encore expiré.
+export const getCurrentUser = async (userId) => {
+  const user = await userModel.findById(userId);
+  if (!user || !user.is_active) {
+    throw new Error('INVALID_CREDENTIALS');
+  }
+  const { id, first_name, last_name, badge_number, role, grade } = user;
+  return { id, first_name, last_name, badge_number, role, grade };
 };

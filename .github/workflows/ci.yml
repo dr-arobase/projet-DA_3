@@ -1,17 +1,18 @@
-# Flux d'intégration continue pour le projet avec matrix Node
+# Intégration continue : mêmes vérifications que le hook .githooks/pre-push
+# (tests du backend, démarrage réel du serveur, build du frontend).
+# Si une étape échoue, le commit est marqué en rouge sur GitHub.
 name: Intégration Continue
 
 on:
   push:
-    branches: [ main , develop/test]
+    branches: [main, develop/test]
   pull_request:
-    branches: [ main , develop/test]
-
+    branches: [main, develop/test]
   workflow_dispatch:
 
 jobs:
-  test:
-    name: Install & Test
+  verification:
+    name: Tests, démarrage du serveur et build du frontend
     runs-on: ubuntu-latest
 
     services:
@@ -29,35 +30,37 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DATABASE_URL: postgres://crimetracker:crimetracker@localhost:5432/crimetracker
+      JWT_SECRET: secret-de-la-ci
+
     steps:
-      - name: Checkout repository
+      - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Installer Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
-      - name: Install dependencies
+      - name: Installer les dépendances du backend
         run: npm ci
+        working-directory: backend
 
-      - name: Set DATABASE_URL for tests
-        run: echo "DATABASE_URL=postgresql://crimetracker:crimetracker@localhost:5432/crimetracker" >> $GITHUB_ENV
+      - name: Installer les dépendances du frontend
+        run: npm ci
+        working-directory: frontend
 
-      - name: Run tests if present
-        run: |
-          if npm run | grep -q "test"; then
-            npm test
-          else
-            echo "No test script defined; skipping tests."
-          fi
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+      - name: Vérifier le projet
+        run: node scripts/verifier-avant-push.mjs
 
   build_and_publish:
     name: Build Docker image and publish (main only)
-    needs: test
+    needs: verification
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -77,10 +80,6 @@ jobs:
           SHA=sha-${GITHUB_SHA::7}
           IMAGE=ghcr.io/$OWNER/crimetracker-api
 
-          docker build -t $IMAGE:latest -t $IMAGE:$SHA .
+          docker build -t $IMAGE:latest -t $IMAGE:$SHA ./backend
           docker push $IMAGE:latest
           docker push $IMAGE:$SHA
-
-# Notes:
-# - Ce workflow installe les dépendances et exécute les tests si un script "test" est présent.
-# - Le job de build publie une image sur ghcr.io uniquement pour la branche `main`.

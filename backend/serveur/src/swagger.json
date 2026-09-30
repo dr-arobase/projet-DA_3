@@ -16,7 +16,7 @@
     { "name": "Système", "description": "Vérification de l'état de l'API" },
     { "name": "Alerts", "description": "Alertes diffusées en temps réel" }
   ],
-  "security": [{ "bearerAuth": [] }],
+  "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
   "paths": {
     "/": {
       "get": {
@@ -173,7 +173,7 @@
       "post": {
         "tags": ["Auth"],
         "summary": "Authentification d'un policier",
-        "description": "Vérifie le matricule et le mot de passe (bcrypt) d'un compte actif et retourne un jeton JWT valide 8 heures.",
+        "description": "Vérifie le matricule et le mot de passe (bcrypt) d'un compte actif et retourne un jeton JWT valide 8 heures.\n\nPose aussi le cookie httpOnly `crimetracker_session`. Avec `se_souvenir: true`, le cookie dure 8 h ; sinon il disparaît à la fermeture du navigateur.",
         "security": [],
         "requestBody": {
           "required": true,
@@ -209,7 +209,7 @@
       "post": {
         "tags": ["Auth"],
         "summary": "Déconnexion de l'agent",
-        "description": "Déconnecte l'agent authentifié. Le jeton doit être supprimé côté client.",
+        "description": "Efface le cookie de session.",
         "security": [{ "bearerAuth": [] }],
         "responses": {
           "200": {
@@ -229,6 +229,30 @@
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Profil de l'agent connecté",
+        "description": "Permet au frontend de vérifier que sa session (cookie) est toujours valide. Un compte désactivé depuis la connexion reçoit 401.",
+        "responses": {
+          "200": {
+            "description": "Agent connecté",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
         }
       }
     },
@@ -773,7 +797,13 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" }
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT" },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "crimetracker_session",
+        "description": "Cookie httpOnly posé par POST /api/auth/login (utilisé par le frontend)."
+      }
     },
     "parameters": {
       "Id": {
@@ -874,7 +904,8 @@
         "required": ["badge_number", "password"],
         "properties": {
           "badge_number": { "type": "string", "example": "P-1001" },
-          "password": { "type": "string", "format": "password", "example": "motdepasse" }
+          "password": { "type": "string", "format": "password", "example": "motdepasse" },
+          "se_souvenir": { "type": "boolean", "example": false }
         }
       },
       "LoginResponse": {

@@ -1,8 +1,9 @@
 import { verifyToken as verifyJwt } from '../utils/jwt.js';
+import { tokenFrom } from '../utils/session.js';
 
 export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Extraction du token du format "Bearer TOKEN"
+  // En-tête « Bearer TOKEN » ou cookie de session posé au login
+  const token = tokenFrom(req.headers);
 
   if (!token) {
     return res.status(401).json({ message: 'Accès refusé. Aucun jeton fourni.' });

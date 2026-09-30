@@ -18,3 +18,18 @@ CrimeTracker est une application web dédiée aux policiers nationaux pour centr
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
 - [Maquettes](docs/maquettes/README.md)
+
+---
+
+## Pousser sur `main`
+
+Un hook git (`.githooks/pre-push`) vérifie chaque push vers `main`. Il s'active tout seul au premier `npm install` (à la racine, dans `backend/` ou dans `frontend/`).
+
+Le push est **refusé** si :
+
+- `main` n'est pas à jour avec GitHub → faire `git pull`, vérifier, puis `git push` ;
+- le push réécrit l'historique (`--force`, `--force-with-lease`) ;
+- il reste des modifications non commitées dans `backend/`, `frontend/` ou `scripts/` ;
+- un test du backend échoue, le serveur ne démarre pas (PostgreSQL doit tourner) ou le frontend ne compile pas.
+
+Pour lancer la même vérification sans pousser : `npm run verifier` à la racine. La CI GitHub (`.github/workflows/ci.yml`) refait ces vérifications à chaque push.
