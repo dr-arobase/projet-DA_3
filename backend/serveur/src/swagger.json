@@ -42,7 +42,7 @@
         }
       }
     },
-   "/api/dossiers": {
+    "/api/dossiers": {
       "get": {
         "tags": ["Dossiers"],
         "summary": "Tous les dossiers, sans pagination",
@@ -206,75 +206,52 @@
         }
       }
     },
-    
     "/api/auth/logout": {
-  "post": {
-    "tags": ["Auth"],
-    "summary": "Déconnexion de l'agent",
-    "description": "Déconnecte l'agent authentifié. Le jeton doit être supprimé côté client.",
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ],
-    "responses": {
-      "200": {
-        "description": "Déconnexion réussie",
-        "content": {
-          "application/json": {
-            "schema": {
-              "type": "object",
-              "properties": {
-                "message": {
-                  "type": "string",
-                  "example": "Déconnexion réussie. Le jeton doit être supprimé côté client."
-                }
-              }
-            }
-          }
-        }
-      },
-      "401": {
-        "$ref": "#/components/responses/Unauthorized"
-      }
-    }
-  }
-    },
-    "/api/criminals": {
-      "get": {
-        "tags": ["Criminals"],
-        "summary": "Liste paginée des personnes recherchées",
-        "description": "Liste paginée, filtrable par nom et statut (récit #7).\n\n**Rôle requis :** `policier`",
-        "parameters": [
-          { "$ref": "#/components/parameters/Page" },
-          { "$ref": "#/components/parameters/Limit" },
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Déconnexion de l'agent",
+        "description": "Déconnecte l'agent authentifié. Le jeton doit être supprimé côté client.",
+        "security": [
           {
-            "name": "status",
-            "in": "query",
-            "description": "Filtrer par statut",
-            "schema": { "$ref": "#/components/schemas/CriminalStatus" }
-          },
-          {
-            "name": "name",
-            "in": "query",
-            "description": "Rechercher par prénom ou nom",
-            "schema": { "type": "string" }
+            "bearerAuth": []
           }
         ],
         "responses": {
           "200": {
-            "description": "Liste récupérée avec succès",
+            "description": "Déconnexion réussie",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "page": { "type": "integer", "example": 1 },
-                    "data": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/CriminalSummary" }
+                    "message": {
+                      "type": "string",
+                      "example": "Déconnexion réussie. Le jeton doit être supprimé côté client."
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/criminals": {
+      "get": {
+        "tags": ["Criminals"],
+        "summary": "Liste des personnes recherchées",
+        "description": "Récupère l'ensemble des dossiers criminels enregistrés.",
+        "responses": {
+          "200": {
+            "description": "Liste des dossiers récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Criminal" }
                 }
               }
             }
@@ -286,7 +263,7 @@
       "post": {
         "tags": ["Criminals"],
         "summary": "Créer un dossier",
-        "description": "Ajoute une personne recherchée au registre (version initiale = 1) et émet l'événement Socket.IO `criminal:added`.\n\n**Rôle requis :** `policier`",
+        "description": "Ajoute un nouveau criminel au registre.",
         "requestBody": {
           "required": true,
           "content": {
@@ -297,14 +274,19 @@
         },
         "responses": {
           "201": {
-            "description": "Dossier créé",
+            "description": "Dossier créé avec succès",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Criminal" }
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Dossier créé avec succès" },
+                    "criminal": { "$ref": "#/components/schemas/Criminal" }
+                  }
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
@@ -314,8 +296,8 @@
       "parameters": [{ "$ref": "#/components/parameters/Id" }],
       "get": {
         "tags": ["Criminals"],
-        "summary": "Détail d'un dossier [À implémenter]",
-        "description": "**Rôle requis :** `policier`",
+        "summary": "Détail d'un dossier",
+        "description": "Récupère les informations d'un criminel par son ID.",
         "responses": {
           "200": {
             "description": "Dossier trouvé",
@@ -326,77 +308,40 @@
             }
           },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" }
-        }
-      },
-      "patch": {
-        "tags": ["Criminals"],
-        "summary": "Mettre à jour le statut [À implémenter]",
-        "description": "Met à jour le statut d'un dossier avec verrouillage optimiste : le client envoie la `version` qu'il a lue. Si elle ne correspond plus à la version en base, la requête est refusée avec `409` (récit #13). Émet `criminal:updated`.\n\n**Rôle requis :** `policier`",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/CriminalStatusUpdate" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Statut mis à jour (version incrémentée)",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Criminal" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": {
-            "description": "Conflit de version : le dossier a été modifié par un autre policier",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/VersionConflict" }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": ["Criminals"],
-        "summary": "Mettre à jour les infos d'un dossier [Contrôleur écrit, route non branchée]",
-        "description": "Codé dans `criminals.controller.js` (`updateCriminal`) mais aucune route ne l'appelle encore. Les champs absents gardent leur valeur actuelle. Aucune vérification de `version`.",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/DossierUpdate" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Dossier mis à jour",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/DossierResponse" }
-              }
-            }
-          },
           "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
-      "delete": {
+      "put": {
         "tags": ["Criminals"],
-        "summary": "Retirer un dossier [À implémenter]",
-        "description": "Retire un dossier du registre, ajoute une entrée au journal d'audit et émet `criminal:removed`.\n\n**Rôle requis :** `superviseur`",
+        "summary": "Mettre à jour un dossier",
+        "description": "Met à jour les informations générales d'un criminel.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CriminalUpdate" }
+            }
+          }
+        },
         "responses": {
-          "204": { "description": "Dossier retiré" },
+          "200": {
+            "description": "Dossier mis à jour avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Dossier mis à jour avec succès" },
+                    "criminal": { "$ref": "#/components/schemas/Criminal" }
+                  }
+                }
+              }
+            }
+          },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
@@ -404,8 +349,8 @@
       "parameters": [{ "$ref": "#/components/parameters/Id" }],
       "patch": {
         "tags": ["Criminals"],
-        "summary": "Changer uniquement le statut [Contrôleur écrit, route non branchée]",
-        "description": "Codé dans `criminals.controller.js` (`changeCriminalStatus`) mais aucune route ne l'appelle encore. Aucune vérification de `version`.",
+        "summary": "Changer le statut d'un dossier",
+        "description": "Met à jour le statut du dossier (ex: WANTED, ARRESTED).",
         "requestBody": {
           "required": true,
           "content": {
@@ -414,7 +359,7 @@
                 "type": "object",
                 "required": ["status"],
                 "properties": {
-                  "status": { "$ref": "#/components/schemas/CriminalStatus" }
+                  "status": { "type": "string", "example": "ARRESTED" }
                 }
               }
             }
@@ -422,40 +367,23 @@
         },
         "responses": {
           "200": {
-            "description": "Statut mis à jour",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/DossierResponse" }
-              }
-            }
-          },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "500": { "$ref": "#/components/responses/ServerError" }
-        }
-      }
-    },
-    "/api/criminals/{id}/sightings": {
-      "parameters": [{ "$ref": "#/components/parameters/Id" }],
-      "get": {
-        "tags": ["Sightings"],
-        "summary": "Historique des signalements d'un dossier [À implémenter]",
-        "description": "**Rôle requis :** `superviseur`",
-        "responses": {
-          "200": {
-            "description": "Liste des signalements",
+            "description": "Statut mis à jour avec succès",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": { "$ref": "#/components/schemas/Sighting" }
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "example": "Statut mis à jour avec succès" },
+                    "criminal": { "$ref": "#/components/schemas/Criminal" }
+                  }
                 }
               }
             }
           },
+          "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
     },
@@ -842,6 +770,16 @@
           "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
           "crimes": { "type": "string", "example": "Vol à main armée" },
           "photo_url": { "type": "string", "maxLength": 500, "example": "/uploads/photos/1.jpg" }
+        }
+      },
+      "CriminalUpdate": {
+        "type": "object",
+        "properties": {
+          "first_name": { "type": "string", "example": "Jean" },
+          "last_name": { "type": "string", "example": "Dupont" },
+          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
+          "status": { "$ref": "#/components/schemas/CriminalStatus" },
+          "photo_url": { "type": "string", "example": "/uploads/photos/1.jpg" }
         }
       },
       "CriminalStatusUpdate": {
