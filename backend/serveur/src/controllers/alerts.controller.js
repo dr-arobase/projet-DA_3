@@ -1,5 +1,6 @@
 import * as alertModel from '../models/alert.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
+import { emitEvent } from '../sockets/index.js';
 
 const VALID_SEVERITIES = ['info', 'urgent'];
 
@@ -28,6 +29,8 @@ export const createAlert = async (req, res) => {
       details: { severity: finalSeverity, criminal_id: criminal_id || null }
     });
 
+    emitEvent('alert:broadcast', alert);
+    
     return res.status(201).json({ message: 'Alerte diffusée avec succès', alert });
   } catch (error) {
     console.error('Erreur lors de la diffusion de l\'alerte:', error);

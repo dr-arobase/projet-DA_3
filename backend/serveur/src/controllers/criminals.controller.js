@@ -1,5 +1,6 @@
 import * as criminalModel from '../models/criminal.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
+import { emitEvent } from '../sockets/index.js';
 
 // Statuts valides autorisés (alignés sur le type criminal_status du schéma SQL)
 const VALID_STATUSES = ['RECHERCHE', 'CAPTURE', 'EN_PRISON', 'LIBERE', 'ARCHIVE'];
@@ -65,7 +66,9 @@ export const createCriminal = async (req, res) => {
       description, crimes, status, photo_url, added_by
     });
     const newCriminal = await criminalModel.findById(created.id);
-
+    
+    emitEvent('criminal:added', newCriminal);
+    
     return res.status(201).json({
       message: 'Dossier criminel créé avec succès',
       criminal: newCriminal
@@ -131,7 +134,9 @@ export const changeCriminalStatus = async (req, res) => {
         criminal: current
       });
     }
-
+    
+    emitEvent('criminal:updated', updatedCriminal);
+    
     return res.json({
       message: `Statut du dossier mis à jour à : ${status}`,
       criminal: updatedCriminal
@@ -159,7 +164,9 @@ export const deleteCriminal = async (req, res) => {
       target_id: removed.id,
       details: { removed_by: req.user.badge_number }
     });
-
+    
+    emitEvent('criminal:removed', { id: removed.id });
+    
     return res.json({ message: 'Dossier retiré avec succès', id: removed.id });
   } catch (error) {
     console.error('Erreur lors de la suppression du criminel:', error);

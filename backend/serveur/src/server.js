@@ -1,6 +1,7 @@
 import app from './app.js';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
+import registerSockets from './sockets/index.js';
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ async function startServer() {
     const server = app.listen(PORT, () => {
       console.log(`Serveur démarré sur http://localhost:${PORT}`);
     });
+    
+    registerSockets(server);
     
     server.on('error', (err) => {
       if (err.code === 'EADDRINUSE') {
