@@ -10,4 +10,7 @@ router.post('/login', authController.login);
 // Route protégée : Déconnexion
 router.post('/logout', verifyToken, authController.logout);
 
+// Route protégée : profil de l'agent connecté (le frontend vérifie ainsi sa session)
+router.get('/me', verifyToken, authController.me);
+
 export default router;

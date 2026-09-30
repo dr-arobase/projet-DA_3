@@ -151,3 +151,14 @@
   .entete-actions { width: 100%; }
   .recherche { flex: 1; width: auto; }
 }
+
+.activite.vide { color: var(--texte-doux); font-size: 14px; }
+
+.erreur {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: var(--rayon);
+  background: var(--danger-fond);
+  color: var(--danger);
+  font-size: 14px;
+}

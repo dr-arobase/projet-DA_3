@@ -59,6 +59,18 @@ describe('Socket.IO', () => {
     expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }]);
   });
 
+  test('accepte le cookie de session du navigateur', async () => {
+    const token = signToken({ id: 9, badge_number: 'PL-009', role: 'policier' });
+    const socket = ioClient(url, {
+      reconnection: false, forceNew: true,
+      extraHeaders: { Cookie: `crimetracker_session=${token}` },
+    });
+    clients.push(socket);
+
+    const presence = await once(socket, 'presence:update');
+    expect(presence.map((u) => u.id)).toEqual([9]);
+  });
+
   test('emitEvent diffuse à tous les clients connectés', async () => {
     const a = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier' }));
     const b = connect(signToken({ id: 2, badge_number: 'PL-002', role: 'policier' }));

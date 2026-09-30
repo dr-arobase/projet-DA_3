@@ -14,7 +14,7 @@ const ICONES_ACTIVITE = {
 
 export default function Home() {
   const { utilisateur } = useAuth();
-  const { stats, activites, dernierCommunique, notifications } = useDashboardData();
+  const { erreur, stats, activites, dernierCommunique, notifications } = useDashboardData();
 
   return (
     <>
@@ -38,6 +38,8 @@ export default function Home() {
       </header>
 
       <div className="page">
+        {erreur && <p className="erreur" role="alert">{erreur}</p>}
+
         <section className="cartes-stats">
           {stats.map((s) => (
             <article key={s.libelle} className="carte carte-stat">
@@ -54,6 +56,7 @@ export default function Home() {
               <Link to="/alertes">Tout voir</Link>
             </div>
             <ul className="carte activites">
+              {activites.length === 0 && <li className="activite vide">Aucune activité pour l'instant.</li>}
               {activites.map((a) => {
                 const Icone = ICONES_ACTIVITE[a.type] ?? IconeSirene;
                 return (
@@ -81,11 +84,15 @@ export default function Home() {
             </div>
 
             <div className="section-titre"><h2>Dernier communiqué</h2></div>
-            <article className={`carte communique${dernierCommunique.prioritaire ? ' prioritaire' : ''}`}>
-              {dernierCommunique.prioritaire && <span className="etiquette">Prioritaire</span>}
-              <strong>{dernierCommunique.titre}</strong>
-              <small>{dernierCommunique.auteur} · {dernierCommunique.heure}</small>
-            </article>
+            {dernierCommunique ? (
+              <article className={`carte communique${dernierCommunique.prioritaire ? ' prioritaire' : ''}`}>
+                {dernierCommunique.prioritaire && <span className="etiquette">Prioritaire</span>}
+                <strong>{dernierCommunique.titre}</strong>
+                <small>{dernierCommunique.auteur} · {dernierCommunique.heure}</small>
+              </article>
+            ) : (
+              <article className="carte communique"><small>Aucun communiqué diffusé.</small></article>
+            )}
           </aside>
         </div>
       </div>

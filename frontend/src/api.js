@@ -26,9 +26,18 @@ export async function requete(chemin, { method = 'GET', body } = {}) {
   return donnees;
 }
 
-export const connexion = (badge_number, password) =>
-  requete('/auth/login', { method: 'POST', body: { badge_number, password } });
+export const connexion = (badge_number, password, se_souvenir = false) =>
+  requete('/api/auth/login', { method: 'POST', body: { badge_number, password, se_souvenir } });
 
-export const deconnexion = () => requete('/auth/logout', { method: 'POST' });
+export const deconnexion = () => requete('/api/auth/logout', { method: 'POST' });
 
-export const moi = () => requete('/auth/me');
+export const moi = () => requete('/api/auth/me');
+
+// Registre et alertes (le cookie de session suffit à s'authentifier)
+const qs = (params) => new URLSearchParams(
+  Object.entries(params).filter(([, v]) => v !== undefined && v !== '')
+).toString();
+
+export const listerCriminels = (params = {}) => requete(`/api/criminals?${qs(params)}`);
+
+export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);

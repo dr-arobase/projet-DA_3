@@ -1,5 +1,6 @@
 import { Server } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
+import { tokenFrom } from '../utils/session.js';
 
 let io;
 
@@ -18,7 +19,8 @@ export default function registerSockets(server) {
   // Authentification au moment de la connexion, via le même jeton JWT que l'API
   io.use((socket, next) => {
     try {
-      const token = socket.handshake.auth?.token;
+      // Jeton passé explicitement (scripts) ou cookie de session (navigateur)
+      const token = socket.handshake.auth?.token || tokenFrom(socket.handshake.headers);
       if (!token) throw new Error('Jeton manquant');
       socket.user = verifyToken(token);
       next();

@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "start": "npm run start --prefix backend",
-    "dev": "npm run dev --prefix backend"
+    "dev": "npm run dev --prefix backend",
+    "verifier": "node scripts/verifier-avant-push.mjs",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
     "yamljs": "^0.3.0"

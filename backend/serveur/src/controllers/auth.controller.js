@@ -1,7 +1,8 @@
 import * as authService from '../services/auth.service.js';
+import { COOKIE_NAME, cookieOptions } from '../utils/session.js';
 
 export const login = async (req, res) => {
-  const { badge_number, password } = req.body;
+  const { badge_number, password, se_souvenir } = req.body;
 
   // Validation basique des entrées
   if (!badge_number || !password) {
@@ -10,6 +11,10 @@ export const login = async (req, res) => {
 
   try {
     const data = await authService.loginUser(badge_number, password);
+    // Le navigateur garde le jeton dans un cookie httpOnly ; il reste aussi dans
+    // la réponse pour les clients sans cookie (Swagger, scripts, Socket.IO en Node).
+    const seSouvenir = se_souvenir === true || se_souvenir === 'true';
+    res.cookie(COOKIE_NAME, data.token, cookieOptions(seSouvenir));
     return res.json(data);
   } catch (error) {
     // Gestion des erreurs métiers renvoyées par le service
@@ -26,9 +31,24 @@ export const logout = async (req, res) => {
   try {
     // req.user est disponible grâce au middleware verifyToken
     const result = await authService.logoutUser(req.user.id);
+    const { maxAge, ...options } = cookieOptions();
+    res.clearCookie(COOKIE_NAME, options);
     return res.status(200).json(result);
   } catch (error) {
     console.error('Erreur lors du logout:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+export const me = async (req, res) => {
+  try {
+    const user = await authService.getCurrentUser(req.user.id);
+    return res.json({ user });
+  } catch (error) {
+    if (error.message === 'INVALID_CREDENTIALS') {
+      return res.status(401).json({ message: 'Session expirée ou compte inactif' });
+    }
+    console.error('Erreur lors de la lecture du profil:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 };

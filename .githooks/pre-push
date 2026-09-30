@@ -1,0 +1,44 @@
+#!/bin/sh
+# Protection de la branche main, exécutée par git avant chaque push.
+# Activée automatiquement par « npm install » (script prepare : git config core.hooksPath .githooks).
+#
+# Pour un push vers main, on refuse si :
+#   - main n'est pas à jour avec le dépôt distant (il faut d'abord faire git pull) ;
+#   - le push réécrirait l'historique distant (push --force / --force-with-lease) ;
+#   - il reste des modifications non commitées dans backend/ ou frontend/ ;
+#   - les tests du backend échouent, le serveur ne démarre pas ou le frontend ne compile pas.
+
+remote="$1"
+zero=0000000000000000000000000000000000000000
+
+rouge() { printf '\033[31m%s\033[0m\n' "$1" >&2; }
+refuser() { rouge "✖ $1"; rouge "✖ Push vers main refusé."; exit 1; }
+
+verifier=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ "$remote_ref" = "refs/heads/main" ] || continue
+  [ "$local_sha" = "$zero" ] && refuser "Supprimer la branche main est interdit."
+
+  # 1. main doit contenir la dernière version distante
+  git fetch --quiet "$remote" main || refuser "Impossible de joindre le dépôt distant pour vérifier main."
+  distant=$(git rev-parse FETCH_HEAD)
+  if ! git merge-base --is-ancestor "$distant" "$local_sha"; then
+    if [ "$remote_sha" != "$zero" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+      refuser "Ce push réécrirait l'historique de main (force push). Fais « git pull » puis un push normal."
+    fi
+    refuser "Ta branche main n'est pas à jour. Fais d'abord « git pull », vérifie que tout marche, puis push."
+  fi
+
+  # 2. Ce qui est testé doit être exactement ce qui est poussé
+  if [ "$local_sha" != "$(git rev-parse HEAD)" ]; then
+    refuser "Place-toi sur le commit que tu pousses (git switch main) pour qu'il soit vérifié."
+  fi
+  if [ -n "$(git status --porcelain -- backend frontend scripts)" ]; then
+    refuser "Des modifications non commitées dans backend/, frontend/ ou scripts/ : commit-les ou mets-les de côté (git stash -u)."
+  fi
+  verifier=1
+done
+
+[ "$verifier" = 1 ] || exit 0
+
+node "$(git rev-parse --show-toplevel)/scripts/verifier-avant-push.mjs" || exit 1
