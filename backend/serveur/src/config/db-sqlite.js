@@ -18,8 +18,16 @@ db.exec('PRAGMA foreign_keys = ON');
 
 /** Exécute une requête écrite pour pg et répond comme pg. */
 async function query(sql, params = []) {
-  const statement = db.prepare(sql.replace(/\$(\d+)/g, '?$1'));
-  const values = params.map((v) => (typeof v === 'boolean' ? Number(v) : v));
+  // $1, $2… deviennent des « ? » anonymes ; on range les valeurs dans l'ordre
+  // où les placeholders apparaissent (un même $n peut revenir plusieurs fois).
+  const order = [];
+  const statement = db.prepare(sql.replace(/\$(\d+)/g, (_, n) => {
+    order.push(Number(n) - 1);
+    return '?';
+  }));
+  const values = order
+    .map((i) => params[i])
+    .map((v) => (typeof v === 'boolean' ? Number(v) : v));
 
   if (/^\s*(SELECT|WITH)\b/i.test(sql) || /\bRETURNING\b/i.test(sql)) {
     const rows = statement.all(...values);
