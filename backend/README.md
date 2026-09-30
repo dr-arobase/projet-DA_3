@@ -21,6 +21,30 @@ CrimeTracker est une application web dédiée aux policiers nationaux pour centr
 
 ---
 
+## Démarrer le projet
+
+**Tout avec Docker** (rien d'autre à installer) :
+
+```bash
+docker compose up --build
+```
+
+Puis ouvrir http://localhost:8080 (Swagger : http://localhost:8080/api-docs). Au premier démarrage, l'API crée les tables et insère les données de départ.
+
+**En développement** (rechargement à chaque modification) :
+
+```bash
+docker compose up -d postgres        # la base seulement, sur localhost:5432
+cd backend  && npm install && npm run dev
+cd frontend && npm install && npm run dev   # http://localhost:5173
+```
+
+Les valeurs par défaut suffisent en local ; pour les changer, copier `.env.example` en `.env` à la racine.
+
+**Sur un serveur** : les images sont publiées sur ghcr.io par la CI à chaque push sur `main`. Voir `deploy/compose.yml` et `deploy/.env.example`.
+
+---
+
 ## Pousser sur `main`
 
 Un hook git (`.githooks/pre-push`) vérifie chaque push vers `main`. Il s'active tout seul au premier `npm install` (à la racine, dans `backend/` ou dans `frontend/`).

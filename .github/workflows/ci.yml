@@ -59,27 +59,54 @@ jobs:
         run: node scripts/verifier-avant-push.mjs
 
   build_and_publish:
-    name: Build Docker image and publish (main only)
+    name: Construire et publier les images Docker (main seulement)
     needs: verification
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout repository
+      - name: Récupérer le dépôt
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Se connecter au registre GitHub (ghcr.io)
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Build and push Docker image
+      - name: Construire et publier crimetracker-api et crimetracker-client
         run: |
           OWNER=${GITHUB_REPOSITORY_OWNER,,}
           SHA=sha-${GITHUB_SHA::7}
-          IMAGE=ghcr.io/$OWNER/crimetracker-api
+          for APP in api:backend client:frontend; do
+            IMAGE=ghcr.io/$OWNER/crimetracker-${APP%%:*}
+            docker build -t $IMAGE:latest -t $IMAGE:$SHA ./${APP##*:}
+            docker push $IMAGE:latest
+            docker push $IMAGE:$SHA
+          done
 
-          docker build -t $IMAGE:latest -t $IMAGE:$SHA ./backend
-          docker push $IMAGE:latest
-          docker push $IMAGE:$SHA
+  compose:
+    name: Démarrage complet avec docker compose
+    needs: verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Construire et démarrer les trois services
+        run: docker compose up -d --build --wait --wait-timeout 180
+
+      - name: Vérifier le frontend, l'API et Swagger à travers nginx
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root">'
+          curl -fsS http://localhost:8080/api-docs/ | grep -q swagger-ui
+          curl -fsS -X POST http://localhost:8080/api/auth/login             -H 'Content-Type: application/json'             -d '{"badge_number":"inconnu","password":"x"}' -o /dev/null -w '%{http_code}' | grep -q 401
+
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs
+
+      - name: Arrêter
+        if: always()
+        run: docker compose down -v

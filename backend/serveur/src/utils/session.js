@@ -8,7 +8,8 @@ const HUIT_HEURES = 8 * 60 * 60 * 1000; // même durée que le JWT
 export const cookieOptions = (seSouvenir = false) => ({
   httpOnly: true,
   sameSite: 'lax', // le cookie n'est pas envoyé par les requêtes POST venant d'un autre site
-  secure: process.env.NODE_ENV === 'production',
+  // true seulement derrière HTTPS : sinon le navigateur refuserait le cookie
+  secure: process.env.COOKIE_SECURE === 'true',
   path: '/',
   ...(seSouvenir ? { maxAge: HUIT_HEURES } : {}),
 });
