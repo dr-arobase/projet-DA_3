@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {authenticate} from './middleware/auth.middleware.js';
 import { requireRole } from './middleware/rbac.middleware.js';
 
