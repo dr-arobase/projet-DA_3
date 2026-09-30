@@ -31,8 +31,13 @@ beforeAll(async () => {
   url = `http://localhost:${server.address().port}`;
 });
 
-afterEach(() => {
+// Attend que le serveur ait traité les déconnexions : sinon un agent du test
+// précédent peut encore figurer dans la présence du test suivant.
+afterEach(async () => {
   clients.splice(0).forEach((s) => s.disconnect());
+  while (io.of('/').sockets.size > 0) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
 });
 
 afterAll(async () => {
