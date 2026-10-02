@@ -87,6 +87,7 @@ describe('loginUser', () => {
       badge_number: 'SM-002',
       role: 'superviseur',
       grade: 'lieutenant',
+      avatar_url: null,
     });
     expect(result.user).not.toHaveProperty('password_hash');
     expect(jwt.decode(result.token)).not.toHaveProperty('password_hash');

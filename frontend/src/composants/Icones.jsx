@@ -35,3 +35,7 @@ export const IconeCloche = creer(<><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-
 export const IconeAjoutPersonne = creer(<><circle cx="9" cy="8" r="4" /><path d="M2 21a7 7 0 0 1 14 0" /><path d="M19 8v6M16 11h6" /></>);
 export const IconeCoche = creer(<path d="M20 6 9 17l-5-5" />);
 export const IconeDeconnexion = creer(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="m16 17 5-5-5-5M21 12H9" /></>);
+export const IconeCourriel = creer(<><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></>);
+export const IconeCalendrier = creer(<><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>);
+export const IconeEnregistrer = creer(<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><path d="M17 21v-8H7v8M7 3v5h8" /></>);
+export const IconeAppareilPhoto = creer(<><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" /><circle cx="12" cy="13" r="3.5" /></>);

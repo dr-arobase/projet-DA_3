@@ -1,0 +1,178 @@
+/* Page Mon profil : informations de l'agent + changement de mot de passe */
+.entete-profil {
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+.entete-profil h1 { display: flex; align-items: center; gap: 10px; font-size: 19px; font-weight: 700; }
+.entete-profil h1 svg { color: var(--marine-700); }
+.entete-profil p { margin-top: 2px; color: var(--texte-doux); font-size: 13px; }
+
+.profil-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  max-width: 1100px;
+  align-items: stretch;
+}
+
+.profil-carte { display: flex; flex-direction: column; overflow: hidden; }
+
+.profil-carte-titre {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--bordure);
+  background: #f5f7fa;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.profil-carte-corps { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 22px 20px; }
+
+/* ---------- Identité ---------- */
+.profil-identite {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--bordure);
+}
+.profil-identite-texte { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.profil-identite-texte strong { font-size: 18px; }
+.profil-identite-texte > span { color: var(--texte-doux); font-size: 13px; }
+
+.profil-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--marine-700), var(--marine-900));
+  color: #fff;
+  font-size: 24px;
+  font-weight: 700;
+  object-fit: cover;
+}
+
+.profil-photo-actions { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+
+.profil-bouton-secondaire {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.profil-bouton-secondaire:hover:not(:disabled) { border-color: var(--marine-600); color: var(--marine-700); }
+
+.profil-bouton-lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--danger);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.profil-bouton-lien:hover:not(:disabled) { text-decoration: underline; }
+
+.profil-bouton-secondaire:disabled,
+.profil-bouton-lien:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.profil-champs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.profil-champ.complet { grid-column: 1 / -1; }
+
+.profil-champ dt,
+.champ-profil label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texte-pale);
+}
+.champ-profil label { display: block; }
+
+.profil-champ dd {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #f5f7fa;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.profil-champ dd.mono { font-family: var(--mono); }
+.profil-champ dd.avec-icone { gap: 10px; font-weight: 500; }
+.profil-champ dd.avec-icone svg { flex-shrink: 0; color: var(--texte-pale); }
+
+.profil-role {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #e6e9f0;
+  color: var(--marine-700);
+  font-size: 12px;
+  font-weight: 700;
+}
+.profil-role.superviseur { background: #fff1d6; color: #8a5a00; }
+.profil-role.direction { background: var(--danger-fond); color: var(--danger); }
+
+.profil-note { display: flex; align-items: center; gap: 6px; color: var(--texte-doux); font-size: 13px; }
+.profil-carte-corps > .profil-note:last-child { margin-top: auto; }
+
+/* ---------- Formulaire mot de passe ---------- */
+.profil-formulaire { gap: 16px; }
+
+.champ-profil input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+}
+.champ-profil input:focus { outline: 0; border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
+
+.profil-message { padding: 10px 14px; border-radius: var(--rayon); font-size: 14px; }
+.profil-message.erreur { background: var(--danger-fond); color: var(--danger); }
+.profil-message.succes { background: var(--succes-fond); color: var(--succes); }
+.page > .profil-message { margin-bottom: 16px; max-width: 1100px; }
+
+.profil-bouton-principal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: auto;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--marine-700);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.profil-bouton-principal:hover:not(:disabled) { background: var(--marine-600); }
+.profil-bouton-principal:disabled { opacity: 0.7; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .profil-grille { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .entete-profil { padding: 14px 16px; }
+  .profil-champs { grid-template-columns: 1fr; }
+}

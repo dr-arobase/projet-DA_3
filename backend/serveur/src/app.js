@@ -18,6 +18,8 @@ import auditLogsRoutes from './routes/auditLogs.routes.js';
 
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
+import { verifyToken } from './middleware/auth.middleware.js';
+import { UPLOADS_DIR } from './middleware/upload.middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -40,6 +42,10 @@ app.use('/api/users', usersRoutes);
 app.use('/api/sightings', sightingsRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/audit-logs', auditLogsRoutes);
+
+// Fichiers envoyés (photos de profil) : réservés aux agents connectés.
+// Le navigateur envoie le cookie de session tout seul pour les <img> de même origine.
+app.use('/api/uploads', verifyToken, express.static(UPLOADS_DIR, { fallthrough: false }));
 
 // Route d'accueil / de test
 app.get('/', (req, res) => {

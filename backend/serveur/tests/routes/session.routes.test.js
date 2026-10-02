@@ -101,6 +101,7 @@ describe('routes protégées avec le cookie seul', () => {
       id: 3, first_name: 'Chrysler', last_name: 'Jean', badge_number: 'PL-003',
       role: 'policier', grade: 'sergent_autres_fonctions',
     });
+    expect(res.body.user).not.toHaveProperty('password_hash');
   });
 
   test('GET /api/auth/me : 401 si le compte a été désactivé depuis la connexion', async () => {

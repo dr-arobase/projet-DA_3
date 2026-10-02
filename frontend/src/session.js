@@ -17,6 +17,12 @@ export function enregistrerSession(session, seSouvenir) {
   stockage.setItem(CLE, JSON.stringify(session));
 }
 
+// Met à jour l'utilisateur mémorisé (ex. nouvelle photo) sans changer de stockage
+export function mettreAJourSession(session) {
+  if (localStorage.getItem(CLE)) localStorage.setItem(CLE, JSON.stringify(session));
+  else if (sessionStorage.getItem(CLE)) sessionStorage.setItem(CLE, JSON.stringify(session));
+}
+
 export function effacerSession() {
   localStorage.removeItem(CLE);
   sessionStorage.removeItem(CLE);

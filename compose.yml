@@ -45,6 +45,9 @@ services:
       DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD:-crimetracker}@postgres:5432/crimetracker
       JWT_SECRET: ${JWT_SECRET:-secret-local-a-changer}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes:
+      # Les photos de profil survivent à la reconstruction de l'image
+      - crimetracker-uploads:/app/serveur/src/uploads
     # Pas de port publié : le navigateur passe par le client (nginx).
     # Au démarrage, l'API crée les tables et insère les données de départ si la base est vide.
     depends_on:
@@ -63,3 +66,4 @@ services:
 volumes:
   crimetracker-db-data:
     name: database_crimetracker-db-data
+  crimetracker-uploads:

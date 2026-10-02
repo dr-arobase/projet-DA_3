@@ -256,6 +256,72 @@
         }
       }
     },
+    "/api/auth/change-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Changer son mot de passe",
+        "description": "L'agent connecté confirme son mot de passe actuel et en choisit un nouveau (8 caractères minimum, différent de l'ancien). La session reste active.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["old_password", "new_password"],
+                "properties": {
+                  "old_password": { "type": "string", "example": "ancienMotDePasse" },
+                  "new_password": { "type": "string", "minLength": 8, "example": "nouveauMotDePasse" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Mot de passe mis à jour" },
+          "400": { "description": "Champs manquants, mot de passe trop court, identique à l'ancien ou mot de passe actuel incorrect" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/auth/avatar": {
+      "put": {
+        "tags": ["Auth"],
+        "summary": "Changer sa photo de profil",
+        "description": "Le corps de la requête est l'image brute (pas de multipart). JPG, PNG ou WebP, 2 Mo maximum. L'ancienne photo est supprimée. L'image est ensuite servie sous avatar_url, réservée aux agents connectés.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": { "schema": { "type": "string", "format": "binary" } },
+            "image/png": { "schema": { "type": "string", "format": "binary" } },
+            "image/webp": { "schema": { "type": "string", "format": "binary" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Photo enregistrée",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "413": { "description": "Image de plus de 2 Mo" },
+          "415": { "description": "Ce n'est pas une image JPG, PNG ou WebP valide" }
+        }
+      },
+      "delete": {
+        "tags": ["Auth"],
+        "summary": "Supprimer sa photo de profil",
+        "description": "L'interface revient aux initiales de l'agent.",
+        "responses": {
+          "200": {
+            "description": "Photo supprimée",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
     "/api/criminals": {
       "get": {
         "tags": ["Criminals"],
@@ -937,6 +1003,7 @@
           "role": { "$ref": "#/components/schemas/Role" },
           "grade": { "$ref": "#/components/schemas/Grade" },
           "is_active": { "type": "boolean", "example": true },
+          "avatar_url": { "type": "string", "nullable": true, "example": "/api/uploads/avatars/1-1759400000000.png" },
           "created_at": { "type": "string", "format": "date-time" }
         }
       },
