@@ -32,6 +32,13 @@ Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
 | `PL-003` | Chrysler Jean | Policier | Sergent (autres fonctions) |
 | `PL-004` | Michael Fortin | Policier | Sergent (autres fonctions) |
 
+**Compte rapide de l'équipe** (tests en local) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve. Pour l'ajouter à une base déjà créée, sans rien effacer :
+
+```bash
+docker compose exec api node scripts/compte-equipe.js     # avec Docker
+cd backend && node scripts/compte-equipe.js               # sans Docker (npm run dev)
+```
+
 > Ces comptes ne sont créés que dans une base **vide**. Si votre base a été créée avant l'ajout de ces mots de passe, réinitialisez-la (`docker compose down -v`) ou, dans `backend/`, lancez `node scripts/set-passwords.js Alpha2026!` (change le mot de passe de **tous** les comptes).
 
 ---
