@@ -95,6 +95,56 @@ describe('GET /api/criminals', () => {
     expect(params).toEqual(['capture', 10, 0]);
   });
 
+  test('recherche par nom (q), sur la liste ET le comptage', async () => {
+    mockList([dossier], 1);
+
+    const res = await request(app).get('/api/criminals?q=%20dupont%20').set('Authorization', bearer());
+
+    expect(res.status).toBe(200);
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/ILIKE \$1/);
+    expect(params).toEqual(['%dupont%', 10, 0]); // espaces autour retirés
+    const [sqlCount, paramsCount] = query.mock.calls[1];
+    expect(sqlCount).toMatch(/COUNT\(\*\).*ILIKE \$1/s);
+    expect(paramsCount).toEqual(['%dupont%']);
+  });
+
+  test('combine le statut et la recherche', async () => {
+    mockList([], 0);
+
+    await request(app).get('/api/criminals?status=recherche&q=Jean').set('Authorization', bearer());
+
+    const [sql, params] = query.mock.calls[0];
+    expect(sql).toMatch(/c\.status = \$1 AND .*ILIKE \$2/s);
+    expect(params).toEqual(['recherche', '%Jean%', 10, 0]);
+  });
+
+  test('les jokers % et _ tapés par l\'agent sont cherchés tels quels', async () => {
+    mockList([], 0);
+
+    await request(app).get('/api/criminals?q=50%25_').set('Authorization', bearer());
+
+    expect(query.mock.calls[0][1][0]).toBe('%50\\%\\_%');
+  });
+
+  test('une recherche vide est ignorée', async () => {
+    mockList([], 0);
+
+    await request(app).get('/api/criminals?q=%20%20').set('Authorization', bearer());
+
+    expect(query.mock.calls[0][0]).not.toMatch(/ILIKE/);
+    expect(query.mock.calls[0][1]).toEqual([10, 0]);
+  });
+
+  test('limite bornée entre 1 et 100, page au moins 1', async () => {
+    mockList([], 0);
+
+    const res = await request(app).get('/api/criminals?page=-2&limit=5000').set('Authorization', bearer());
+
+    expect(res.body).toMatchObject({ page: 1, limit: 100 });
+    expect(query.mock.calls[0][1]).toEqual([100, 0]);
+  });
+
   test('400 si le statut filtré est inconnu', async () => {
     const res = await request(app).get('/api/criminals?status=INCONNU').set('Authorization', bearer());
 

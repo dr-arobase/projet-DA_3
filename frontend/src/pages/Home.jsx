@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
 import useDashboardData from '../hooks/useDashboardData.js';
 import {
@@ -15,6 +15,14 @@ const ICONES_ACTIVITE = {
 export default function Home() {
   const { utilisateur } = useAuth();
   const { erreur, stats, activites, dernierCommunique, notifications } = useDashboardData();
+  const navigate = useNavigate();
+
+  // La recherche ouvre le registre filtré sur ce nom
+  function rechercher(e) {
+    e.preventDefault();
+    const q = new FormData(e.currentTarget).get('q').trim();
+    navigate(q ? `/personnes-recherchees?q=${encodeURIComponent(q)}` : '/personnes-recherchees');
+  }
 
   return (
     <>
@@ -26,14 +34,14 @@ export default function Home() {
           </p>
         </div>
         <div className="entete-actions">
-          <label className="recherche">
+          <form className="recherche" role="search" onSubmit={rechercher}>
             <IconeRecherche taille={15} />
-            <input type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" />
-          </label>
-          <button type="button" className="cloche" aria-label={`${notifications} notifications`}>
+            <input name="q" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" />
+          </form>
+          <Link to="/alertes" className="cloche" aria-label={`${notifications} alertes urgentes aujourd'hui`}>
             <IconeCloche taille={17} />
             {notifications > 0 && <span className="cloche-pastille">{notifications}</span>}
-          </button>
+          </Link>
         </div>
       </header>
 
@@ -80,6 +88,7 @@ export default function Home() {
               </Link>
               <Link to="/communiques" className="action">
                 <IconeMegaphone taille={17} /> Diffuser un communiqué
+                <span className="a-venir">À venir</span>
               </Link>
             </div>
 

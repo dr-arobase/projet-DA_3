@@ -14,9 +14,10 @@ const handleError = (res, error, context) => {
 
 export const getAll = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
-    const result = await criminalService.getAllCriminals({ page, limit, status: req.query.status });
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+    const search = typeof req.query.q === 'string' ? req.query.q : undefined;
+    const result = await criminalService.getAllCriminals({ page, limit, status: req.query.status, search });
     return res.json(result);
   } catch (error) {
     return handleError(res, error, 'de la récupération des dossiers');

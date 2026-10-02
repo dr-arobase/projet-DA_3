@@ -5,24 +5,25 @@ import {
 } from './Icones.jsx';
 import UserProfileMenu from './UserProfileMenu.jsx';
 
+// aVenir : la page n'existe pas encore (elle affiche « Page en construction ») ; c'est signalé dans le menu
 const sections = [
   {
     titre: 'Principal',
     liens: [
       { vers: '/', libelle: 'Accueil', Icone: IconeMaison, fin: true },
       { vers: '/personnes-recherchees', libelle: 'Personnes recherchées', Icone: IconeRecherche },
-      { vers: '/alertes', libelle: 'Alertes', Icone: IconeSirene, badge: 6 },
-      { vers: '/communiques', libelle: 'Communiqués', Icone: IconeMegaphone },
-      { vers: '/messagerie', libelle: 'Messagerie', Icone: IconeMessage, badge: 3 },
-      { vers: '/annuaire', libelle: 'Annuaire', Icone: IconeRecherche },
-      { vers: '/carte', libelle: 'Carte', Icone: IconeRepere },
+      { vers: '/alertes', libelle: 'Alertes', Icone: IconeSirene, aVenir: true },
+      { vers: '/communiques', libelle: 'Communiqués', Icone: IconeMegaphone, aVenir: true },
+      { vers: '/messagerie', libelle: 'Messagerie', Icone: IconeMessage, aVenir: true },
+      { vers: '/annuaire', libelle: 'Annuaire', Icone: IconeRecherche, aVenir: true },
+      { vers: '/carte', libelle: 'Carte', Icone: IconeRepere, aVenir: true },
     ],
   },
   {
     titre: 'Gestion',
     liens: [
-      { vers: '/statistiques', libelle: 'Statistiques', Icone: IconeStats },
-      { vers: '/utilisateurs', libelle: 'Utilisateurs', Icone: IconeGroupe },
+      { vers: '/statistiques', libelle: 'Statistiques', Icone: IconeStats, aVenir: true },
+      { vers: '/utilisateurs', libelle: 'Utilisateurs', Icone: IconeGroupe, aVenir: true },
     ],
   },
 ];
@@ -39,11 +40,11 @@ export default function Menu() {
         {sections.map((section) => (
           <div key={section.titre} className="menu-section">
             <p className="menu-titre">{section.titre}</p>
-            {section.liens.map(({ vers, libelle, Icone, badge, fin }) => (
+            {section.liens.map(({ vers, libelle, Icone, fin, aVenir }) => (
               <NavLink key={vers} to={vers} end={fin} className="menu-lien">
                 <Icone />
                 <span>{libelle}</span>
-                {badge ? <span className="pastille">{badge}</span> : null}
+                {aVenir && <span className="a-venir">À venir</span>}
               </NavLink>
             ))}
           </div>
