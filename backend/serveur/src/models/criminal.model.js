@@ -13,34 +13,40 @@ const SELECT_WITH_NAMES = `
   LEFT JOIN app_user uu ON c.updated_by = uu.id
 `;
 
-// Récupérer les criminels avec pagination et filtre optionnel sur le statut
-export const findAll = async ({ limit = 10, offset = 0, status } = {}) => {
-  let query = SELECT_WITH_NAMES;
+// Filtres communs à la liste et au comptage : statut exact, et recherche par nom
+// (prénom nom ou nom prénom, sans tenir compte des majuscules)
+function buildFilters({ status, search } = {}) {
+  const conditions = [];
   const params = [];
 
   if (status) {
-    query += ' WHERE c.status = $1';
     params.push(status);
+    conditions.push(`c.status = $${params.length}`);
+  }
+  if (search) {
+    // % et _ tapés par l'agent sont cherchés tels quels, pas comme des jokers
+    params.push(`%${search.replace(/[\\%_]/g, '\\$&')}%`);
+    const n = params.length;
+    conditions.push(`((c.first_name || ' ' || c.last_name) ILIKE $${n} OR (c.last_name || ' ' || c.first_name) ILIKE $${n})`);
   }
 
-  query += ` ORDER BY c.added_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-  params.push(limit, offset);
+  const where = conditions.length ? ` WHERE ${conditions.join(' AND ')}` : '';
+  return { where, params };
+}
 
-  const result = await pool.query(query, params);
+// Récupérer les criminels avec pagination, filtre optionnel sur le statut et recherche par nom
+export const findAll = async ({ limit = 10, offset = 0, status, search } = {}) => {
+  const { where, params } = buildFilters({ status, search });
+  const query = `${SELECT_WITH_NAMES}${where} ORDER BY c.added_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+
+  const result = await pool.query(query, [...params, limit, offset]);
   return result.rows;
 };
 
-// Compter les criminels (pour le nombre total de pages)
-export const countAll = async (status) => {
-  let query = 'SELECT COUNT(*) FROM criminal';
-  const params = [];
-
-  if (status) {
-    query += ' WHERE status = $1';
-    params.push(status);
-  }
-
-  const result = await pool.query(query, params);
+// Compter les criminels (pour le nombre total de pages), avec les mêmes filtres
+export const countAll = async ({ status, search } = {}) => {
+  const { where, params } = buildFilters({ status, search });
+  const result = await pool.query(`SELECT COUNT(*) FROM criminal c${where}`, params);
   return parseInt(result.rows[0].count, 10);
 };
 
