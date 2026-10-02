@@ -68,7 +68,32 @@ Fermer un ticket automatiquement :
 
 ---
 
-## Contributions individuelles
+## Contributions individuelles — sprint 1
+
+Établi à partir de l'historique Git (`git shortlog -sn --all --since=2026-09-16`), des branches et des tickets GitHub au 2 octobre. Comptes GitHub : Massyle = `massyle` / `dr-arobase`, Eric = `Lenrics-01` (aussi « Gouife A Djiben », même adresse), Chrysler = `nleukeu` / `nleukeu76`, Michael = `MichaelLaurore`.
+
+| Membre | Récits responsables (tickets) | Réalisé dans le dépôt | Commits | Traces |
+|---|---|---|---|---|
+| **Massyle** | #3 (avec Chrysler et Michael), #24 | Structure du backend et schéma PostgreSQL; Swagger; tests Jest/Supertest du backend; frontend (connexion, tableau de bord en temps réel, page « Mon profil » avec photo et mot de passe); session par cookie httpOnly; Docker (`compose.yml`, images de production, `deploy/`); CI complète; fusion de `chystbranch` dans `main` | 31 | Branches `structure-backend` (fusionnée), `frontend/massyle` ([#23](https://github.com/dr-arobase/projet-DA_3/pull/23)), `chore/organisation-projet` ([#34](https://github.com/dr-arobase/projet-DA_3/pull/34)) |
+| **Eric** | Aucun récit assigné pour l'instant (à corriger : voir plus bas) | Intégration continue GitHub Actions (premier `ci.yml`); validation des entrées; tests de routes; début de la partie client | 14 | Branches `eric_ajout_validator`, `eric_ajout_de_test`, `develop/test` ([#22](https://github.com/dr-arobase/projet-DA_3/pull/22)), **pas encore fusionnées** dans `main` |
+| **Chrysler** | #3, #4, #5, #6, #7, #8, #9 | Routes du backend (registre, utilisateurs, signalements, alertes, journal d'audit), rôles, Socket.IO et présence en temps réel | 4 | Branche `chystbranch`, fusionnée dans `main` le 30 septembre |
+| **Michael** | #3, #4, #5, #6, #8 | Authentification (routes, contrôleur), routes des dossiers (`criminal`, `dossier.js`), premiers `Dockerfile` et `docker-compose.yml`, Swagger, organisation de `docs/` | 14 | Commits directement sur `main` |
+
+**Écarts à corriger avant la remise** :
+- Eric n'est responsable d'aucun récit du sprint 1 alors que chaque membre doit en avoir au moins un. Il faut lui en assigner un sur GitHub, ou noter ici la raison.
+- Le travail d'Eric est sur des branches non fusionnées : tant qu'il n'est pas dans `main`, il n'apparaît pas à l'étiquette `alpha-v1`.
+- Le nombre de commits ne mesure pas l'effort : Chrysler a livré la plus grande partie des routes du backend en 4 commits volumineux.
+
+### Définition de « terminé » : appliquée en retard
+
+La définition de « terminé » n'a pas changé, mais elle **n'a pas été respectée** pendant le sprint 1 : presque tout le travail a été poussé directement sur `main` ou fusionné sans demande de tirage revue (une seule PR fusionnée, [#1](https://github.com/dr-arobase/projet-DA_3/pull/1), à la soumission). Pour la fin du sprint 1 :
+- `main` est protégée sur GitHub depuis le 2 octobre (ticket [#28](https://github.com/dr-arobase/projet-DA_3/issues/28)) : PR obligatoire, une approbation d'un coéquipier, CI verte, administrateurs compris;
+- chaque récit passe par sa branche `feature/<ticket>-…` et une PR avec `Closes #n`;
+- le relecteur laisse un commentaire concret, pas seulement une approbation.
+
+---
+
+## Contributions individuelles — sprint 0 (soumission)
 
 | Membre | Rôle | Contributions principales | Liens utiles |
 |---|---|---|---|

@@ -1,0 +1,244 @@
+/* Registre des personnes recherchées : liste, fiche et formulaire d'ajout */
+.entete-registre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 32px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+.entete-registre h1 { font-size: 19px; font-weight: 700; }
+.entete-registre p { margin-top: 2px; color: var(--texte-doux); font-size: 13px; }
+
+.registre-retour {
+  display: inline-block;
+  margin-bottom: 4px;
+  color: var(--texte-doux);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.registre-retour:hover { color: var(--marine-700); text-decoration: underline; }
+
+/* ---------- Boutons ---------- */
+.registre-bouton-principal,
+.registre-bouton-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.registre-bouton-principal { background: var(--marine-700); }
+.registre-bouton-principal:hover:not(:disabled) { background: var(--marine-600); }
+.registre-bouton-danger { background: var(--danger); }
+.registre-bouton-danger:hover:not(:disabled) { background: #a51f1f; }
+.registre-bouton-principal:disabled,
+.registre-bouton-danger:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.registre-lien {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--lien);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+.registre-lien:hover { text-decoration: underline; }
+
+/* ---------- Filtres ---------- */
+.registre-filtres { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 16px; }
+
+.registre-recherche {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--texte-pale);
+}
+.registre-recherche:focus-within { border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
+.registre-recherche input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--texte); font-size: 14px; }
+
+.registre-select {
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+}
+.registre-select:focus { outline: 0; border-color: var(--marine-600); }
+
+/* ---------- Tableau ---------- */
+.registre-tableau-cadre { overflow-x: auto; }
+
+.registre-tableau { width: 100%; border-collapse: collapse; font-size: 14px; }
+.registre-tableau th {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--bordure);
+  background: #f5f7fa;
+  color: var(--texte-pale);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: left;
+  text-transform: uppercase;
+}
+.registre-tableau td { padding: 12px 16px; border-bottom: 1px solid var(--bordure); vertical-align: top; }
+.registre-tableau tbody tr:last-child td { border-bottom: 0; }
+.registre-tableau tbody tr:not(.registre-vide) { cursor: pointer; }
+.registre-tableau tbody tr:not(.registre-vide):hover { background: #f5f7fa; }
+.registre-tableau td a { color: var(--texte); font-weight: 700; text-decoration: none; }
+.registre-tableau td a:hover { color: var(--marine-700); text-decoration: underline; }
+.registre-tableau td small { display: block; margin-top: 2px; color: var(--texte-doux); font-size: 12px; }
+.registre-vide td { padding: 28px 16px; color: var(--texte-doux); text-align: center; }
+
+/* ---------- Statuts ---------- */
+.statut {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.statut-recherche { background: var(--danger-fond); color: var(--danger); }
+.statut-capture { background: var(--succes-fond); color: var(--succes); }
+.statut-libere { background: #e6e9f0; color: var(--marine-700); }
+.statut-grand { padding: 5px 14px; font-size: 14px; }
+
+/* ---------- Pagination ---------- */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; font-size: 14px; }
+.pagination button {
+  padding: 7px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte);
+  font-weight: 600;
+  cursor: pointer;
+}
+.pagination button:hover:not(:disabled) { border-color: var(--marine-600); }
+.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- Messages ---------- */
+.registre-message { margin-bottom: 16px; padding: 10px 14px; border-radius: var(--rayon); font-size: 14px; }
+.registre-message.erreur { background: var(--danger-fond); color: var(--danger); }
+.registre-message.succes { background: var(--succes-fond); color: var(--succes); }
+.registre-message.info { background: #e6e9f0; color: var(--marine-700); }
+.fiche-formulaire .registre-message { margin-bottom: 0; }
+.registre-note { color: var(--texte-doux); font-size: 13px; }
+
+/* ---------- Fiche ---------- */
+.fiche-grille {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.fiche-cote { display: grid; gap: 20px; }
+.fiche-carte { overflow: hidden; }
+.fiche-titre {
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--bordure);
+  background: #f5f7fa;
+  font-size: 15px;
+  font-weight: 700;
+}
+.fiche-corps { display: flex; flex-direction: column; gap: 16px; padding: 20px; }
+.fiche-corps > p { color: var(--texte-doux); font-size: 13px; }
+
+.fiche-photo {
+  width: 120px;
+  height: 150px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #e6e9f0;
+}
+.fiche-photo-vide {
+  display: grid;
+  place-items: center;
+  color: var(--marine-700);
+  font-size: 32px;
+  font-weight: 700;
+}
+
+.fiche-champs,
+.fiche-historique { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin: 0; }
+.fiche-historique { grid-template-columns: 1fr; }
+.fiche-champs .complet { grid-column: 1 / -1; }
+.fiche-champs dt,
+.fiche-historique dt,
+.fiche-formulaire label,
+.champ-registre label {
+  margin-bottom: 4px;
+  color: var(--texte-pale);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.fiche-champs dd,
+.fiche-historique dd { margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.fiche-historique dd { font-weight: 500; }
+.texte-long { font-weight: 500 !important; line-height: 1.5; white-space: pre-line; }
+
+.fiche-formulaire { gap: 10px; }
+.fiche-formulaire label { display: block; }
+.fiche-danger { border-color: #f0b4b4; }
+.fiche-confirmation { display: flex; align-items: center; gap: 16px; }
+
+/* ---------- Formulaire d'ajout ---------- */
+.formulaire-dossier { max-width: 820px; }
+.formulaire-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.champ-registre { display: flex; flex-direction: column; }
+.champ-registre.complet { grid-column: 1 / -1; }
+.champ-registre input,
+.champ-registre textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--texte);
+  font: inherit;
+  font-size: 14px;
+}
+.champ-registre textarea { resize: vertical; }
+.champ-registre input:focus,
+.champ-registre textarea:focus { outline: 0; border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
+.champ-registre input[aria-invalid='true'] { border-color: var(--danger); }
+.champ-erreur { margin-top: 4px; color: var(--danger); font-size: 12px; }
+.requis { color: var(--danger); }
+.formulaire-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; }
+
+@media (max-width: 1000px) {
+  .fiche-grille { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 860px) {
+  .entete-registre { flex-wrap: wrap; padding: 14px 16px; }
+  .registre-recherche { max-width: none; }
+  .fiche-champs,
+  .formulaire-grille { grid-template-columns: 1fr; }
+}
