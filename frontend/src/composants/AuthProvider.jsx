@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AuthContext } from './AuthContext.js';
 import * as api from '../api.js';
-import { lireSession, enregistrerSession, effacerSession } from '../session.js';
+import { lireSession, enregistrerSession, mettreAJourSession, effacerSession } from '../session.js';
 
 export default function AuthProvider({ children }) {
   // L'utilisateur mémorisé permet d'afficher l'interface tout de suite ;
@@ -12,7 +12,7 @@ export default function AuthProvider({ children }) {
   useEffect(() => {
     if (!lireSession()) return;
     api.moi()
-      .then(({ user }) => setUtilisateur(user))
+      .then(({ user }) => mettreAJourUtilisateur(user))
       .catch((err) => {
         // 401 : pas de cookie ou compte inactif ; 403 : jeton expiré ou invalide
         if (err.status === 401 || err.status === 403) {
@@ -27,6 +27,12 @@ export default function AuthProvider({ children }) {
     enregistrerSession(user, seSouvenir);
     setUtilisateur(user);
     return user;
+  }
+
+  // Le profil a changé côté serveur (photo, etc.) : on garde l'interface et la session à jour
+  function mettreAJourUtilisateur(user) {
+    mettreAJourSession(user);
+    setUtilisateur(user);
   }
 
   async function seDeconnecter() {
@@ -44,6 +50,7 @@ export default function AuthProvider({ children }) {
     estConnecte: Boolean(utilisateur),
     seConnecter,
     seDeconnecter,
+    mettreAJourUtilisateur,
   };
 
   return <AuthContext.Provider value={valeur}>{children}</AuthContext.Provider>;

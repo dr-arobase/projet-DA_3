@@ -7,3 +7,7 @@ dist/
 # La base SQLite d'un poste sans Docker
 backend/serveur/*.sqlite
 backend/serveur/*.sqlite-*
+
+# Les photos de profil envoyées depuis l'application (seul le dossier est versionné)
+backend/serveur/src/uploads/avatars/*
+!backend/serveur/src/uploads/avatars/.gitkeep

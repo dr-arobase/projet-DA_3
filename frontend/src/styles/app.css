@@ -147,6 +147,7 @@ button, input { font: inherit; }
   font-size: 13px;
   font-weight: 700;
 }
+.avatar-photo { object-fit: cover; }
 
 .profil-texte { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .profil-texte strong { color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -166,9 +167,11 @@ button, input { font: inherit; }
   background: rgba(255, 255, 255, 0.04);
   color: #e3e8ef;
   font-size: 13px;
+  text-decoration: none;
   cursor: pointer;
 }
-.profil-action:hover { background: rgba(198, 40, 40, 0.25); }
+.profil-action:hover { background: rgba(255, 255, 255, 0.1); }
+.profil-action.deconnexion:hover { background: rgba(198, 40, 40, 0.25); }
 
 /* ---------- Page générique ---------- */
 .page { padding: 28px 32px; }

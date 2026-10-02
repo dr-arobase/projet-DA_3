@@ -1,13 +1,15 @@
 // Appel générique vers le backend. La session est un cookie httpOnly posé par le serveur :
 // le navigateur l'envoie tout seul (même origine grâce au proxy Vite), on ne manipule aucun jeton.
+// body : un objet (envoyé en JSON) ou un fichier (envoyé tel quel, avec son type MIME).
 export async function requete(chemin, { method = 'GET', body } = {}) {
+  const fichier = body instanceof Blob;
   let reponse;
   try {
     reponse = await fetch(chemin, {
       method,
       credentials: 'same-origin',
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
-      body: body ? JSON.stringify(body) : undefined,
+      headers: body ? { 'Content-Type': fichier ? body.type : 'application/json' } : undefined,
+      body: body ? (fichier ? body : JSON.stringify(body)) : undefined,
     });
   } catch {
     throw new Error('Serveur injoignable. Vérifiez que le backend est démarré.');
@@ -32,6 +34,13 @@ export const connexion = (badge_number, password, se_souvenir = false) =>
 export const deconnexion = () => requete('/api/auth/logout', { method: 'POST' });
 
 export const moi = () => requete('/api/auth/me');
+
+export const changerMotDePasse = (old_password, new_password) =>
+  requete('/api/auth/change-password', { method: 'POST', body: { old_password, new_password } });
+
+export const envoyerPhoto = (fichier) => requete('/api/auth/avatar', { method: 'PUT', body: fichier });
+
+export const supprimerPhoto = () => requete('/api/auth/avatar', { method: 'DELETE' });
 
 // Registre et alertes (le cookie de session suffit à s'authentifier)
 const qs = (params) => new URLSearchParams(

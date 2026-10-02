@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
-import { IconeChevron, IconeDeconnexion } from './Icones.jsx';
+import { IconeChevron, IconeDeconnexion, IconeUtilisateur } from './Icones.jsx';
+import Avatar from './Avatar.jsx';
 
 // Valeurs de app_user.role et app_user.grade (voir database/seed.sql)
 const LIBELLES_ROLE = {
@@ -25,7 +26,6 @@ export default function UserProfileMenu() {
 
   const prenom = utilisateur?.first_name ?? '';
   const nom = utilisateur?.last_name ?? '';
-  const initiales = `${prenom[0] ?? ''}${nom[0] ?? ''}`.toUpperCase() || '?';
   const nomAffiche = [ABREVIATIONS_GRADE[utilisateur?.grade], prenom, nom].filter(Boolean).join(' ');
   const role = LIBELLES_ROLE[utilisateur?.role?.toLowerCase()] ?? utilisateur?.role ?? '';
 
@@ -37,9 +37,14 @@ export default function UserProfileMenu() {
   return (
     <div className="profil">
       {ouvert && (
-        <button type="button" className="profil-action" onClick={quitter}>
-          <IconeDeconnexion taille={16} /> Se déconnecter
-        </button>
+        <>
+          <Link to="/profil" className="profil-action" onClick={() => setOuvert(false)}>
+            <IconeUtilisateur taille={16} /> Mon profil
+          </Link>
+          <button type="button" className="profil-action deconnexion" onClick={quitter}>
+            <IconeDeconnexion taille={16} /> Se déconnecter
+          </button>
+        </>
       )}
       <button
         type="button"
@@ -47,7 +52,7 @@ export default function UserProfileMenu() {
         onClick={() => setOuvert((o) => !o)}
         aria-expanded={ouvert}
       >
-        <span className="avatar">{initiales}</span>
+        <Avatar utilisateur={utilisateur} />
         <span className="profil-texte">
           <strong>{nomAffiche}</strong>
           <small>{role}</small>

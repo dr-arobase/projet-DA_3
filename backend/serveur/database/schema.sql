@@ -40,6 +40,7 @@ CREATE TABLE app_user (
     role            user_role NOT NULL DEFAULT 'policier',
     grade           user_grade NOT NULL DEFAULT 'sergent_autres_fonctions',
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
+    avatar_url      VARCHAR(500),
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

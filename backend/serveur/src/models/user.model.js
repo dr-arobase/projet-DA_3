@@ -1,6 +1,6 @@
 import { pool } from '../config/db.js';
 
-const PUBLIC_FIELDS = 'id, first_name, last_name, badge_number, email, role, grade, is_active, created_at';
+const PUBLIC_FIELDS = 'id, first_name, last_name, badge_number, email, role, grade, is_active, avatar_url, created_at';
 
 // Lister tous les comptes (sans le mot de passe)
 export const findAll = async () => {
@@ -46,6 +46,15 @@ export const promote = async (id, { role, grade }) => {
   const result = await pool.query(
     `UPDATE app_user SET role = $1, grade = $2 WHERE id = $3 RETURNING ${PUBLIC_FIELDS}`,
     [role, grade, id]
+  );
+  return result.rows[0] || null;
+};
+
+// Photo de profil : chemin de l'image, ou null pour revenir aux initiales
+export const setAvatar = async (id, avatar_url) => {
+  const result = await pool.query(
+    `UPDATE app_user SET avatar_url = $1 WHERE id = $2 RETURNING ${PUBLIC_FIELDS}`,
+    [avatar_url, id]
   );
   return result.rows[0] || null;
 };

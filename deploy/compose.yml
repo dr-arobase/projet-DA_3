@@ -31,6 +31,9 @@ services:
       DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD}@postgres:5432/crimetracker
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+    volumes:
+      # Les photos de profil survivent aux mises à jour de l'image
+      - crimetracker-uploads:/app/serveur/src/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,3 +49,4 @@ services:
 
 volumes:
   crimetracker-pgdata:
+  crimetracker-uploads:
