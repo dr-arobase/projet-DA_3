@@ -16,13 +16,14 @@ const checkStatus = (status) => {
   }
 };
 
-export const getAllCriminals = async ({ page = 1, limit = 10, status } = {}) => {
+export const getAllCriminals = async ({ page = 1, limit = 10, status, search } = {}) => {
   if (status) checkStatus(status);
   const offset = (page - 1) * limit;
+  search = search?.trim() || undefined;
 
   const [data, total] = await Promise.all([
-    criminalModel.findAll({ limit, offset, status }),
-    criminalModel.countAll(status)
+    criminalModel.findAll({ limit, offset, status, search }),
+    criminalModel.countAll({ status, search })
   ]);
 
   return { page, limit, total, totalPages: Math.ceil(total / limit), data };
