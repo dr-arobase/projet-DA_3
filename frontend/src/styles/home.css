@@ -25,6 +25,7 @@
   background: #f5f7fa;
   color: #6b7482;
 }
+.recherche { margin: 0; }
 .recherche input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px; }
 .recherche:focus-within { border-color: var(--marine-600); }
 
@@ -38,6 +39,7 @@
   border-radius: 9px;
   background: #e8ecf1;
   color: var(--texte);
+  text-decoration: none;
   cursor: pointer;
 }
 .cloche-pastille {
@@ -122,6 +124,7 @@
   text-decoration: none;
 }
 .action:hover { border-color: var(--marine-600); }
+.action .a-venir { margin-left: auto; color: var(--texte-doux); }
 .action-principale { border-color: var(--marine-700); background: var(--marine-700); color: #fff; }
 .action-principale:hover { background: var(--marine-600); }
 

@@ -4,6 +4,7 @@ import { useAuth } from '../composants/AuthContext.js';
 import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron } from '../composants/Icones.jsx';
 import '../styles/auth.css';
 
+// Chiffres de démonstration, pas encore lus dans l'API : signalés à l'écran (voir README)
 const STATS = [
   { valeur: 128, libelle: 'Fiches actives' },
   { valeur: 58, libelle: 'Agents connectés' },
@@ -55,6 +56,7 @@ export default function Auth() {
             Échangez sur les personnes recherchées, suivez les alertes en temps réel et
             communiquez avec vos équipes, depuis un seul espace de travail.
           </p>
+          <p className="auth-demo">Chiffres de démonstration</p>
           <ul className="auth-stats">
             {STATS.map((s) => (
               <li key={s.libelle}>
@@ -108,7 +110,7 @@ export default function Auth() {
               />
               Se souvenir de moi
             </label>
-            <a href="#" onClick={(e) => e.preventDefault()}>Mot de passe oublié ?</a>
+            <span className="auth-a-venir" title="Fonction pas encore disponible">Mot de passe oublié ? <em>(à venir)</em></span>
           </div>
 
           {erreur && <p className="auth-erreur" role="alert">{erreur}</p>}
@@ -119,7 +121,7 @@ export default function Auth() {
           </button>
 
           <p className="auth-info">
-            <IconeCadenas taille={14} /> Authentification à deux facteurs requise
+            <IconeCadenas taille={14} /> Authentification à deux facteurs : à venir
           </p>
 
           <p className="auth-mention">Accès réservé au personnel autorisé — usage tracé et audité.</p>
