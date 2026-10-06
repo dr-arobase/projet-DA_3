@@ -2,7 +2,7 @@
 
 ## Date
 
-À compléter.
+Mercredi 07 Octocbre 2026
 
 ## Participants
 
@@ -25,8 +25,8 @@
 
 ## Actions décidées
 
-| Action | Responsable | Échéance |
-|---|---|---|
+| Action        | Responsable   | Échéance    |
+| ------------- | ------------- | ------------- |
 | À compléter | À compléter | À compléter |
 
 ## Bilan du sprint
