@@ -1,13 +1,13 @@
 Sprint 1 — version alpha
 Pondération : 20 %
-Remise : jeudi 1er octobre 2026 à 23 h 59
+Remise : mardi 06 octobre 2026 à 23 h 59
 Dates importantes
 Quatre rendez-vous structurent ces trois semaines :
 
-Lundi 21 septembre — point de contrôle 1 : votre méthode de travail agile est en place;
-Lundi 28 septembre — point de contrôle 2 : l'application démarre à partir d'un clone neuf et un premier récit est terminé;
-Jeudi 1er octobre, 23 h 59 — remise : étiquette alpha-v1 sur le dépôt;
-Jeudi 8 octobre — revue de sprint de 20 minutes avec votre équipe : vous me montrez l'application.
+Mercredi 23 septembre — point de contrôle 1 : votre méthode de travail agile est en place;
+Mercredi 30 septembre — point de contrôle 2 : l'application démarre à partir d'un clone neuf et un premier récit est terminé;
+Vendredi 2 octobre, 23 h 59 — remise : étiquette alpha-v1 sur le dépôt;
+Mercredi 7 octobre — revue de sprint de 20 minutes avec votre équipe : vous me montrez l'application.
 Vous devez être présent à tous les rendez-vous. Si vous ne pouvez pas, prévenez-moi avant.
 
 But du sprint 1
