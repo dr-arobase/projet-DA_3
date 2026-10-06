@@ -30,6 +30,39 @@
 ### Notions disponibles
 Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 
+### Engagement réel du sprint 1
+
+- **Objectif en une phrase** : un agent se connecte et gère le registre des personnes recherchées de bout en bout (liste, fiche, ajout, statut, retrait), dans une application qui démarre avec `docker compose up` et dont la CI est verte.
+- **Récits engagés** : #1, #2, #3, #4, #5, #6, #7 du tableau ci-dessus, soit **24 points** (tickets GitHub #3 à #9).
+- **Capacité** : 4 membres × 4 h/semaine × 3 semaines = 48 h, soit environ **24 points** (1 point ≈ 2 h).
+- **Ordre d'abandon** : celui de la section [Ordre d'abandon](#ordre-dabandon); pour le sprint 1, le filtre avancé (#7 du tableau, ticket #9) part en premier, la recherche par nom reste.
+- **Responsable de la mêlée** : Eric (Scrum Master).
+- **Ajouts en cours de sprint** (non engagés, donc hors vélocité) : le temps réel a été préparé dès le sprint 1 (Socket.IO, tableau de bord en direct), ainsi que la gestion des rôles et la page « Mon profil » (photo, changement de mot de passe).
+
+### Bilan du sprint 1
+
+> **À compléter le jour de la remise (6 octobre)**, quand l'état final de chaque ticket est connu. Rappel de l'énoncé : un récit à moitié fait vaut **zéro** point; un récit est livré seulement s'il respecte la définition de « terminé » de `05-equipe.md` (PR revue, CI verte, ticket fermé).
+
+| Ticket | Récit | Points | Backend (API + tests) | Page dans le navigateur | Livré ? |
+|---|---|---|---|---|---|
+| #3 | S'authentifier avec badge et mot de passe | 5 | Fait | Fait | Ticket fermé |
+| #4 | Consulter la liste paginée | 2 | Fait | Fait | PR à revoir |
+| #5 | Voir la fiche complète d'un dossier | 3 | Fait | Fait | PR à revoir |
+| #6 | Ajouter un dossier | 5 | Fait | Fait | PR à revoir |
+| #7 | Retirer un dossier (superviseur) | 3 | Fait | Fait | PR à revoir |
+| #8 | Mettre à jour le statut | 3 | Fait (avec `version`, 409 si conflit) | Fait, conflit affiché | PR à revoir |
+| #9 | Filtrer et rechercher | 3 | Fait (statut + nom) | Fait | PR à revoir |
+
+État au 2 octobre : toutes les routes du registre existent et sont testées, et les écrans du registre viennent d'être écrits. Ils ont été commencés tard (voir `06-risques.md`). Un récit ne compte comme livré qu'une fois sa PR revue par un coéquipier et fusionnée avec la CI verte.
+
+Bilan en cinq lignes (à remplir le 6 octobre) :
+
+1. **Points engagés** : 24
+2. **Points livrés** : …
+3. **Vélocité réelle** : … points
+4. **Récits abandonnés et pourquoi** : …
+5. **Ce qu'on change** : voir la rétrospective (`retrospectives/sprint-1.md`)
+
 ---
 
 ## Sprint 2 — Beta (~3 semaines)

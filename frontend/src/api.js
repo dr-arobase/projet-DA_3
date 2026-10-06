@@ -23,6 +23,7 @@ export async function requete(chemin, { method = 'GET', body } = {}) {
       : `Erreur ${reponse.status}`;
     const erreur = new Error(donnees.message || parDefaut);
     erreur.status = reponse.status;
+    erreur.donnees = donnees; // ex. 409 : le dossier tel qu'il est maintenant en base
     throw erreur;
   }
   return donnees;
@@ -48,5 +49,15 @@ const qs = (params) => new URLSearchParams(
 ).toString();
 
 export const listerCriminels = (params = {}) => requete(`/api/criminals?${qs(params)}`);
+
+export const lireCriminel = (id) => requete(`/api/criminals/${id}`);
+
+export const creerCriminel = (dossier) => requete('/api/criminals', { method: 'POST', body: dossier });
+
+// version : celle du dossier affiché ; le serveur répond 409 si quelqu'un l'a modifié entre-temps
+export const changerStatut = (id, status, version) =>
+  requete(`/api/criminals/${id}/status`, { method: 'PATCH', body: { status, version } });
+
+export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method: 'DELETE' });
 
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
