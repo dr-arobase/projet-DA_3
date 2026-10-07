@@ -12,7 +12,9 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY . .
 
 # Les photos de profil sont écrites par l'API : le dossier doit appartenir à l'utilisateur node
-RUN mkdir -p serveur/src/uploads/avatars && chown -R node:node serveur/src/uploads
+# et être accessible en écriture (construit depuis Windows/OneDrive, il arrive en lecture seule)
+RUN mkdir -p serveur/src/uploads/avatars && chown -R node:node serveur/src/uploads \
+  && chmod -R u+rwX serveur/src/uploads
 
 # Le serveur tourne sans les droits root
 USER node
