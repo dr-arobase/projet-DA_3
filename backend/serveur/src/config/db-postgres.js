@@ -22,8 +22,8 @@ export async function initializeDatabase() {
     if (err.code !== '42710' && err.code !== '42P07') throw err;
   }
 
-  // Colonnes ajoutées après la création de la base : schema.sql ne s'applique pas à une base existante
-  await pool.query('ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)');
+  // Colonnes et tables ajoutées après la création de la base : schema.sql ne s'applique pas à une base existante
+  await pool.query(await readSql('migrations.sql'));
 
   const { rows } = await pool.query('SELECT COUNT(*) AS n FROM app_user');
   if (rows[0].n === 0) {

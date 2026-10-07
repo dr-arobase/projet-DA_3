@@ -10,6 +10,7 @@
     { "name": "Auth", "description": "Connexion et déconnexion" },
     { "name": "Criminals", "description": "Registre des personnes recherchées" },
     { "name": "Sightings", "description": "Signalements d'observation sur le terrain" },
+    { "name": "Messages", "description": "Messagerie privée entre agents" },
     { "name": "Users", "description": "Gestion des comptes policiers et superviseurs" },
     { "name": "Audit", "description": "Journal des actions sensibles" },
     { "name": "Dossiers", "description": "Routes codées dans routes/dossier.js — **non montées dans app.js** (répondent 404 pour l'instant) et en doublon avec /api/criminals" },
@@ -452,6 +453,90 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/sightings/recent": {
+      "get": {
+        "tags": ["Sightings"],
+        "summary": "Derniers signalements, tous dossiers (carte)",
+        "description": "Du plus récent au plus ancien, avec la position quand elle est connue. Événement Socket.IO `sighting:added` à chaque nouveau signalement.\n\n**Rôle requis :** `policier`",
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 200, "minimum": 1, "maximum": 500 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signalements",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Sighting" } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/messages/contacts": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Agents à qui écrire",
+        "description": "Agents actifs (sauf soi), avec le nombre de messages non lus reçus de chacun et la date du dernier échange; conversations récentes en premier.\n\n**Rôle requis :** `policier`",
+        "responses": {
+          "200": {
+            "description": "Contacts",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/messages/{userId}": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Conversation avec un agent",
+        "description": "Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur).\n\n**Rôle requis :** `policier`",
+        "parameters": [
+          { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Messages",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Message" } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/messages": {
+      "post": {
+        "tags": ["Messages"],
+        "summary": "Envoyer un message privé",
+        "description": "Le destinataire et l'expéditeur le reçoivent en direct (événement Socket.IO `message:new`, envoyé à eux seuls).\n\n**Rôle requis :** `policier`",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["recipient_id", "body"],
+                "properties": {
+                  "recipient_id": { "type": "integer", "example": 2 },
+                  "body": { "type": "string", "maxLength": 2000, "example": "Suspect vu au métro Berri-UQAM." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Message envoyé",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "$ref": "#/components/schemas/Message" } } } } }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -1023,14 +1108,43 @@
           "criminal": { "$ref": "#/components/schemas/Criminal" }
         }
       },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 9 },
+          "sender_id": { "type": "integer", "example": 3 },
+          "recipient_id": { "type": "integer", "example": 2 },
+          "body": { "type": "string", "example": "Suspect vu au métro Berri-UQAM." },
+          "created_at": { "type": "string", "format": "date-time" },
+          "read_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 2 },
+          "first_name": { "type": "string", "example": "Eric" },
+          "last_name": { "type": "string", "example": "Tremblay" },
+          "badge_number": { "type": "string", "example": "SM-002" },
+          "role": { "type": "string", "enum": ["policier", "superviseur", "direction"] },
+          "grade": { "type": "string", "example": "lieutenant" },
+          "avatar_url": { "type": "string", "nullable": true },
+          "unread": { "type": "integer", "example": 2 },
+          "last_message_at": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
       "Sighting": {
         "type": "object",
         "properties": {
           "id": { "type": "integer", "example": 1 },
           "criminal_id": { "type": "integer", "example": 1 },
-          "reported_by": { "type": "integer", "example": 3 },
+          "reported_by": { "type": "string", "description": "Nom de l'agent", "example": "Michael Fortin" },
+          "criminal_name": { "type": "string", "example": "Jean Dupont" },
+          "criminal_status": { "type": "string", "enum": ["recherche", "capture", "libere"] },
           "location": { "type": "string", "example": "Station Berri-UQAM, Montréal" },
           "notes": { "type": "string", "nullable": true, "example": "Portait un manteau noir" },
+          "latitude": { "type": "number", "nullable": true, "example": 45.5153 },
+          "longitude": { "type": "number", "nullable": true, "example": -73.561 },
           "reported_at": { "type": "string", "format": "date-time" }
         }
       },
@@ -1045,6 +1159,8 @@
             "example": "Station Berri-UQAM, Montréal"
           },
           "notes": { "type": "string", "example": "Portait un manteau noir" },
+          "latitude": { "type": "number", "minimum": -90, "maximum": 90, "description": "Facultative, avec longitude", "example": 45.5153 },
+          "longitude": { "type": "number", "minimum": -180, "maximum": 180, "description": "Facultative, avec latitude", "example": -73.561 },
           "reported_at": {
             "type": "string",
             "format": "date-time",
