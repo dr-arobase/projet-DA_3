@@ -41,27 +41,29 @@ Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 
 ### Bilan du sprint 1
 
-> **À compléter le jour de la remise (6 octobre)**, quand l'état final de chaque ticket est connu. Rappel de l'énoncé : un récit à moitié fait vaut **zéro** point; un récit est livré seulement s'il respecte la définition de « terminé » de `05-equipe.md` (PR revue, CI verte, ticket fermé).
+État final au 6 octobre. Rappel de l'énoncé : un récit à moitié fait vaut **zéro** point; un récit est livré seulement s'il respecte la définition de « terminé » de `05-equipe.md` (PR revue, CI verte, ticket fermé).
 
-| Ticket | Récit | Points | Backend (API + tests) | Page dans le navigateur | Livré ? |
-|---|---|---|---|---|---|
-| #3 | S'authentifier avec badge et mot de passe | 5 | Fait | Fait | Ticket fermé |
-| #4 | Consulter la liste paginée | 2 | Fait | Fait | PR à revoir |
-| #5 | Voir la fiche complète d'un dossier | 3 | Fait | Fait | PR à revoir |
-| #6 | Ajouter un dossier | 5 | Fait | Fait | PR à revoir |
-| #7 | Retirer un dossier (superviseur) | 3 | Fait | Fait | PR à revoir |
-| #8 | Mettre à jour le statut | 3 | Fait (avec `version`, 409 si conflit) | Fait, conflit affiché | PR à revoir |
-| #9 | Filtrer et rechercher | 3 | Fait (statut + nom) | Fait | PR à revoir |
+| Ticket | Récit | Points | Backend (API + tests) | Page dans le navigateur | Fermé par | Livré selon la DoD ? |
+|---|---|---|---|---|---|---|
+| #3 | S'authentifier avec badge et mot de passe | 5 | Fait | Fait | Poussées directes sur `main` (30 sept.) | **Non** : fonctionnel, mais jamais passé par une PR revue |
+| #4 | Consulter la liste paginée | 2 | Fait | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
+| #5 | Voir la fiche complète d'un dossier | 3 | Fait | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
+| #6 | Ajouter un dossier | 5 | Fait | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
+| #7 | Retirer un dossier (superviseur) | 3 | Fait | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
+| #8 | Mettre à jour le statut | 3 | Fait (avec `version`, 409 si conflit) | Fait, conflit affiché | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
+| #9 | Filtrer et rechercher | 3 | Fait (statut + nom) | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
 
-État au 2 octobre : toutes les routes du registre existent et sont testées, et les écrans du registre viennent d'être écrits. Ils ont été commencés tard (voir `06-risques.md`). Un récit ne compte comme livré qu'une fois sa PR revue par un coéquipier et fusionnée avec la CI verte.
+Les sept parcours fonctionnent de bout en bout dans le navigateur. Les écrans du registre (#4 à #9) ont été écrits tard, le 2 octobre, et livrés dans une seule PR (#35) revue par Eric : des PR plus petites, une par ticket, auraient permis une revue plus utile. L'authentification (#3) a été construite par poussées directes sur `main`, avant que la branche soit protégée : on ne la compte pas comme livrée au sens strict de notre définition de « terminé ».
 
-Bilan en cinq lignes (à remplir le 6 octobre) :
+Bilan en cinq lignes :
 
-1. **Points engagés** : 24
-2. **Points livrés** : …
-3. **Vélocité réelle** : … points
-4. **Récits abandonnés et pourquoi** : …
-5. **Ce qu'on change** : voir la rétrospective (`retrospectives/sprint-1.md`)
+1. **Points engagés** : 24 (tickets #3 à #9).
+2. **Points livrés** : 19 selon la définition de « terminé » (#4 à #9); 24 si l'on compte #3, fonctionnel et testé mais fusionné sans PR revue.
+3. **Vélocité réelle** : **19 points**, valeur retenue pour planifier le sprint 2 (le plan actuel du sprint 2, 23 points, sera ramené à cette capacité).
+4. **Récits abandonnés et pourquoi** : aucun. L'ordre d'abandon n'a pas eu à servir : le filtre avancé (#9), premier à couper, a été livré avec la recherche par nom.
+5. **Ce qu'on change** : voir la rétrospective (`retrospectives/sprint-1.md`).
+
+**Note sur le journal** : les entrées des blocs du sprint 1 dans `journal.md` n'ont pas été commises le jour de chaque bloc; elles ont été ajoutées après coup, le 6 octobre ([PR #37](https://github.com/dr-arobase/projet-DA_3/pull/37)). L'historique Git fait foi pour les dates réelles du travail.
 
 ---
 

@@ -16,15 +16,15 @@
 
 | # | Risque | Ce qui s'est passé | Ce qu'on fait |
 |---|---|---|---|
-| 2 | **Portée trop large** | Le backend du registre est complet et testé, mais les écrans du registre (#4 à #9) ont été commencés tard : le 2 octobre, à quatre jours de la remise, seules la connexion et le tableau de bord avaient leur page. Les écrans du registre ont été écrits ce jour-là. | On applique l'ordre d'abandon de `04-sprints.md` (le filtre avancé part en premier) et on concentre l'équipe sur les pages du registre avant d'ajouter quoi que ce soit d'autre. |
-| 5 | **Inégalité de contribution** (en partie) | Le travail est inégalement visible dans `main` : une partie du travail d'Eric est sur des branches non fusionnées, et Eric n'a aucun récit assigné. | Tableau des contributions dans `05-equipe.md`; chaque membre est responsable d'au moins un récit et fusionne son travail par une PR avant la remise. |
+| 2 | **Portée trop large** (en partie) | Le backend du registre était complet et testé tôt, mais les écrans du registre (#4 à #9) n'ont été écrits que le 2 octobre, à quatre jours de la remise. Les sept récits ont finalement été livrés, sans recourir à l'ordre d'abandon, mais au prix d'une grande PR de fin de sprint (#35) et de travail hors sprint (temps réel, profil) fait avant les écrans engagés. | Au sprint 2, on planifie sur la vélocité réelle (19 points, voir `04-sprints.md`) et on termine les récits engagés, écran compris, avant tout ajout non engagé. |
+| 5 | **Inégalité de contribution** (en partie) | Le travail est inégalement visible dans `main` : Eric n'a été responsable d'aucun récit du sprint 1, et sa PR (#22) n'est pas fusionnée; Chrysler a livré l'essentiel du backend en quelques gros commits, sans PR. | Tableau des contributions dans `05-equipe.md`. Au sprint 2, chaque membre est responsable d'au moins un récit dès la planification et livre par des PR revues. |
 
 ### Risques qui ont disparu ou diminué
 
 | # | Risque | Pourquoi |
 |---|---|---|
 | 1 | **Socket.IO inconnu de l'équipe** | **Levé.** Socket.IO fonctionne de bout en bout dès le sprint 1 : connexion authentifiée par le cookie de session, diffusion des ajouts, changements de statut, retraits et alertes, liste de présence. Le tableau de bord se met à jour sans recharger la page, et des tests automatisés couvrent les événements. Le repli vers le polling n'est plus nécessaire. |
-| 3 | **Concurrence sous-estimée** | **Diminué.** Le verrouillage optimiste est déjà en place côté serveur : un déclencheur PostgreSQL incrémente `version`, et `PATCH /api/criminals/:id/status` répond `409` avec l'état actuel en cas de conflit. Il reste l'affichage du conflit dans le frontend. |
+| 3 | **Concurrence sous-estimée** | **Diminué.** Le verrouillage optimiste est déjà en place côté serveur : un déclencheur PostgreSQL incrémente `version`, et `PATCH /api/criminals/:id/status` répond `409` avec l'état actuel en cas de conflit. Le frontend affiche le conflit sur la fiche d'un dossier, et des tests (routes et intégration PostgreSQL) vérifient qu'une version périmée reçoit `409`. |
 | 4 | **Déploiement en fin de session** | **Diminué.** L'application démarre entièrement avec `docker compose up`, la CI construit et publie les images sur ghcr.io à chaque poussée sur `main`, et `deploy/compose.yml` est prêt pour un serveur. Il reste à choisir le serveur et à faire un premier déploiement réel. |
 
 ### Nouveaux risques
