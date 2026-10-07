@@ -67,62 +67,65 @@ Décisions prises : Finalisation du Sprint 0 et remise du travail dans les déla
 
 **JOURNAL DE BORD — SPRINT 1**
 
-**Bloc 1 — vendredi 11 septembre 2026 (15 h - 18 h)**
+**Bloc 1 — mercredi 16 septembre 2026 (8 h - 11 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Lancement du Sprint 1 et planification de l'incrément alpha.
-•   Création des tickets GitHub (issues #1 à #19) à partir des récits d'utilisateurs.
-•   Initialisation de la structure du projet avec Docker, Node.js (Express), PostgreSQL et React.
-Ce qui bloque : Aucun blocage majeur signalé.
-Décisions prises : Découpage du travail selon les rôles définis dans l'équipe : Massyle au frontend/CI, Chrysler à la BD/backend, Michael aux formulaires et intégration, Eric à la documentation et aux tests.
+•   Lancement officiel du Sprint 1 et cadrage des exigences pour la version Alpha.
+•   Organisation des rôles et revue du backlog d'équipe.
+•   Réflexion sur la structure initiale du projet et les priorités de développement.
+Ce qui bloque : Aucun blocage majeur.
+Décisions prises : Lancer le développement backend et la configuration de l'environnement dès le bloc suivant.
 
 
-**Bloc 2 — mercredi 16 septembre 2026 (8 h - 11 h)**
+**Bloc 2 — vendredi 18 septembre 2026 (15 h - 18 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Mise en place de la base de données PostgreSQL et création du schéma initial.
-•   Création des routes d'authentification (`POST /api/auth/login`) et intégration du hachage de mot de passe avec bcrypt.
-•   Configuration de la chaîne d'intégration continue (.github/workflows/ci.yml) pour exécuter les tests à chaque push.
-Ce qui bloque : Ajustement de la configuration Docker pour assurer la persistance des données PostgreSQL entre les redémarrages.
-Décisions prises : Utilisation d'un volume Docker dédié (`postgres_data`) pour conserver la base de données.
+•   Ajout du schéma PostgreSQL initial et du plan de rétrospective d'équipe (`dr-arobase`).
+•   Mise en place de la documentation et création de la structure de base du backend (`MichaelLaurore`).
+•   Configuration initiale des fichiers `Dockerfile` et `docker-compose.yml`.
+Ce qui bloque : Nécessité d'aligner les routes d'authentification et la structure des criminels.
+Décisions prises : Valider le schéma de base de données avant d'avancer sur les tests d'intégration.
 
 
-**Bloc 3 — vendredi 18 septembre 2026 (15 h - 18 h)**
+**Bloc 3 — mercredi 23 septembre 2026 (8 h - 11 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Développement des endpoints REST pour les criminels (`/api/criminals`).
-•   Création des maquettes d'interface et intégration initiale du tableau de bord frontend.
-•   Rédaction des tests unitaires et d'intégration pour le backend (165 tests validés).
-Ce qui bloque : Les comptes de démo dans `seed.sql` utilisent des mots de passe fictifs non hachés, empêchant la connexion effective.
-Décisions prises : Génération et intégration de vrais hachages bcrypt dans le script de démarrage `seed.sql` pour les comptes de chaque rôle.
+•   Mise en place de la chaîne CI avec GitHub Actions et tests continus (`Lenrics-01`).
+•   Organisation de la structure backend et ajout des spécifications OpenAPI / Swagger (`dr-arobase`).
+•   Développement initial des routes `dossier.js`, `auth.js` et `criminal.js` (`MichaelLaurore`).
+•   Ajout du fichier `.gitignore` pour exclure les dépendances `node_modules` et fichiers de configuration locaux.
+Ce qui bloque : Ajustements requis dans la CI (`ci.yml`) pour stabiliser l'exécution automatisée des tests.
+Décisions prises : Poursuivre le développement des contrôleurs backend et valider la CI à chaque push.
 
 
-**Bloc 4 — mercredi 23 septembre 2026 (8 h - 11 h)**
+**Bloc 4 — vendredi 25 septembre 2026 (15 h - 18 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Avancement sur le composant frontend d'affichage des listes et la pagination.
-•   Implémentation des contrôleurs backend pour le changement de statut d'un dossier (#8) et le retrait par un superviseur (#7).
-Ce qui bloque : Retard accumulé sur le suivi administratif GitHub (tickets non assignés, absences de Pull Requests fermant les issues).
-Décisions prises : Prioriser le code fonctionnel et procéder à la régularisation du suivi GitHub avant la remise de l'alpha.
+•   Configuration complète du serveur Node/Express (`app.js`, `server.js`, connexions DB et scripts npm).
+•   Intégration de Swagger pour la documentation interactive de l'API.
+•   Ajout des premiers tests d'intégration backend avec Jest et Supertest (`dr-arobase`).
+•   Ajustements sur les endpoints de gestion des dossiers (`MichaelLaurore`).
+Ce qui bloque : Résolution de conflits mineurs lors du déplacement du dossier `docs/` et dans le `README.md`.
+Décisions prises : Finaliser les routes d'authentification et de gestion des criminels pour le début de la semaine suivante.
 
 
-**Bloc 5 — vendredi 25 septembre 2026 (15 h - 18 h)**
+**Bloc 5 — mercredi 30 septembre 2026 (8 h - 11 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Intégration du formulaire d'ajout d'un dossier criminel côté frontend (Michael, #6).
-•   Mise en place de la recherche par nom et du filtre par statut dans la liste des criminels (Massyle, #4, #9).
-•   Développement de la page de profil d'un dossier et des actions de mise à jour (Chrysler, #5).
-Ce qui bloque : La recherche globale et la cloche de notification restent incomplètes côté frontend.
-Décisions prises : Afficher un bandeau « Simulé » explicite sur les éléments non raccordés au backend conformément aux consignes de l'alpha.
+•   Finalisation de l'authentification par session/cookie, gestion du temps réel via Socket.IO, rôles, utilisateurs, signalements et journaux d'audit (`nleukeu76`, `dr-arobase`).
+•   Création du frontend React (page de connexion, tableau de bord, suivi en temps réel).
+•   Ajout d'une suite complète de tests backend (Socket.IO, routes REST).
+•   Conteneurisation complète de la stack avec `docker compose up` et verrouillage de la CI pour les déploiements.
+Ce qui bloque : Retard accumulé dans la tenue au fil de l'eau du journal et l'attribution des tickets GitHub.
+Décisions prises : Consacrer la fin de semaine à la création des pages frontend du registre et à la régularisation de la documentation.
 
 
-**Bloc 6 — jeudi 1er octobre 2026 (Jour de remise Alpha)**
+**Bloc 6 — vendredi 2 octobre 2026 (15 h - 18 h — Remise)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Rédaction du `README.md` principal à la racine du dépôt décrivant le démarrage Docker, les comptes de démo et les éléments simulés (Massyle).
-•   Ménage du dépôt et replacement des maquettes sous `docs/maquettes/` (Michael).
-•   Tests de qualification complets sur clone neuf avec `docker compose up --build` (Michael).
-•   Tenue de la rétrospective du Sprint 1 (`docs/retrospectives/sprint-1.md`), rédaction du bilan (`docs/04-sprints.md`), et mise à jour de la matrice de risques et des contributions (Eric, Chrysler).
-•   Publication de la version alpha via le tag `alpha-v1` sur `main` (Massyle).
-Ce qui bloque : Constat que les entrées de journal des blocs passés du Sprint 1 n'ont pas été commises au fur et à mesure.
-Décisions prises : Ajout rétrospectif et daté honnêtement des 6 entrées du Sprint 1 dans `docs/journal.md`, avec mention explicite au professeur dans le bilan de sprint.
+•   Création et intégration complète des pages frontend du registre : liste, fiche détaillée, ajout, changement de statut et retrait (`MichaelLaurore`, ticket #4).
+•   Mise en place de la recherche par nom, de l'affichage clair des éléments simulés et de la documentation du Sprint 1.
+•   Ajout d'un compte de démo rapide de l'équipe (matricule 1, mot de passe 2) dans `seed.sql` (`Lenrics-01`).
+•   Revue finale des Pull Requests (#35, #36), fusion sur `main` et rédaction rétrospective du journal de bord.
+Ce qui bloque : La saisie du journal n'ayant pas été faite au jour le jour lors des premiers blocs, les dates ont été régularisées de manière transparente et honnête.
+Décisions prises : Apposer le tag `alpha-v1` sur le dernier commit validé par la CI et remettre la version alpha.
