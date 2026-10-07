@@ -123,9 +123,13 @@ Décisions prises : Consacrer la fin de semaine à la création des pages fronte
 **Bloc 6 — vendredi 2 octobre 2026 (15 h - 18 h — Remise)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
-•   Création et intégration complète des pages frontend du registre : liste, fiche détaillée, ajout, changement de statut et retrait (`MichaelLaurore`, ticket #4).
+•   Création et intégration complète des pages frontend du registre : liste, fiche détaillée, ajout, changement de statut et retrait (`dr-arobase`, PR #35, tickets #4 à #9).
 •   Mise en place de la recherche par nom, de l'affichage clair des éléments simulés et de la documentation du Sprint 1.
-•   Ajout d'un compte de démo rapide de l'équipe (matricule 1, mot de passe 2) dans `seed.sql` (`Lenrics-01`).
+•   Ajout d'un compte de démo rapide de l'équipe (matricule 1, mot de passe 2) dans `seed.sql` (`dr-arobase`, PR #36, revue par `Lenrics-01`).
 •   Revue finale des Pull Requests (#35, #36), fusion sur `main` et rédaction rétrospective du journal de bord.
 Ce qui bloque : La saisie du journal n'ayant pas été faite au jour le jour lors des premiers blocs, les dates ont été régularisées de manière transparente et honnête.
 Décisions prises : Apposer le tag `alpha-v1` sur le dernier commit validé par la CI et remettre la version alpha.
+
+
+**Note — mardi 6 octobre 2026 (soir, avant la remise)**
+Fusion de la PR #38 (bilan du sprint, contributions et risques) **sans approbation d'un coéquipier** : aucun coéquipier n'était disponible pour la revoir avant l'échéance de minuit. La protection de `main` a été désactivée le temps de cette fusion seulement, puis réactivée aussitôt. C'est l'exception prévue par nos règles (« sauf urgence documentée dans le journal »); la PR reste ouverte aux commentaires de l'équipe après coup.
