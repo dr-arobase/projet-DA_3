@@ -77,14 +77,13 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine.
 
 ## Ce qui est simulé dans l'alpha
 
-Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration », mention « à venir », ou « À venir » dans le menu.
+Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « à venir ».
 
 | Élément | Où | Ce qui le remplacera | Sprint |
 |---|---|---|---|
 | Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
 | « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
 | « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
-| Pages Messagerie, Carte (« À venir » dans le menu) | Menu latéral | Hors portée de l'alpha (récits *Could*) | — |
 
 Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 
@@ -93,7 +92,9 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 - les alertes et les communiqués (diffusion réservée aux superviseurs et à la direction);
 - l'annuaire (agents connectés pour tous, annuaire complet pour les superviseurs et la direction);
 - les statistiques (dossiers par statut, taux de capture, alertes du jour, agents connectés);
-- la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction).
+- la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction);
+- la messagerie privée entre agents (reçue en direct, avec les non-lus et l'accusé « Lu »);
+- la carte des signalements terrain (OpenStreetMap; un clic sur la carte place un nouveau signalement).
 
 ---
 

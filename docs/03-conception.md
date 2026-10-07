@@ -62,7 +62,17 @@ erDiagram
         int reported_by FK
         string location
         text notes
+        float latitude "nullable"
+        float longitude "nullable"
         timestamp reported_at
+    }
+    MESSAGE {
+        int id PK
+        int sender_id FK
+        int recipient_id FK
+        string body
+        timestamp created_at
+        timestamp read_at "nullable"
     }
     ALERT {
         int id PK
@@ -86,6 +96,7 @@ erDiagram
     USER ||--o{ SIGHTING : "signale"
     USER ||--o{ ALERT : "émet"
     USER ||--o{ AUDIT_LOG : "effectue"
+    USER ||--o{ MESSAGE : "envoie / reçoit"
     CRIMINAL ||--o{ SIGHTING : "concerne"
     CRIMINAL ||--o{ ALERT : "concerne (optionnel)"
 ```
@@ -95,7 +106,10 @@ erDiagram
 - `CRIMINAL.version` : **déjà exploité au sprint 1**, plus tôt que prévu. Un déclencheur PostgreSQL (`trg_bump_criminal_version`) l'incrémente à chaque `UPDATE`, et `PATCH /api/criminals/:id/status` exige la version affichée par le client : si elle a changé entre-temps, l'API répond `409` avec l'état actuel du dossier. Il reste au frontend à afficher ce conflit (récit #13).
 - `CRIMINAL.crimes` : stocké en texte libre pour le sprint 1 ; normalisé en table séparée si besoin au sprint 2.
 - `CRIMINAL.status` : les valeurs de l'énumération sont sans accents (`recherche`, `capture`, `libere`), pour éviter les problèmes d'encodage entre la base, l'API et le frontend. Les libellés accentués sont ajoutés à l'affichage.
-- `SIGHTING` et `ALERT` : leurs routes existent déjà dans l'API (création et lecture); leurs écrans ne sont pas encore faits.
+- `SIGHTING` et `ALERT` : leurs routes existaient dès le sprint 1; leurs écrans (Carte, Alertes, Communiqués) ont été ajoutés au début du sprint 2.
+- `SIGHTING.latitude` et `SIGHTING.longitude` (début du sprint 2) : position facultative d'un signalement, pour la carte. Les deux vont ensemble; un signalement peut n'avoir qu'un lieu écrit.
+- `MESSAGE` (début du sprint 2) : messagerie privée entre deux agents. `read_at` reste `null` tant que le destinataire n'a pas ouvert la conversation; une contrainte `CHECK` interdit de s'écrire à soi-même.
+- Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
 - `AUDIT_LOG` : les actions `CRIMINAL_REMOVED`, `ALERT_ISSUED`, `USER_DEACTIVATED`, `USER_REACTIVATED` et `USER_PROMOTED` y sont déjà enregistrées, avec leur auteur, leur cible et la date. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
 
@@ -120,7 +134,8 @@ erDiagram
 | `/annuaire` | Agents connectés (présence Socket.IO, #14) pour tous; annuaire complet pour les superviseurs et la direction | Ajouté au début du sprint 2 |
 | `/statistiques` | Dossiers par statut, taux de capture, alertes du jour, agents connectés (#20) | Ajouté au début du sprint 2 |
 | `/utilisateurs` | Création (#10), désactivation et réactivation (#16) des comptes; promotion par la direction (#19). Lien caché aux policiers | Ajouté au début du sprint 2 |
-| `/messagerie`, `/carte` | Page « À venir » (récits *Could*) | Annoncé comme simulé |
+| `/messagerie?avec=` | Messagerie privée : contacts avec présence et non-lus, conversation reçue en direct, accusé « Lu » | Ajouté au début du sprint 2 |
+| `/carte` | Carte OpenStreetMap (Leaflet) des derniers signalements, couleur selon le statut, en temps réel; un clic place un nouveau signalement (#13, #21). Chargée seulement à la première visite | Ajouté au début du sprint 2 |
 
 Toute autre route affiche une page 404 « Page introuvable ». Les pages sont protégées : sans session valide, on est renvoyé vers `/connexion`. Le menu et les boutons cachent ce qu'un rôle ne peut pas faire, mais la vraie protection reste côté serveur (`requireRole`).
 
@@ -143,6 +158,7 @@ Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crime
 | `DELETE` | `/api/criminals/:id` | Retirer un dossier (journal d'audit) | `superviseur` |
 | `POST` | `/api/sightings` | Signaler une observation | `policier` |
 | `GET` | `/api/sightings?criminal_id=` | Historique des signalements d'un dossier | `superviseur` |
+| `GET` | `/api/sightings/recent?limit=` | Derniers signalements, tous dossiers, avec leur position (carte; 500 au plus) | `policier` |
 | `POST` | `/api/alerts` | Diffuser une alerte (enregistrée puis diffusée par Socket.IO) | `superviseur` |
 | `GET` | `/api/alerts` | Liste des alertes | `policier` |
 | `GET` | `/api/users` | Liste des comptes | `superviseur` |
@@ -152,6 +168,9 @@ Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crime
 | `PATCH` | `/api/users/:id/reactivate` | Réactiver un compte (journal d'audit) | `superviseur` |
 | `PATCH` | `/api/users/:id/promote` | Changer le rôle et le grade (journal d'audit) | `direction` |
 | `GET` | `/api/audit-logs` | Journal des actions sensibles | `direction` |
+| `GET` | `/api/messages/contacts` | Agents à qui écrire, avec les non-lus et la date du dernier échange | `policier` |
+| `GET` | `/api/messages/:userId` | Conversation avec un agent; marque comme lus les messages reçus | `policier` |
+| `POST` | `/api/messages` | Envoyer un message privé (2000 caractères au plus) | `policier` |
 | `GET` | `/api/uploads/avatars/:fichier` | Photos de profil (réservées aux agents connectés) | Connecté |
 
 La recherche **par nom** du récit #9 a été ajoutée à la fin du sprint (`q`). Les caractères `%` et `_` tapés par l'agent sont cherchés tels quels, pas comme des jokers SQL.
@@ -176,6 +195,11 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → clients | `criminal:removed` | `{ id }` | `DELETE /api/criminals/:id` |
 | Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) | `POST /api/alerts` |
 | Serveur → clients | `presence:update` | liste des connexions : `[{ id, badge_number, role, grade }]` | Connexion ou déconnexion d'un agent |
+| Serveur → clients | `sighting:added` | le signalement, avec le nom du dossier et la position | `POST /api/sightings` |
+| Serveur → **deux agents** | `message:new` | le message enregistré | `POST /api/messages` (au destinataire et aux autres onglets de l'expéditeur) |
+| Serveur → **un agent** | `message:read` | `{ by }` : l'agent qui vient de lire | `GET /api/messages/:userId` (à l'expéditeur des messages lus) |
+
+Chaque agent rejoint à la connexion une salle privée (`agent:<id>`), commune à tous ses onglets : les messages privés passent par cette salle et ne sont jamais diffusés aux autres agents.
 
 À la soumission, un événement client → serveur `alert:send` était prévu. Il a été remplacé par la route `POST /api/alerts` : l'alerte passe ainsi par la même vérification de rôle et le même journal d'audit que le reste de l'API.
 
@@ -315,7 +339,9 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Raison** : le schéma est petit et a peu changé pendant le sprint; un seul fichier SQL lisible suffit et ne demande aucun outil de plus. Les données vivent dans un volume Docker et survivent aux redémarrages.
 
-**Prix de ce choix** : `schema.sql` ne s'applique qu'à une base vide. Une colonne ajoutée plus tard (comme `app_user.avatar_url`) doit aussi être ajoutée au démarrage avec `ALTER TABLE … ADD COLUMN IF NOT EXISTS`. Si le schéma évolue beaucoup, on passera à un outil de migration.
+**Prix de ce choix** : `schema.sql` ne s'applique qu'à une base vide. Une colonne ou une table ajoutée plus tard doit aussi pouvoir être créée sur une base existante.
+
+**Ajustement au début du sprint 2** : ces ajouts sont regroupés dans `database/migrations.sql`, exécuté à chaque démarrage entre `schema.sql` et `seed.sql`. Chaque instruction y est rejouable sans effet (`ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`) : `app_user.avatar_url`, `sighting.latitude` et `longitude`, la table `message`. Si ce fichier grossit beaucoup, on passera à un outil de migration avec un fichier numéroté par changement.
 
 ---
 
