@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
 import useDashboardData from '../hooks/useDashboardData.js';
+import { estAuMoins } from '../agents.js';
 import {
   IconeRecherche, IconeCloche, IconeSirene, IconeAjoutPersonne, IconeCoche, IconeMegaphone,
 } from '../composants/Icones.jsx';
@@ -86,10 +87,16 @@ export default function Home() {
               <Link to="/personnes-recherchees/nouvelle" className="action action-principale">
                 <IconeAjoutPersonne taille={17} /> Nouvelle fiche
               </Link>
-              <Link to="/communiques" className="action">
-                <IconeMegaphone taille={17} /> Diffuser un communiqué
-                <span className="a-venir">À venir</span>
-              </Link>
+              {estAuMoins(utilisateur, 'superviseur') && (
+                <>
+                  <Link to="/alertes" className="action">
+                    <IconeSirene taille={17} /> Diffuser une alerte
+                  </Link>
+                  <Link to="/communiques" className="action">
+                    <IconeMegaphone taille={17} /> Diffuser un communiqué
+                  </Link>
+                </>
+              )}
             </div>
 
             <div className="section-titre"><h2>Dernier communiqué</h2></div>

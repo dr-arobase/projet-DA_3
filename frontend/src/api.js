@@ -61,3 +61,19 @@ export const changerStatut = (id, status, version) =>
 export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method: 'DELETE' });
 
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
+
+// severity : 'urgent' (alerte) ou 'info' (communiqué) ; réservé aux superviseurs et à la direction
+export const diffuserAlerte = (message, severity) =>
+  requete('/api/alerts', { method: 'POST', body: { message, severity } });
+
+// Comptes des agents : superviseur ou direction (promouvoir : direction seulement)
+export const listerUtilisateurs = () => requete('/api/users');
+
+export const creerUtilisateur = (agent) => requete('/api/users', { method: 'POST', body: agent });
+
+export const desactiverUtilisateur = (id) => requete(`/api/users/${id}/deactivate`, { method: 'PATCH' });
+
+export const reactiverUtilisateur = (id) => requete(`/api/users/${id}/reactivate`, { method: 'PATCH' });
+
+export const promouvoirUtilisateur = (id, role, grade) =>
+  requete(`/api/users/${id}/promote`, { method: 'PATCH', body: { role, grade } });
