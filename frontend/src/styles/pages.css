@@ -1,0 +1,85 @@
+/* Pages Alertes, Communiqués, Annuaire, Statistiques, Utilisateurs, À venir et 404 */
+.pages-colonne { display: grid; gap: 16px; align-content: start; }
+
+.pages-carte { display: grid; gap: 14px; padding: 18px 20px; }
+.pages-titre { display: flex; align-items: center; gap: 8px; font-size: 16px; }
+
+.visuellement-cache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Alertes et communiqués ---------- */
+.pages-fil { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.pages-diffusion { display: grid; gap: 6px; padding: 14px 18px; border-left: 4px solid var(--marine-600); }
+.pages-diffusion.urgent { border-left-color: var(--danger); }
+.pages-diffusion p { white-space: pre-line; overflow-wrap: anywhere; }
+.pages-diffusion small { color: var(--texte-doux); font-size: 12px; }
+.pages-vide { padding: 18px; color: var(--texte-doux); text-align: center; }
+
+/* ---------- Tableaux d'agents ---------- */
+.pages-tableau-fixe td { vertical-align: middle; }
+.pages-tableau-fixe tr { cursor: default; }
+.pages-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
+.pages-promotion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.pages-promotion .registre-bouton-principal { padding: 7px 12px; font-size: 13px; }
+
+/* ---------- Annuaire ---------- */
+.pages-point { width: 10px; height: 10px; border-radius: 50%; background: var(--succes); }
+.pages-presence {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pages-presence li {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+}
+.pages-presence small { color: var(--texte-doux); font-size: 12px; }
+
+/* ---------- Statistiques ---------- */
+.pages-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.pages-tuile { display: grid; gap: 4px; padding: 18px 20px; }
+.pages-tuile strong { font-size: 28px; }
+.pages-tuile span { color: var(--texte-doux); font-size: 13px; }
+.pages-tuile.danger strong { color: var(--danger); }
+.pages-tuile.succes strong { color: var(--succes); }
+
+.pages-barres { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.pages-barres li { display: grid; grid-template-columns: 90px 1fr 110px; align-items: center; gap: 12px; font-size: 14px; }
+.pages-barre-piste { height: 12px; overflow: hidden; border-radius: 999px; background: #e6e9f0; }
+.pages-barre { display: block; height: 100%; border-radius: 999px; }
+.pages-barre.statut-recherche { background: var(--danger); }
+.pages-barre.statut-capture { background: var(--succes); }
+.pages-barre.statut-libere { background: var(--marine-600); }
+.pages-barre-valeur { color: var(--texte-doux); text-align: right; }
+
+/* ---------- Section à venir ---------- */
+.pages-a-venir { justify-items: center; max-width: 520px; margin: 24px auto; padding: 32px; color: var(--texte-pale); text-align: center; }
+.pages-a-venir p { color: var(--texte); }
+.pages-a-venir .registre-note { color: var(--texte-doux); }
+.entete-registre h1 .a-venir { margin-left: 8px; color: var(--texte-pale); vertical-align: middle; }
+
+/* ---------- 404 ---------- */
+.pages-introuvable { display: grid; justify-items: center; gap: 10px; padding-top: 80px; text-align: center; }
+.pages-code { color: var(--marine-700); font-size: 64px; font-weight: 800; line-height: 1; }
+.pages-introuvable h1 { font-size: 22px; }
+.pages-introuvable p { color: var(--texte-doux); }
+.pages-introuvable code { font-family: var(--mono); color: var(--texte); }
+.pages-liens { display: flex; gap: 20px; margin-top: 8px; font-weight: 700; }
+
+@media (max-width: 860px) {
+  .pages-barres li { grid-template-columns: 70px 1fr; }
+  .pages-barre-valeur { grid-column: 2; text-align: left; }
+  .pages-actions { justify-content: flex-start; }
+}

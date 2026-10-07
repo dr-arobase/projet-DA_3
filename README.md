@@ -84,11 +84,16 @@ Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Ch
 | Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
 | « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
 | « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
-| Pages Alertes, Communiqués, Utilisateurs (« À venir » dans le menu et sur « Diffuser un communiqué ») | Menu latéral, tableau de bord | Diffusion d'alertes, gestion des comptes | 2 |
-| Pages Annuaire, Statistiques (« À venir » dans le menu) | Menu latéral | Agents connectés, statistiques globales | 3 |
 | Pages Messagerie, Carte (« À venir » dans le menu) | Menu latéral | Hors portée de l'alpha (récits *Could*) | — |
 
-Le reste est réel : le tableau de bord (compteurs, activité récente, dernier communiqué) et le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait) lisent et écrivent dans la base, et se mettent à jour en temps réel (Socket.IO).
+Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
+
+- le tableau de bord (compteurs, activité récente, dernier communiqué);
+- le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait);
+- les alertes et les communiqués (diffusion réservée aux superviseurs et à la direction);
+- l'annuaire (agents connectés pour tous, annuaire complet pour les superviseurs et la direction);
+- les statistiques (dossiers par statut, taux de capture, alertes du jour, agents connectés);
+- la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction).
 
 ---
 
