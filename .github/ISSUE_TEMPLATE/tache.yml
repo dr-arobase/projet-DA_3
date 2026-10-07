@@ -1,0 +1,21 @@
+name: Tâche
+description: Travail technique, de documentation ou de remise, hors récit
+labels: ["type:tâche"]
+body:
+  - type: textarea
+    id: contexte
+    attributes:
+      label: Contexte
+      description: Pourquoi cette tâche est nécessaire
+    validations:
+      required: true
+  - type: textarea
+    id: termine
+    attributes:
+      label: Terminé quand
+      description: Liste de cases à cocher, chacune vérifiable
+      placeholder: |
+        - [ ] …
+        - [ ] …
+    validations:
+      required: true
