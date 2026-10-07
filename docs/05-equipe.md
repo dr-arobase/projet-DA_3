@@ -77,7 +77,7 @@ Fermer un ticket automatiquement :
 | **Massyle** | #3 (avec Chrysler et Michael), #24 | Structure du backend et schéma PostgreSQL; Swagger; tests Jest/Supertest du backend; frontend (connexion, tableau de bord en temps réel, pages du registre : liste, fiche, ajout, statut, retrait, recherche); page « Mon profil » (photo, mot de passe); session par cookie httpOnly; Docker (`compose.yml`, images de production, `deploy/`); CI complète; protection de `main`; README et documents du sprint | 28 | [#35](https://github.com/dr-arobase/projet-DA_3/pull/35) et [#36](https://github.com/dr-arobase/projet-DA_3/pull/36) (fusionnées, revues par Eric), [#23](https://github.com/dr-arobase/projet-DA_3/pull/23) et [#34](https://github.com/dr-arobase/projet-DA_3/pull/34) (ouvertes) |
 | **Eric** | Aucun récit engagé (voir plus bas) | Premier `ci.yml` (GitHub Actions); validation des entrées; tests de routes; revue de [#35](https://github.com/dr-arobase/projet-DA_3/pull/35) et [#36](https://github.com/dr-arobase/projet-DA_3/pull/36) | 13 | [#22](https://github.com/dr-arobase/projet-DA_3/pull/22) (ouverte) |
 | **Chrysler** | #3, #4, #5, #6, #7, #8, #9 (backend) | Routes du backend (registre, utilisateurs, signalements, alertes, journal d'audit), rôles, Socket.IO et présence en temps réel | 4 | Aucune : branche `chystbranch` fusionnée dans `main` le 30 septembre sans PR |
-| **Michael** | #3, #4, #5, #6, #8 (backend) | Authentification (routes, contrôleur), routes des dossiers (`criminal`, `dossier.js`), premiers `Dockerfile` et `docker-compose.yml`, Swagger, organisation de `docs/`, entrées du journal du sprint 1 | 18 | [#37](https://github.com/dr-arobase/projet-DA_3/pull/37) (fusionnée, revue par Massyle) |
+| **Michael** | #3, #4, #5, #6, #8 (backend) | Authentification (routes, contrôleur), routes des dossiers (`criminal`, `dossier.js`, retiré ensuite car jamais branché dans `app.js`, ticket #43), premiers `Dockerfile` et `docker-compose.yml`, Swagger, organisation de `docs/`, entrées du journal du sprint 1 | 18 | [#37](https://github.com/dr-arobase/projet-DA_3/pull/37) (fusionnée, revue par Massyle) |
 
 **Écarts constatés** :
 - Eric n'a été responsable d'aucun récit du sprint 1, alors que chaque membre doit l'être d'au moins un. Son travail a porté sur l'intégration continue, la validation et les tests, et sur la revue des PR. Au sprint 2, il est responsable d'au moins un récit dès la planification.
@@ -87,7 +87,7 @@ Fermer un ticket automatiquement :
 ### Définition de « terminé » : appliquée en retard
 
 La définition de « terminé » n'a pas changé, mais elle **n'a pas été respectée** pendant la plus grande partie du sprint 1 : jusqu'au 30 septembre, le travail était poussé directement sur `main` ou fusionné sans demande de tirage revue. Depuis :
-- `main` est protégée sur GitHub (ticket [#28](https://github.com/dr-arobase/projet-DA_3/issues/28)) : PR obligatoire, une approbation d'un coéquipier, les deux vérifications de la CI vertes, administrateurs compris;
+- `main` est protégée sur GitHub (ticket [#28](https://github.com/dr-arobase/projet-DA_3/issues/28)) : PR obligatoire et les deux vérifications de la CI vertes, administrateurs compris. L'approbation d'un coéquipier a été exigée par GitHub du 2 au 6 octobre; depuis le 6 octobre, elle n'est plus imposée par GitHub et reste une règle d'équipe;
 - les PR #35, #36 et #37 sont passées par cette règle;
 - chaque récit passe par sa branche `feature/<ticket>-…` et une PR avec `Closes #n`, et le relecteur laisse un commentaire concret, pas seulement une approbation.
 
