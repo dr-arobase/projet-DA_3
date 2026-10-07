@@ -20,6 +20,7 @@ const emitEvent = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent,
+  emitToUsers: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');

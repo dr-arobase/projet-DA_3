@@ -1,4 +1,4 @@
-/* Pages Alertes, Communiqués, Annuaire, Statistiques, Utilisateurs, À venir et 404 */
+/* Pages Alertes, Communiqués, Annuaire, Statistiques, Utilisateurs, Carte, Messagerie et 404 */
 .pages-colonne { display: grid; gap: 16px; align-content: start; }
 
 .pages-carte { display: grid; gap: 14px; padding: 18px 20px; }
@@ -64,11 +64,65 @@
 .pages-barre.statut-libere { background: var(--marine-600); }
 .pages-barre-valeur { color: var(--texte-doux); text-align: right; }
 
-/* ---------- Section à venir ---------- */
-.pages-a-venir { justify-items: center; max-width: 520px; margin: 24px auto; padding: 32px; color: var(--texte-pale); text-align: center; }
-.pages-a-venir p { color: var(--texte); }
-.pages-a-venir .registre-note { color: var(--texte-doux); }
-.entete-registre h1 .a-venir { margin-left: 8px; color: var(--texte-pale); vertical-align: middle; }
+/* ---------- Carte ---------- */
+.carte-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.carte-cadre { overflow: hidden; }
+.carte-leaflet { height: calc(100vh - 210px); min-height: 420px; }
+.carte-legende { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; padding: 10px 14px; list-style: none; font-size: 13px; }
+.carte-legende li { display: flex; align-items: center; gap: 6px; }
+.carte-legende span { width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--bordure); }
+.carte-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.carte-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
+.carte-liste li > :first-child { justify-self: start; }
+.carte-liste small { grid-column: 1; color: var(--texte-doux); font-size: 12px; }
+.carte-liste a { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 700; }
+
+/* ---------- Messagerie ---------- */
+.messagerie { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; height: calc(100vh - 140px); min-height: 460px; }
+.messagerie-contacts { display: grid; grid-template-rows: auto 1fr; gap: 12px; min-height: 0; padding: 14px; }
+.messagerie-contacts .registre-recherche { max-width: none; }
+.messagerie-contacts ul { display: grid; align-content: start; gap: 4px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.messagerie-contact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: var(--rayon);
+  background: none;
+  color: var(--texte);
+  text-align: left;
+  cursor: pointer;
+}
+.messagerie-contact:hover { background: var(--fond); }
+.messagerie-contact.actif { background: #e6e9f0; }
+.messagerie-presence { flex-shrink: 0; width: 9px; height: 9px; border-radius: 50%; background: var(--bordure); }
+.messagerie-presence.en-ligne { background: var(--succes); }
+.messagerie-nom { display: grid; flex: 1; min-width: 0; font-weight: 600; font-size: 14px; }
+.messagerie-nom small { overflow: hidden; color: var(--texte-doux); font-weight: 400; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.messagerie-non-lus { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
+
+.messagerie-fil { display: grid; grid-template-rows: auto 1fr auto auto; min-height: 0; }
+.messagerie-entete { display: grid; padding: 14px 18px; border-bottom: 1px solid var(--bordure); }
+.messagerie-entete small { color: var(--texte-doux); font-size: 12px; }
+.messagerie-messages { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 16px 18px; overflow-y: auto; list-style: none; }
+.messagerie-bulle { display: grid; gap: 4px; max-width: 70%; padding: 9px 13px; border-radius: 14px 14px 14px 4px; background: #e6e9f0; }
+.messagerie-bulle.moi { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--marine-700); color: #fff; }
+.messagerie-bulle p { white-space: pre-line; overflow-wrap: anywhere; }
+.messagerie-bulle small { font-size: 11px; opacity: 0.75; }
+.messagerie-vide { margin: auto; color: var(--texte-doux); text-align: center; }
+.messagerie-fil > .messagerie-vide { align-self: center; padding: 24px; }
+.messagerie-fil .registre-message { margin: 0 18px 10px; }
+.messagerie-saisie { display: flex; align-items: flex-end; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--bordure); }
+.messagerie-saisie textarea {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  font: inherit;
+  resize: none;
+}
 
 /* ---------- 404 ---------- */
 .pages-introuvable { display: grid; justify-items: center; gap: 10px; padding-top: 80px; text-align: center; }
@@ -82,4 +136,10 @@
   .pages-barres li { grid-template-columns: 70px 1fr; }
   .pages-barre-valeur { grid-column: 2; text-align: left; }
   .pages-actions { justify-content: flex-start; }
+  .carte-grille { grid-template-columns: 1fr; }
+  .carte-leaflet { height: 60vh; }
+  .messagerie { grid-template-columns: 1fr; height: auto; }
+  .messagerie-contacts ul { max-height: 220px; }
+  .messagerie-fil { min-height: 60vh; }
+  .messagerie-bulle { max-width: 85%; }
 }
