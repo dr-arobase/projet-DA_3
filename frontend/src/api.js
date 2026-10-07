@@ -77,3 +77,16 @@ export const reactiverUtilisateur = (id) => requete(`/api/users/${id}/reactivate
 
 export const promouvoirUtilisateur = (id, role, grade) =>
   requete(`/api/users/${id}/promote`, { method: 'PATCH', body: { role, grade } });
+
+// Signalements terrain (carte) : latitude et longitude facultatives
+export const listerSignalementsRecents = (params = {}) => requete(`/api/sightings/recent?${qs(params)}`);
+
+export const signaler = (signalement) => requete('/api/sightings', { method: 'POST', body: signalement });
+
+// Messagerie privée
+export const listerContacts = () => requete('/api/messages/contacts');
+
+export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`);
+
+export const envoyerMessage = (recipient_id, body) =>
+  requete('/api/messages', { method: 'POST', body: { recipient_id, body } });

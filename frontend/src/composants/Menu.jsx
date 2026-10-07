@@ -7,7 +7,6 @@ import UserProfileMenu from './UserProfileMenu.jsx';
 import { useAuth } from './AuthContext.js';
 import { estAuMoins } from '../agents.js';
 
-// aVenir : la page n'existe pas encore (elle affiche « À venir ») ; c'est signalé dans le menu
 // role : lien affiché seulement à partir de ce rôle (le serveur refuse de toute façon les autres)
 const sections = [
   {
@@ -17,9 +16,9 @@ const sections = [
       { vers: '/personnes-recherchees', libelle: 'Personnes recherchées', Icone: IconeRecherche },
       { vers: '/alertes', libelle: 'Alertes', Icone: IconeSirene },
       { vers: '/communiques', libelle: 'Communiqués', Icone: IconeMegaphone },
-      { vers: '/messagerie', libelle: 'Messagerie', Icone: IconeMessage, aVenir: true },
+      { vers: '/messagerie', libelle: 'Messagerie', Icone: IconeMessage },
       { vers: '/annuaire', libelle: 'Annuaire', Icone: IconeRecherche },
-      { vers: '/carte', libelle: 'Carte', Icone: IconeRepere, aVenir: true },
+      { vers: '/carte', libelle: 'Carte', Icone: IconeRepere },
     ],
   },
   {
@@ -47,11 +46,10 @@ export default function Menu() {
             <p className="menu-titre">{section.titre}</p>
             {section.liens
               .filter(({ role }) => !role || estAuMoins(utilisateur, role))
-              .map(({ vers, libelle, Icone, fin, aVenir }) => (
+              .map(({ vers, libelle, Icone, fin }) => (
                 <NavLink key={vers} to={vers} end={fin} className="menu-lien">
                   <Icone />
                   <span>{libelle}</span>
-                  {aVenir && <span className="a-venir">À venir</span>}
                 </NavLink>
               ))}
           </div>
