@@ -115,8 +115,14 @@ erDiagram
 | `/personnes-recherchees?q=&status=&page=` | Liste paginée, recherche par nom et filtre par statut, mise à jour en temps réel (#4, #9) | Livré |
 | `/personnes-recherchees/:id` | Fiche d'un dossier, changement de statut avec gestion du conflit de version, retrait réservé aux superviseurs (#5, #8, #7) | Livré |
 | `/personnes-recherchees/nouvelle` | Formulaire d'ajout (#6) | Livré |
+| `/alertes` | Alertes urgentes en temps réel; diffusion par un superviseur ou la direction (#12) | Ajouté au début du sprint 2 |
+| `/communiques` | Communiqués (diffusions de sévérité `info`), même fonctionnement que les alertes | Ajouté au début du sprint 2 |
+| `/annuaire` | Agents connectés (présence Socket.IO, #14) pour tous; annuaire complet pour les superviseurs et la direction | Ajouté au début du sprint 2 |
+| `/statistiques` | Dossiers par statut, taux de capture, alertes du jour, agents connectés (#20) | Ajouté au début du sprint 2 |
+| `/utilisateurs` | Création (#10), désactivation et réactivation (#16) des comptes; promotion par la direction (#19). Lien caché aux policiers | Ajouté au début du sprint 2 |
+| `/messagerie`, `/carte` | Page « À venir » (récits *Could*) | Annoncé comme simulé |
 
-Toute autre route affiche « Page en construction », et le menu marque ces liens « À venir ». Les pages sont protégées : sans session valide, on est renvoyé vers `/connexion`.
+Toute autre route affiche une page 404 « Page introuvable ». Les pages sont protégées : sans session valide, on est renvoyé vers `/connexion`. Le menu et les boutons cachent ce qu'un rôle ne peut pas faire, mais la vraie protection reste côté serveur (`requireRole`).
 
 ### API REST
 
