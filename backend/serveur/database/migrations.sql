@@ -28,3 +28,28 @@ CREATE INDEX IF NOT EXISTS idx_message_unread ON message(recipient_id) WHERE rea
 -- (un compte créé par GitHub n'en a pas; il ne peut pas se connecter par matricule)
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS github_id BIGINT UNIQUE;
 ALTER TABLE app_user ALTER COLUMN password_hash DROP NOT NULL;
+
+-- Groupes de discussion (#55) : un message va soit à un agent (recipient_id), soit à un groupe (group_id)
+CREATE TABLE IF NOT EXISTS message_group (
+    id              SERIAL PRIMARY KEY,
+    name            VARCHAR(100) NOT NULL,
+    created_by      INTEGER NOT NULL REFERENCES app_user(id),
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- last_read_at : les messages du groupe arrivés après sont « non lus » pour ce membre
+CREATE TABLE IF NOT EXISTS message_group_member (
+    group_id        INTEGER NOT NULL REFERENCES message_group(id) ON DELETE CASCADE,
+    user_id         INTEGER NOT NULL REFERENCES app_user(id),
+    joined_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_read_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (group_id, user_id)
+);
+
+ALTER TABLE message ADD COLUMN IF NOT EXISTS group_id INTEGER REFERENCES message_group(id) ON DELETE CASCADE;
+ALTER TABLE message ALTER COLUMN recipient_id DROP NOT NULL;
+ALTER TABLE message DROP CONSTRAINT IF EXISTS message_destination;
+ALTER TABLE message ADD CONSTRAINT message_destination CHECK ((recipient_id IS NULL) <> (group_id IS NULL));
+
+CREATE INDEX IF NOT EXISTS idx_message_group ON message(group_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_message_group_member_user ON message_group_member(user_id);
