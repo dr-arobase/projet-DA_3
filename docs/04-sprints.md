@@ -87,6 +87,85 @@ Bilan en cinq lignes :
 ### Notions disponibles
 Authentification externe (OAuth 2 / OIDC), rôles et autorisations, programmation sécurisée, protocole WebSocket / Socket.IO (début).
 
+### Ce que l'énoncé exige pour la bêta
+
+Remise : étiquette `beta-v1` sur `main`, le **jeudi 29 octobre 2026 à 23 h 59**, et le `.env` envoyé en privé sur MIO. Points de contrôle : **lundi 19 octobre** (méthode agile) et **lundi 26 octobre** (la bêta tient debout). Revue de sprint : premier cours de la semaine 10.
+
+En plus de tout ce qui était vérifié à l'alpha, l'application à l'étiquette `beta-v1` doit satisfaire les cinq points suivants :
+
+1. Un clone neuf, le `.env` transmis en privé et une commande du README suffisent : l'application s'ouvre dans un navigateur, sans rien installer d'autre que Docker.
+2. On se connecte avec un compte GitHub (OAuth 2), même un compte jamais vu, qui reçoit le rôle par défaut prévu dans `03-conception.md`. On se déconnecte aussi.
+3. Les rôles et les permissions sont appliqués **par le serveur**, y compris quand on tape l'adresse, qu'on envoie la requête à la main ou qu'on passe par le WebSocket.
+4. Au moins un parcours temps réel passe par WebSocket entre deux navigateurs, et ce qui doit durer est en base.
+5. Les parcours engagés fonctionnent de bout en bout, des tests automatisés les couvrent, et la CI est verte à l'étiquette.
+
+Sécurité exigée :
+- cookies `HttpOnly` et `SameSite` ;
+- protection contre la falsification de requête (CSRF) ;
+- affichage échappé (XSS) ;
+- entrées validées côté serveur, messages WebSocket compris ;
+- aucun secret dans le dépôt, et le secret OAuth ne parvient jamais au navigateur.
+
+Chaque PR doit aussi être revue par un coéquipier avant la fusion.
+
+### Engagement réel du sprint 2
+
+> **Écrit le 15 octobre, en retard.** L'énoncé demandait la planification commise au plus tard à la fin du bloc du 9 octobre. Elle n'a pas été tenue à ce moment, et nous l'écrivons maintenant plutôt que de la dater après coup. Le retard est noté dans `journal.md`.
+
+- **Objectif en une phrase** : l'application sait qui est connecté (mot de passe ou GitHub), ce que chacun a le droit de faire (vérifié par le serveur), et elle réagit en temps réel entre agents.
+- **Capacité** : la vélocité réelle du sprint 1, soit **19 points**.
+- **Responsable de la mêlée** : Eric.
+
+Les numéros sont ceux des tickets GitHub. Le tableau « Récits prévus » ci-dessus utilise les numéros du backlog (`02-backlog.md`).
+
+| Ticket | Récit | Points | Responsable | État au 15 octobre |
+|---|---|---|---|---|
+| #50 | Se connecter avec un compte GitHub (OAuth 2) | 5 | Massyle | Code livré (PR #51), fusionné sans revue : à faire revoir |
+| #11 | Tableau de bord temps réel (alertes et mises à jour) | 8 | Michael | Code présent depuis le début du sprint ; reste à vérifier chaque critère, ajouter les tests et fermer le ticket par une PR revue |
+| #12 | Diffuser une alerte urgente | 5 | Chrysler | Code présent ; l'audit du 15 octobre trouve des validations manquantes (message vide ou trop long, dossier inexistant) |
+| #16 | Désactiver un compte | 2 | Eric | Code présent mais **incomplet** : un compte désactivé garde l'accès à l'API et au WebSocket jusqu'à 8 h |
+| **Total** | | **20** | | |
+
+**Écart avec la vélocité (+1 point)** : la connexion GitHub (#50) est une exigence de l'énoncé de la bêta qui manquait au plan initial. On l'ajoute et on retire deux récits de l'engagement pour rester près de 19 points :
+- **Créer un compte** (#10, 3 points, Chrysler) ;
+- **Signaler une observation** (#13, 5 points, Michael).
+
+Leur code existe déjà ; ils seront validés si le temps le permet, mais ne comptent pas dans la vélocité.
+
+**Ordre d'abandon du sprint 2**, décidé maintenant :
+1. #13 et #10, qui sont hors engagement.
+2. #16, la désactivation de compte (`Should`).
+
+On ne coupe jamais #50 (connexion GitHub), #11 (temps réel) ni #12 (alerte urgente) : ce sont des `Must` de la bêta.
+
+**Ajouts hors engagement** : ils ne comptent pas dans la vélocité. Ce sont les tickets #53 à #55, #62 à #66 et #71, décrits plus bas, ainsi que #56 à #59 (appels, fichiers, emojis, messages vocaux), qui sont reportés au sprint 3.
+
+**Changements décidés à la rétrospective du sprint 1, et où ils en sont :**
+
+| Changement | Responsable | Où on en est au 15 octobre |
+|---|---|---|
+| Une PR par ticket | Chrysler | Appliqué : chaque ajout du sprint a sa branche, son ticket et sa PR |
+| Revue de chaque PR dans les 24 h, avec un commentaire concret | Chrysler | **Pas appliqué** : les 8 PR du sprint ont été fusionnées sans revue, et la protection de `main` n'exige aucune approbation. On demande la revue après coup et on passe la protection à 1 approbation |
+| Journal commis à la fin de chaque bloc | Michael | **Pas appliqué** : aucune entrée depuis le 6 octobre. On rattrape les blocs du 8 et du 9 octobre |
+| Tickets déplacés dans le Project à chaque mêlée | Massyle | En partie : les tickets des ajouts sont créés, assignés et fermés par leurs PR. Les récits engagés n'ont pas bougé |
+| Chaque membre responsable d'au moins un récit | Eric | Fait dans le tableau ci-dessus |
+
+### Travail réalisé par Massyle (au 15 octobre)
+
+| PR | Ticket(s) | Contenu |
+|---|---|---|
+| #51 | #50 | Connexion GitHub (OAuth 2) avec la bibliothèque arctic : `state` vérifié contre la falsification, compte jamais vu créé avec le rôle policier, 18 tests (décision 10) |
+| #60 | #53 | Annuaire : prénom, nom et matricule des agents connectés |
+| #61 | #54, #55 | Messagerie : seulement les conversations existantes, recherche d'un agent pour en commencer une, groupes de discussion (le créateur gère les membres, un non-membre reçoit `403`), 29 tests dont 4 sur un vrai PostgreSQL |
+| #68 | #62 | Accents « ?? » réparés dans les données de départ, fichiers SQL forcés en UTF-8 |
+| #69 | #63 | Notification des alertes et des communiqués sur toutes les pages, et notification du navigateur en arrière-plan |
+| #70 | #64, #65, #66 | Dernière adresse connue d'un dossier placée sur la carte (géocodage Nominatim côté serveur, décision 11), adresse d'un signalement écrite à la main, recherche de dossier par nom ou numéro |
+| #72 | #71 | Les erreurs ne renvoient plus de détail interne au navigateur (chemin du serveur, message SQL) |
+| #52 | — | Compte rapide de l'équipe ajouté au démarrage s'il manque |
+| — | #67 | Vérification de bout en bout à travers nginx avec de vrais clients Socket.IO : 59 vérifications sur 59, puis audit de sécurité et des cas limites (voir les tickets créés le 15 octobre) |
+
+Toutes ces PR ont été fusionnées **sans revue d'un coéquipier**, ce qui ne respecte pas notre définition de « terminé ». Une revue après coup est demandée pour chacune, voir le tableau des changements ci-dessus.
+
 ---
 
 ## Sprint 3 — Version finale (~5 semaines)
