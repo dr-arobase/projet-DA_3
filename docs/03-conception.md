@@ -226,7 +226,7 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → clients | `criminal:added` | le dossier créé | `POST /api/criminals` |
 | Serveur → clients | `criminal:updated` | le dossier complet, avec sa nouvelle `version` | `PATCH …/status` ou `PUT /api/criminals/:id` |
 | Serveur → clients | `criminal:removed` | `{ id }` | `DELETE /api/criminals/:id` |
-| Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) | `POST /api/alerts` |
+| Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) et `issued_by_id`; chaque agent, sauf l'émetteur, en reçoit une notification sur n'importe quelle page (#63) | `POST /api/alerts` |
 | Serveur → clients | `presence:update` | liste des connexions : `[{ id, badge_number, role, grade }]` | Connexion ou déconnexion d'un agent |
 | Serveur → clients | `sighting:added` | le signalement, avec le nom du dossier et la position | `POST /api/sightings` |
 | Serveur → **deux agents** | `message:new` | le message enregistré | `POST /api/messages` (au destinataire et aux autres onglets de l'expéditeur) |
