@@ -73,10 +73,23 @@ erDiagram
     MESSAGE {
         int id PK
         int sender_id FK
-        int recipient_id FK
+        int recipient_id FK "nullable (message de groupe)"
+        int group_id FK "nullable (message à deux)"
         string body
         timestamp created_at
         timestamp read_at "nullable"
+    }
+    MESSAGE_GROUP {
+        int id PK
+        string name
+        int created_by FK
+        timestamp created_at
+    }
+    MESSAGE_GROUP_MEMBER {
+        int group_id PK, FK
+        int user_id PK, FK
+        timestamp joined_at
+        timestamp last_read_at
     }
     ALERT {
         int id PK
@@ -101,6 +114,9 @@ erDiagram
     USER ||--o{ ALERT : "émet"
     USER ||--o{ AUDIT_LOG : "effectue"
     USER ||--o{ MESSAGE : "envoie / reçoit"
+    USER ||--o{ MESSAGE_GROUP_MEMBER : "est membre"
+    MESSAGE_GROUP ||--o{ MESSAGE_GROUP_MEMBER : "regroupe"
+    MESSAGE_GROUP ||--o{ MESSAGE : "contient"
     CRIMINAL ||--o{ SIGHTING : "concerne"
     CRIMINAL ||--o{ ALERT : "concerne (optionnel)"
 ```
@@ -113,6 +129,7 @@ erDiagram
 - `SIGHTING` et `ALERT` : leurs routes existaient dès le sprint 1; leurs écrans (Carte, Alertes, Communiqués) ont été ajoutés au début du sprint 2.
 - `SIGHTING.latitude` et `SIGHTING.longitude` (début du sprint 2) : position facultative d'un signalement, pour la carte. Les deux vont ensemble; un signalement peut n'avoir qu'un lieu écrit.
 - `MESSAGE` (début du sprint 2) : messagerie privée entre deux agents. `read_at` reste `null` tant que le destinataire n'a pas ouvert la conversation; une contrainte `CHECK` interdit de s'écrire à soi-même.
+- `MESSAGE_GROUP` et `MESSAGE_GROUP_MEMBER` (sprint 2, #55) : groupes de discussion. Un message va **soit** à un agent (`recipient_id`), **soit** à un groupe (`group_id`); la contrainte `message_destination` l'impose. Pour un groupe, « lu » se suit par membre : les messages arrivés après son `last_read_at` sont non lus. `created_by` est celui qui gère les membres; s'il quitte, le membre le plus ancien prend la relève, et un groupe sans membre est supprimé avec ses messages.
 - `USER.github_id` (sprint 2) : identifiant numérique du compte GitHub lié, `null` pour un compte à mot de passe. `password_hash` devient facultatif : un compte créé par GitHub n'a pas de mot de passe, ne peut pas se connecter par matricule et ne peut pas changer de mot de passe. Son matricule est `GH-<github_id>` (voir décision 10).
 - `CRIMINAL.last_known_address`, `latitude` et `longitude` (sprint 2, #64) : dernière adresse connue, convertie en position par le serveur pour la placer sur la carte (décision 11). Une adresse introuvable est gardée sans position.
 - Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
@@ -140,7 +157,7 @@ erDiagram
 | `/annuaire` | Agents connectés (présence Socket.IO, #14) pour tous; annuaire complet pour les superviseurs et la direction | Ajouté au début du sprint 2 |
 | `/statistiques` | Dossiers par statut, taux de capture, alertes du jour, agents connectés (#20) | Ajouté au début du sprint 2 |
 | `/utilisateurs` | Création (#10), désactivation et réactivation (#16) des comptes; promotion par la direction (#19). Lien caché aux policiers | Ajouté au début du sprint 2 |
-| `/messagerie?avec=` | Messagerie privée : contacts avec présence et non-lus, conversation reçue en direct, accusé « Lu » | Ajouté au début du sprint 2 |
+| `/messagerie?avec=` ou `?groupe=` | Messagerie : seulement les conversations existantes (à deux et groupes), recherche par matricule ou nom pour en commencer une; création de groupe et gestion des membres (#54, #55); accusé « Lu » à deux | Ajouté au début du sprint 2 |
 | `/carte` | Carte OpenStreetMap (Leaflet) des derniers signalements, couleur selon le statut, en temps réel; un clic place un nouveau signalement (#13, #21). Chargée seulement à la première visite | Ajouté au début du sprint 2 |
 
 Toute autre route affiche une page 404 « Page introuvable ». Les pages sont protégées : sans session valide, on est renvoyé vers `/connexion`. Le menu et les boutons cachent ce qu'un rôle ne peut pas faire, mais la vraie protection reste côté serveur (`requireRole`).
@@ -181,6 +198,12 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `GET` | `/api/messages/contacts` | Agents à qui écrire, avec les non-lus et la date du dernier échange | `policier` |
 | `GET` | `/api/messages/:userId` | Conversation avec un agent; marque comme lus les messages reçus | `policier` |
 | `POST` | `/api/messages` | Envoyer un message privé (2000 caractères au plus) | `policier` |
+| `GET` | `/api/messages/groups` | Mes groupes, avec membres, non-lus et dernier message | `policier` |
+| `POST` | `/api/messages/groups` | Créer un groupe `{ name, member_ids }` (le créateur en est membre) | `policier` |
+| `GET` | `/api/messages/groups/:groupId` | Le groupe et ses messages; tout passe à « lu » pour moi | Membre du groupe |
+| `POST` | `/api/messages/groups/:groupId/messages` | Écrire dans le groupe | Membre du groupe |
+| `POST` | `/api/messages/groups/:groupId/members` | Ajouter des membres | Créateur du groupe |
+| `DELETE` | `/api/messages/groups/:groupId/members/:userId` | Retirer un membre (créateur), ou quitter (soi-même) | Créateur, ou soi-même |
 | `GET` | `/api/uploads/avatars/:fichier` | Photos de profil (réservées aux agents connectés) | Connecté |
 
 La recherche **par nom** du récit #9 a été ajoutée à la fin du sprint (`q`). Les caractères `%` et `_` tapés par l'agent sont cherchés tels quels, pas comme des jokers SQL.
@@ -207,6 +230,8 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → clients | `presence:update` | liste des connexions : `[{ id, badge_number, role, grade }]` | Connexion ou déconnexion d'un agent |
 | Serveur → clients | `sighting:added` | le signalement, avec le nom du dossier et la position | `POST /api/sightings` |
 | Serveur → **deux agents** | `message:new` | le message enregistré | `POST /api/messages` (au destinataire et aux autres onglets de l'expéditeur) |
+| Serveur → **membres d'un groupe** | `group:message` | le message, avec le nom de l'expéditeur | `POST /api/messages/groups/:groupId/messages` |
+| Serveur → **membres d'un groupe** | `group:updated` | `{ group_id }` | Création, ajout ou retrait de membres (anciens membres compris) |
 | Serveur → **un agent** | `message:read` | `{ by }` : l'agent qui vient de lire | `GET /api/messages/:userId` (à l'expéditeur des messages lus) |
 
 Chaque agent rejoint à la connexion une salle privée (`agent:<id>`), commune à tous ses onglets : les messages privés passent par cette salle et ne sont jamais diffusés aux autres agents.
