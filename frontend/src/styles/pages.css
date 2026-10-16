@@ -72,6 +72,31 @@
 .carte-legende { display: flex; flex-wrap: wrap; gap: 16px; margin: 0; padding: 10px 14px; list-style: none; font-size: 13px; }
 .carte-legende li { display: flex; align-items: center; gap: 6px; }
 .carte-legende span { width: 12px; height: 12px; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px var(--bordure); }
+.carte-legende .carte-legende-signalement { background: #8a93a0; }
+.carte-legende .carte-legende-dossier { border-radius: 3px; background: #8a93a0; }
+/* Repère d'un dossier (divIcon Leaflet) : un carré, distinct des ronds des signalements */
+.carte-repere-dossier span { display: block; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 4px; box-shadow: 0 1px 4px rgba(12, 26, 48, 0.45); }
+.carte-adresse { display: grid; gap: 6px; }
+.carte-adresse .registre-lien { justify-self: start; }
+.recherche-dossier { position: relative; }
+.recherche-dossier input { width: 100%; }
+.recherche-dossier-liste {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  display: grid;
+  max-height: 260px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  box-shadow: 0 8px 24px rgba(12, 26, 48, 0.12);
+}
+.recherche-dossier-liste li[role='option'] { padding: 8px 10px; border-radius: 7px; font-size: 14px; cursor: pointer; }
+.recherche-dossier-liste li.actif { background: var(--fond); }
+.recherche-dossier-choisi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); font-size: 14px; }
 .carte-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .carte-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
 .carte-liste li > :first-child { justify-self: start; }
