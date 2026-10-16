@@ -1,5 +1,6 @@
 import * as authService from '../services/auth.service.js';
-import { COOKIE_NAME, cookieOptions } from '../utils/session.js';
+import * as githubService from '../services/github.service.js';
+import { COOKIE_NAME, cookieOptions, readCookie } from '../utils/session.js';
 
 export const login = async (req, res) => {
   const { badge_number, password, se_souvenir } = req.body;
@@ -24,6 +25,55 @@ export const login = async (req, res) => {
 
     console.error('Erreur lors du login:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// Connexion GitHub. Le state aléatoire voyage dans l'adresse GitHub ET dans un cookie
+// httpOnly; au retour, les deux doivent être identiques (protection CSRF du flux OAuth).
+// Le cookie est limité aux routes /api/auth/github et dure 10 minutes.
+const STATE_COOKIE = 'crimetracker_oauth_state';
+const stateCookieOptions = () => ({
+  ...cookieOptions(),
+  path: '/api/auth/github',
+});
+const DIX_MINUTES = 10 * 60 * 1000;
+
+// Redirige vers la page de connexion du frontend (même origine) avec le résultat
+const versConnexion = (res, resultat) => res.redirect(`/connexion?${resultat}`);
+
+export const githubStart = (req, res) => {
+  if (!githubService.isConfigured()) {
+    return versConnexion(res, 'erreur=github-non-configure');
+  }
+  const { state, url } = githubService.authorizationUrl();
+  res.cookie(STATE_COOKIE, state, { ...stateCookieOptions(), maxAge: DIX_MINUTES });
+  return res.redirect(url);
+};
+
+export const githubCallback = async (req, res) => {
+  const { code, state, error } = req.query;
+  const stateAttendu = readCookie(req.headers.cookie, STATE_COOKIE);
+  res.clearCookie(STATE_COOKIE, stateCookieOptions());
+
+  // L'agent a refusé l'autorisation sur GitHub
+  if (error) {
+    return versConnexion(res, 'erreur=github-annule');
+  }
+  if (typeof code !== 'string' || typeof state !== 'string' || !stateAttendu || state !== stateAttendu) {
+    return versConnexion(res, 'erreur=github');
+  }
+
+  try {
+    const profile = await githubService.fetchProfile(code);
+    const data = await authService.loginWithGithub(profile);
+    res.cookie(COOKIE_NAME, data.token, cookieOptions());
+    return versConnexion(res, 'github=ok');
+  } catch (err) {
+    if (err.message === 'INVALID_CREDENTIALS') {
+      return versConnexion(res, 'erreur=inactif');
+    }
+    console.error('Erreur lors de la connexion GitHub:', err);
+    return versConnexion(res, 'erreur=github');
   }
 };
 
@@ -76,6 +126,9 @@ export const changePassword = async (req, res) => {
   } catch (error) {
     if (error.message === 'WRONG_PASSWORD') {
       return res.status(400).json({ message: 'Mot de passe actuel incorrect' });
+    }
+    if (error.message === 'NO_PASSWORD') {
+      return res.status(400).json({ message: "Ce compte se connecte avec GitHub : il n'a pas de mot de passe" });
     }
     if (error.message === 'INVALID_CREDENTIALS') {
       return res.status(401).json({ message: 'Session expirée ou compte inactif' });
