@@ -78,6 +78,33 @@
         }
       }
     },
+    "/api/auth/github": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Départ de la connexion GitHub (OAuth 2)",
+        "description": "À ouvrir dans le navigateur, pas en fetch. Pose le cookie httpOnly `crimetracker_oauth_state` (10 min) et redirige vers GitHub. Sans `GITHUB_CLIENT_ID` ni `GITHUB_CLIENT_SECRET`, redirige vers `/connexion?erreur=github-non-configure`.",
+        "security": [],
+        "responses": {
+          "302": { "description": "Redirection vers https://github.com/login/oauth/authorize" }
+        }
+      }
+    },
+    "/api/auth/github/callback": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Retour de GitHub après l'autorisation",
+        "description": "Vérifie que le `state` reçu est celui du cookie, échange le code, retrouve ou crée le compte (rôle `policier` à la première connexion), pose le cookie `crimetracker_session` puis redirige vers `/connexion?github=ok`. En cas d'échec : `/connexion?erreur=github`, `erreur=github-annule` ou `erreur=inactif`.",
+        "security": [],
+        "parameters": [
+          { "name": "code", "in": "query", "schema": { "type": "string" } },
+          { "name": "state", "in": "query", "schema": { "type": "string" } },
+          { "name": "error", "in": "query", "schema": { "type": "string" }, "description": "Envoyé par GitHub si l'agent refuse" }
+        ],
+        "responses": {
+          "302": { "description": "Redirection vers la page de connexion du frontend" }
+        }
+      }
+    },
     "/api/auth/logout": {
       "post": {
         "tags": ["Auth"],

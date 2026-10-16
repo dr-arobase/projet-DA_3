@@ -60,6 +60,13 @@ export const changerStatut = (id, status, version) =>
 
 export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method: 'DELETE' });
 
+// Dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte s'il la trouve
+export const changerAdresse = (id, last_known_address) =>
+  requete(`/api/criminals/${id}/address`, { method: 'PATCH', body: { last_known_address } });
+
+// Position d'une adresse écrite (géocodage par le serveur) : { latitude, longitude, display_name }
+export const localiser = (adresse) => requete(`/api/geocode?${qs({ q: adresse })}`);
+
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
 
 // severity : 'urgent' (alerte) ou 'info' (communiqué) ; réservé aux superviseurs et à la direction
@@ -90,3 +97,21 @@ export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`)
 
 export const envoyerMessage = (recipient_id, body) =>
   requete('/api/messages', { method: 'POST', body: { recipient_id, body } });
+
+// Groupes de la messagerie
+export const listerGroupes = () => requete('/api/messages/groups');
+
+export const creerGroupe = (name, member_ids) =>
+  requete('/api/messages/groups', { method: 'POST', body: { name, member_ids } });
+
+export const lireGroupe = (groupeId) => requete(`/api/messages/groups/${groupeId}`);
+
+export const envoyerAuGroupe = (groupeId, body) =>
+  requete(`/api/messages/groups/${groupeId}/messages`, { method: 'POST', body: { body } });
+
+export const ajouterMembres = (groupeId, member_ids) =>
+  requete(`/api/messages/groups/${groupeId}/members`, { method: 'POST', body: { member_ids } });
+
+// Retirer un membre (créateur), ou se retirer soi-même pour quitter le groupe
+export const retirerMembre = (groupeId, agentId) =>
+  requete(`/api/messages/groups/${groupeId}/members/${agentId}`, { method: 'DELETE' });

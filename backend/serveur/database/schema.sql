@@ -2,6 +2,9 @@
 -- Basé sur le modèle de données de docs/03-conception.md
 -- Verrouillage optimiste sur CRIMINAL via la colonne "version" (Décision 2)
 
+-- Toujours lire ce fichier en UTF-8, même lancé par psql depuis une console Windows (#62)
+SET client_encoding = 'UTF8';
+
 BEGIN;
 
 -- ============================================================

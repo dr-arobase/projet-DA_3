@@ -45,6 +45,10 @@ services:
       DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD:-crimetracker}@postgres:5432/crimetracker
       JWT_SECRET: ${JWT_SECRET:-secret-local-a-changer}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Connexion GitHub (OAuth App) : identifiant et secret dans le .env, jamais dans le dépôt
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:8080/api/auth/github/callback}
     volumes:
       # Les photos de profil survivent à la reconstruction de l'image
       - crimetracker-uploads:/app/serveur/src/uploads

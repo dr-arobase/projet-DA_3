@@ -33,11 +33,12 @@ erDiagram
         string last_name
         string badge_number UK
         string email UK
-        string password_hash
+        string password_hash "nullable (compte GitHub)"
         enum role "policier | superviseur | direction"
         enum grade "sergent_autres_fonctions | sergent_gestionnaire | sergent_responsable_de_poste | lieutenant | capitaine | inspecteur | inspecteur_chef | directeur_general_adjoint | directeur_general"
         bool is_active
         string avatar_url "nullable"
+        bigint github_id UK "nullable"
         timestamp created_at
     }
     CRIMINAL {
@@ -50,6 +51,9 @@ erDiagram
         enum status "recherche | capture | libere"
         text description
         text crimes
+        string last_known_address "nullable"
+        float latitude "nullable"
+        float longitude "nullable"
         int added_by FK
         int updated_by FK
         int version
@@ -69,10 +73,23 @@ erDiagram
     MESSAGE {
         int id PK
         int sender_id FK
-        int recipient_id FK
+        int recipient_id FK "nullable (message de groupe)"
+        int group_id FK "nullable (message à deux)"
         string body
         timestamp created_at
         timestamp read_at "nullable"
+    }
+    MESSAGE_GROUP {
+        int id PK
+        string name
+        int created_by FK
+        timestamp created_at
+    }
+    MESSAGE_GROUP_MEMBER {
+        int group_id PK, FK
+        int user_id PK, FK
+        timestamp joined_at
+        timestamp last_read_at
     }
     ALERT {
         int id PK
@@ -97,6 +114,9 @@ erDiagram
     USER ||--o{ ALERT : "émet"
     USER ||--o{ AUDIT_LOG : "effectue"
     USER ||--o{ MESSAGE : "envoie / reçoit"
+    USER ||--o{ MESSAGE_GROUP_MEMBER : "est membre"
+    MESSAGE_GROUP ||--o{ MESSAGE_GROUP_MEMBER : "regroupe"
+    MESSAGE_GROUP ||--o{ MESSAGE : "contient"
     CRIMINAL ||--o{ SIGHTING : "concerne"
     CRIMINAL ||--o{ ALERT : "concerne (optionnel)"
 ```
@@ -109,6 +129,9 @@ erDiagram
 - `SIGHTING` et `ALERT` : leurs routes existaient dès le sprint 1; leurs écrans (Carte, Alertes, Communiqués) ont été ajoutés au début du sprint 2.
 - `SIGHTING.latitude` et `SIGHTING.longitude` (début du sprint 2) : position facultative d'un signalement, pour la carte. Les deux vont ensemble; un signalement peut n'avoir qu'un lieu écrit.
 - `MESSAGE` (début du sprint 2) : messagerie privée entre deux agents. `read_at` reste `null` tant que le destinataire n'a pas ouvert la conversation; une contrainte `CHECK` interdit de s'écrire à soi-même.
+- `MESSAGE_GROUP` et `MESSAGE_GROUP_MEMBER` (sprint 2, #55) : groupes de discussion. Un message va **soit** à un agent (`recipient_id`), **soit** à un groupe (`group_id`); la contrainte `message_destination` l'impose. Pour un groupe, « lu » se suit par membre : les messages arrivés après son `last_read_at` sont non lus. `created_by` est celui qui gère les membres; s'il quitte, le membre le plus ancien prend la relève, et un groupe sans membre est supprimé avec ses messages.
+- `USER.github_id` (sprint 2) : identifiant numérique du compte GitHub lié, `null` pour un compte à mot de passe. `password_hash` devient facultatif : un compte créé par GitHub n'a pas de mot de passe, ne peut pas se connecter par matricule et ne peut pas changer de mot de passe. Son matricule est `GH-<github_id>` (voir décision 10).
+- `CRIMINAL.last_known_address`, `latitude` et `longitude` (sprint 2, #64) : dernière adresse connue, convertie en position par le serveur pour la placer sur la carte (décision 11). Une adresse introuvable est gardée sans position.
 - Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
 - `AUDIT_LOG` : les actions `CRIMINAL_REMOVED`, `ALERT_ISSUED`, `USER_DEACTIVATED`, `USER_REACTIVATED` et `USER_PROMOTED` y sont déjà enregistrées, avec leur auteur, leur cible et la date. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
@@ -134,18 +157,20 @@ erDiagram
 | `/annuaire` | Agents connectés (présence Socket.IO, #14) pour tous; annuaire complet pour les superviseurs et la direction | Ajouté au début du sprint 2 |
 | `/statistiques` | Dossiers par statut, taux de capture, alertes du jour, agents connectés (#20) | Ajouté au début du sprint 2 |
 | `/utilisateurs` | Création (#10), désactivation et réactivation (#16) des comptes; promotion par la direction (#19). Lien caché aux policiers | Ajouté au début du sprint 2 |
-| `/messagerie?avec=` | Messagerie privée : contacts avec présence et non-lus, conversation reçue en direct, accusé « Lu » | Ajouté au début du sprint 2 |
+| `/messagerie?avec=` ou `?groupe=` | Messagerie : seulement les conversations existantes (à deux et groupes), recherche par matricule ou nom pour en commencer une; création de groupe et gestion des membres (#54, #55); accusé « Lu » à deux | Ajouté au début du sprint 2 |
 | `/carte` | Carte OpenStreetMap (Leaflet) des derniers signalements, couleur selon le statut, en temps réel; un clic place un nouveau signalement (#13, #21). Chargée seulement à la première visite | Ajouté au début du sprint 2 |
 
 Toute autre route affiche une page 404 « Page introuvable ». Les pages sont protégées : sans session valide, on est renvoyé vers `/connexion`. Le menu et les boutons cachent ce qu'un rôle ne peut pas faire, mais la vraie protection reste côté serveur (`requireRole`).
 
 ### API REST
 
-Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crimetracker_session`, ou en-tête `Authorization: Bearer` pour Swagger et les scripts). Un rôle supérieur a les droits des rôles inférieurs (`policier` < `superviseur` < `direction`). La documentation complète est dans Swagger (`/api-docs`).
+Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/github` exigent une session (cookie `crimetracker_session`, ou en-tête `Authorization: Bearer` pour Swagger et les scripts). Un rôle supérieur a les droits des rôles inférieurs (`policier` < `superviseur` < `direction`). La documentation complète est dans Swagger (`/api-docs`).
 
 | Méthode | Route | Description | Rôle requis |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | Connexion, pose le cookie de session httpOnly | — |
+| `GET` | `/api/auth/github` | Départ de la connexion GitHub : pose le cookie du `state` et redirige vers GitHub | — |
+| `GET` | `/api/auth/github/callback` | Retour de GitHub : vérifie le `state`, crée le compte à la première connexion, pose le cookie de session et redirige vers `/connexion?github=ok` | — |
 | `POST` | `/api/auth/logout` | Déconnexion, efface le cookie | Connecté |
 | `GET` | `/api/auth/me` | Profil de l'agent connecté (vérifie la session) | Connecté |
 | `POST` | `/api/auth/change-password` | Changer son mot de passe (ancien mot de passe exigé) | Connecté |
@@ -156,6 +181,8 @@ Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crime
 | `PATCH` | `/api/criminals/:id/status` | Changer le statut, avec la `version` affichée (409 si conflit) | `policier` |
 | `PUT` | `/api/criminals/:id` | Modifier un dossier | `superviseur` |
 | `DELETE` | `/api/criminals/:id` | Retirer un dossier (journal d'audit) | `superviseur` |
+| `PATCH` | `/api/criminals/:id/address` | Changer la dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte | `policier` |
+| `GET` | `/api/geocode?q=` | Position d'une adresse écrite (`404` introuvable, `503` service indisponible) | `policier` |
 | `POST` | `/api/sightings` | Signaler une observation | `policier` |
 | `GET` | `/api/sightings?criminal_id=` | Historique des signalements d'un dossier | `superviseur` |
 | `GET` | `/api/sightings/recent?limit=` | Derniers signalements, tous dossiers, avec leur position (carte; 500 au plus) | `policier` |
@@ -171,6 +198,12 @@ Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crime
 | `GET` | `/api/messages/contacts` | Agents à qui écrire, avec les non-lus et la date du dernier échange | `policier` |
 | `GET` | `/api/messages/:userId` | Conversation avec un agent; marque comme lus les messages reçus | `policier` |
 | `POST` | `/api/messages` | Envoyer un message privé (2000 caractères au plus) | `policier` |
+| `GET` | `/api/messages/groups` | Mes groupes, avec membres, non-lus et dernier message | `policier` |
+| `POST` | `/api/messages/groups` | Créer un groupe `{ name, member_ids }` (le créateur en est membre) | `policier` |
+| `GET` | `/api/messages/groups/:groupId` | Le groupe et ses messages; tout passe à « lu » pour moi | Membre du groupe |
+| `POST` | `/api/messages/groups/:groupId/messages` | Écrire dans le groupe | Membre du groupe |
+| `POST` | `/api/messages/groups/:groupId/members` | Ajouter des membres | Créateur du groupe |
+| `DELETE` | `/api/messages/groups/:groupId/members/:userId` | Retirer un membre (créateur), ou quitter (soi-même) | Créateur, ou soi-même |
 | `GET` | `/api/uploads/avatars/:fichier` | Photos de profil (réservées aux agents connectés) | Connecté |
 
 La recherche **par nom** du récit #9 a été ajoutée à la fin du sprint (`q`). Les caractères `%` et `_` tapés par l'agent sont cherchés tels quels, pas comme des jokers SQL.
@@ -193,10 +226,12 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → clients | `criminal:added` | le dossier créé | `POST /api/criminals` |
 | Serveur → clients | `criminal:updated` | le dossier complet, avec sa nouvelle `version` | `PATCH …/status` ou `PUT /api/criminals/:id` |
 | Serveur → clients | `criminal:removed` | `{ id }` | `DELETE /api/criminals/:id` |
-| Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) | `POST /api/alerts` |
+| Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) et `issued_by_id`; chaque agent, sauf l'émetteur, en reçoit une notification sur n'importe quelle page (#63) | `POST /api/alerts` |
 | Serveur → clients | `presence:update` | liste des connexions : `[{ id, badge_number, role, grade }]` | Connexion ou déconnexion d'un agent |
 | Serveur → clients | `sighting:added` | le signalement, avec le nom du dossier et la position | `POST /api/sightings` |
 | Serveur → **deux agents** | `message:new` | le message enregistré | `POST /api/messages` (au destinataire et aux autres onglets de l'expéditeur) |
+| Serveur → **membres d'un groupe** | `group:message` | le message, avec le nom de l'expéditeur | `POST /api/messages/groups/:groupId/messages` |
+| Serveur → **membres d'un groupe** | `group:updated` | `{ group_id }` | Création, ajout ou retrait de membres (anciens membres compris) |
 | Serveur → **un agent** | `message:read` | `{ by }` : l'agent qui vient de lire | `GET /api/messages/:userId` (à l'expéditeur des messages lus) |
 
 Chaque agent rejoint à la connexion une salle privée (`agent:<id>`), commune à tous ses onglets : les messages privés passent par cette salle et ne sont jamais diffusés aux autres agents.
@@ -374,3 +409,54 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 **Raison** : un seul fichier par requête, sans champ de formulaire : `express.raw` suffit, sans dépendance de plus. L'API vérifie les premiers octets du fichier (un `Content-Type` se falsifie facilement), choisit elle-même le nom du fichier, et ne sert les photos qu'aux agents connectés.
 
 **Prix de ce choix** : les fichiers sont sur le disque du conteneur de l'API (dans un volume Docker); si l'application tourne un jour sur plusieurs serveurs, il faudra un stockage partagé.
+
+---
+
+### Décision 10 — Connexion GitHub (OAuth 2) avec arctic, compte créé avec le rôle policier
+
+**Question** : comment un agent se connecte-t-il avec son compte GitHub, et quel rôle reçoit un compte jamais vu ?
+
+**Options envisagées** :
+- Passport (`passport-github2`) : très répandu, mais sa protection par `state` exige une session côté serveur, que nous n'avons pas (décision 5).
+- arctic : une petite bibliothèque OAuth 2 (celle de Lucia) qui construit l'adresse d'autorisation et échange le code contre un jeton, sans imposer de session.
+- Écrire l'échange OAuth nous-mêmes : refusé, l'énoncé exige une bibliothèque reconnue.
+
+**Choix retenu** : arctic, avec ce flux :
+1. `GET /api/auth/github` génère un `state` aléatoire, le pose dans un cookie `httpOnly` limité à `/api/auth/github` (10 min), puis redirige vers GitHub.
+2. Au retour, `GET /api/auth/github/callback` exige le même `state` dans l'adresse et dans le cookie, ce qui protège le flux contre la falsification de requête (CSRF). Il échange ensuite le code (arctic) et lit le profil public (`https://api.github.com/user`).
+3. Le compte est retrouvé par `github_id`, ou créé à la première connexion.
+4. La session est ensuite **la même** que pour un mot de passe : JWT dans le cookie `crimetracker_session` (décision 5). Les rôles, les permissions et Socket.IO ne font aucune différence entre les deux connexions.
+
+**Rôle d'un nouveau compte GitHub** : `policier`, grade « sergent autres fonctions », le rôle qui a le moins de droits. Un superviseur ou la direction peut ensuite le désactiver, et la direction peut le promouvoir.
+
+**Autres choix** :
+- Aucune portée n'est demandée : le profil public suffit.
+- Le courriel est le courriel public du compte GitHub s'il est libre, sinon l'adresse `<id>+<login>@users.noreply.github.com`. Un compte GitHub n'est **jamais** lié automatiquement à un compte existant par son courriel, pour éviter qu'on prenne le compte de quelqu'un d'autre.
+- Le secret de l'OAuth App reste dans le `.env` du serveur; le navigateur ne voit passer que le code et le `state`.
+
+**Prix de ce choix** :
+- L'adresse de retour dépend du port : l'OAuth App doit déclarer celle de `docker compose up` (`localhost:8080`) et celle de Vite (`localhost:5173`), et `GITHUB_CALLBACK_URL` doit choisir la bonne.
+- Le jeton d'accès GitHub n'est pas conservé : on ne s'en sert qu'une fois, pour lire le profil.
+
+---
+
+### Décision 11 — Adresses converties en position par le serveur, avec Nominatim (OpenStreetMap)
+
+**Question** : comment placer sur la carte une adresse écrite, celle d'un dossier (#64) ou d'un signalement (#65) ?
+
+**Options envisagées** :
+- Le navigateur interroge directement un service de géocodage.
+- Le serveur interroge Nominatim, le service d'OpenStreetMap, et ne renvoie que la position.
+- Un service payant (Google, Mapbox), qui demande une clé et un compte.
+
+**Choix retenu** : le serveur interroge Nominatim (`services/geocoding.service.js`). La route `GET /api/geocode` sert au formulaire de signalement. L'ajout d'un dossier et `PATCH /api/criminals/:id/address` placent l'adresse eux-mêmes.
+
+**Raison** :
+- Nominatim est gratuit, sans clé, et c'est la même source que les tuiles de la carte.
+- Sa politique d'utilisation exige un User-Agent qui identifie l'application et au plus une requête par seconde. Le serveur peut garantir ces deux règles pour tous les agents : il espace les requêtes et garde les réponses en mémoire.
+- La route exige une session, pour que l'API ne serve pas de relais ouvert.
+
+**Prix de ce choix** :
+- L'API doit pouvoir joindre Internet.
+- Si Nominatim ne répond pas, le dossier est enregistré **sans** position. Le formulaire de signalement propose alors de cliquer sur la carte.
+- Une requête par seconde suffit pour une équipe, mais pas pour un import massif de dossiers.

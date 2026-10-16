@@ -143,7 +143,7 @@ describe('/api/alerts', () => {
     expect(res.status).toBe(403);
   });
 
-  test('POST 201 : enregistre, journalise et diffuse alert:broadcast', async () => {
+  test('POST 201 : enregistre, journalise et diffuse alert:broadcast avec son émetteur', async () => {
     const alert = { id: 8, message: 'Individu dangereux', severity: 'urgent' };
     query
       .mockResolvedValueOnce({ rows: [{ id: 8 }] }) // INSERT
@@ -157,7 +157,8 @@ describe('/api/alerts', () => {
 
     expect(res.status).toBe(201);
     expect(query.mock.calls[2][1][1]).toBe('ALERT_ISSUED');
-    expect(emitEvent).toHaveBeenCalledWith('alert:broadcast', alert);
+    // Avec l'id de l'émetteur, pour qu'il ne reçoive pas sa propre notification
+    expect(emitEvent).toHaveBeenCalledWith('alert:broadcast', { ...alert, issued_by_id: 3 });
   });
 
   test('POST 400 si la sévérité est inconnue', async () => {
