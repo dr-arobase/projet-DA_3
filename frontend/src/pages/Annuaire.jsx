@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useTempsReel } from '../composants/TempsReelContext.js';
@@ -15,6 +15,9 @@ export default function Annuaire() {
   const voitTout = estAuMoins(utilisateur, 'superviseur');
 
   const [agents, setAgents] = useState([]);
+  // Noms de tous les agents actifs : la présence Socket.IO ne porte que l'id et le matricule.
+  // /api/messages/contacts est ouvert à tout agent, contrairement à /api/users.
+  const [noms, setNoms] = useState(new Map());
   const [recherche, setRecherche] = useState('');
   const [erreur, setErreur] = useState('');
 
@@ -24,6 +27,22 @@ export default function Annuaire() {
       .then(setAgents)
       .catch((err) => setErreur(err.message));
   }, [voitTout]);
+
+  // Chargés au début, puis rechargés quand un agent jamais vu se connecte (ex. nouveau
+  // compte GitHub). Chaque id ne déclenche qu'un rechargement, pour ne jamais boucler.
+  const vus = useRef(null);
+  useEffect(() => {
+    const nouveaux = presence.filter((p) => !vus.current?.has(p.id));
+    if (vus.current && nouveaux.length === 0) return;
+    vus.current ??= new Set([utilisateur.id]);
+    nouveaux.forEach((p) => vus.current.add(p.id));
+    api.listerContacts()
+      .then((contacts) => setNoms(new Map(contacts.map((c) => [c.id, nomAgent(c)]))))
+      .catch(() => {}); // sans les noms, on affiche au moins les matricules
+  }, [presence, utilisateur.id]);
+
+  // Nom d'un agent connecté (soi-même n'est pas dans les contacts)
+  const nomDe = (p) => (p.id === utilisateur.id ? nomAgent(utilisateur) : noms.get(p.id)) ?? '';
 
   // Un agent peut avoir plusieurs onglets ouverts : une seule entrée par agent
   const connectes = [...new Map(presence.map((p) => [p.id, p])).values()];
@@ -52,7 +71,8 @@ export default function Annuaire() {
             <ul className="pages-presence">
               {connectes.map((p) => (
                 <li key={p.id}>
-                  <strong>{p.badge_number}</strong>
+                  <strong>{nomDe(p) || p.badge_number}</strong>
+                  {nomDe(p) && <span className="pages-presence-matricule">{p.badge_number}</span>}
                   <small>{LIBELLES_ROLE[p.role]} · {LIBELLES_GRADE[p.grade]}</small>
                 </li>
               ))}

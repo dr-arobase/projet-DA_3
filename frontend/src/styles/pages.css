@@ -46,6 +46,7 @@
   border-radius: var(--rayon);
 }
 .pages-presence small { color: var(--texte-doux); font-size: 12px; }
+.pages-presence-matricule { font-size: 13px; font-variant-numeric: tabular-nums; }
 
 /* ---------- Statistiques ---------- */
 .pages-tuiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
