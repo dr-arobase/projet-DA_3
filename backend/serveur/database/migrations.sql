@@ -3,6 +3,9 @@
 -- ce fichier est exécuté à CHAQUE démarrage de l'API, après schema.sql et avant seed.sql.
 -- Chaque instruction doit donc pouvoir être rejouée sans effet (IF NOT EXISTS).
 
+-- Toujours lire ce fichier en UTF-8, même lancé par psql depuis une console Windows (#62)
+SET client_encoding = 'UTF8';
+
 -- Photo de profil (page « Mon profil »)
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
 
@@ -34,6 +37,16 @@ ALTER TABLE app_user ALTER COLUMN password_hash DROP NOT NULL;
 ALTER TABLE criminal ADD COLUMN IF NOT EXISTS last_known_address VARCHAR(255);
 ALTER TABLE criminal ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
 ALTER TABLE criminal ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;
+
+-- Accents perdus (#62) : les données de départ de certaines bases ont été insérées par un
+-- outil qui ne lisait pas seed.sql en UTF-8 (« armé » devenu « arm?? »). On remet le texte
+-- d'origine de seed.sql, seulement là où il est abîmé : sans effet sur une base saine.
+UPDATE criminal SET description = 'Vu pour la dernière fois à Montréal.', crimes = 'Vol qualifié'
+  WHERE first_name = 'Jean' AND last_name = 'Dupont' AND (description LIKE '%??%' OR crimes LIKE '%??%');
+UPDATE alert SET message = 'Individu potentiellement armé, prudence recommandée.'
+  WHERE message LIKE 'Individu potentiellement arm??%';
+UPDATE sighting SET location = 'Métro Berri-UQAM', notes = 'Individu correspondant au signalement, non intercepté.'
+  WHERE location LIKE 'M??tro Berri-UQAM%';
 
 -- Groupes de discussion (#55) : un message va soit à un agent (recipient_id), soit à un groupe (group_id)
 CREATE TABLE IF NOT EXISTS message_group (

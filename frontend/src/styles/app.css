@@ -196,3 +196,66 @@ button, input { font: inherit; }
   .menu-lien { white-space: nowrap; }
   .page { padding: 20px 16px; }
 }
+
+/* ---------- Notifications d'alertes et de communiqués (#63) ---------- */
+.notifications {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+.notification {
+  display: flex;
+  align-items: flex-start;
+  border: 1px solid var(--bordure);
+  border-left: 4px solid var(--marine-600);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  box-shadow: 0 10px 28px rgba(12, 26, 48, 0.16);
+  animation: notification-entree 0.2s ease-out;
+}
+.notification.urgente { border-left-color: var(--danger); background: #fff6f6; }
+.notification-corps {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px 4px 12px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notification-corps > span:last-child { display: grid; gap: 2px; min-width: 0; }
+.notification-corps strong { font-size: 14px; }
+.notification.urgente .notification-corps strong { color: var(--danger); }
+.notification-corps small { color: var(--texte-doux); font-size: 12px; }
+.notification-message { overflow-wrap: anywhere; font-size: 13px; }
+.notification-icone { color: var(--marine-600); }
+.notification.urgente .notification-icone { color: var(--danger); }
+.notification-fermer {
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  color: var(--texte-doux);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+.notification-permission {
+  padding: 8px 12px;
+  border: 1px dashed var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  color: var(--lien);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+@keyframes notification-entree { from { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .notification { animation: none; } }
