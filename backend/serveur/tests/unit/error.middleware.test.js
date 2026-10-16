@@ -39,13 +39,26 @@ describe('errorHandler', () => {
     expect(res.status).toHaveBeenCalledWith(400);
   });
 
-  test('renvoie 500 par défaut', () => {
+  test('renvoie 500 par défaut, sans le détail de la panne', () => {
     const res = mockRes();
 
-    errorHandler(new Error('boom'), {}, res, () => {});
+    errorHandler(new Error('relation "app_user" does not exist'), {}, res, () => {});
 
     expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ message: 'boom' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'Erreur serveur' });
+  });
+
+  test('fichier absent (express.static) : 404 générique, sans le chemin du serveur, pas journalisé', () => {
+    const res = mockRes();
+    const err = Object.assign(new Error("ENOENT: no such file or directory, stat 'C:\\Users\\x\\avatars\\1.jpg'"), {
+      status: 404, statusCode: 404, expose: false,
+    });
+
+    errorHandler(err, {}, res, () => {});
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Ressource introuvable' });
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 
   test('message par défaut si l\'erreur n\'en a pas', () => {
@@ -57,11 +70,17 @@ describe('errorHandler', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Erreur serveur' });
   });
 
-  test('journalise l\'erreur dans la console', () => {
+  test('journalise une panne (5xx) dans la console', () => {
     const err = new Error('à journaliser');
 
     errorHandler(err, {}, mockRes(), () => {});
 
     expect(consoleSpy).toHaveBeenCalledWith(err);
+  });
+
+  test('ne journalise pas une erreur du client (4xx)', () => {
+    errorHandler(Object.assign(new Error('Introuvable'), { status: 404 }), {}, mockRes(), () => {});
+
+    expect(consoleSpy).not.toHaveBeenCalled();
   });
 });
