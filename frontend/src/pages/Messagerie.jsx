@@ -1,60 +1,96 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
-import { IconeRecherche } from '../composants/Icones.jsx';
+import { IconeRecherche, IconeGroupe, IconePoints, IconePlus, IconeQuitter } from '../composants/Icones.jsx';
+import Avatar from '../composants/Avatar.jsx';
+import SelecteurAgents from '../composants/SelecteurAgents.jsx';
 import { LIBELLES_ROLE, nomAgent } from '../agents.js';
-import { formaterDate } from '../registre.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
+const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
 
-// Messagerie privée entre agents : la conversation choisie est dans l'URL (?avec=<id>)
+// Séparateur de jour (« mar. 20 janv. ») et heure d'un message
+const jourDe = (iso) => new Date(iso).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
+const heureDe = (iso) => new Date(iso).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' });
+
+const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
+
+// Messagerie : conversations à deux (?avec=<id agent>) et groupes (?groupe=<id groupe>).
+// La liste ne montre que les conversations existantes; la recherche trouve tous les agents.
 export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
+  const groupeId = Number(params.get('groupe')) || null;
 
-  const [contacts, setContacts] = useState([]);
+  const [contacts, setContacts] = useState([]); // tous les agents actifs, avec non-lus et dernier échange
+  const [groupes, setGroupes] = useState([]);
   const [recherche, setRecherche] = useState('');
   const [messages, setMessages] = useState([]);
+  const [groupe, setGroupe] = useState(null); // groupe ouvert, avec ses membres
   const [texte, setTexte] = useState('');
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
+  const [panneau, setPanneau] = useState(null); // 'nouveau-groupe' | 'membres' | null
+  const [menuOuvert, setMenuOuvert] = useState(false);
   const fin = useRef(null);
 
   const chargerContacts = useCallback(() => {
     api.listerContacts().then(setContacts).catch((err) => setErreur(err.message));
   }, []);
+  const chargerGroupes = useCallback(() => {
+    api.listerGroupes().then(setGroupes).catch((err) => setErreur(err.message));
+  }, []);
 
-  useEffect(() => { chargerContacts(); }, [chargerContacts]);
+  useEffect(() => {
+    chargerContacts();
+    chargerGroupes();
+  }, [chargerContacts, chargerGroupes]);
 
   // Ouvrir une conversation marque ses messages comme lus côté serveur
-  useEffect(() => {
-    if (!avecId) return undefined;
-    let actif = true;
-    setMessages([]);
-    api.lireConversation(avecId)
-      .then((liste) => {
-        if (!actif) return;
+  const ouvrir = useCallback((actif = () => true) => {
+    if (groupeId) {
+      return api.lireGroupe(groupeId).then(({ group, messages: liste }) => {
+        if (!actif()) return;
+        setGroupe(group);
         setMessages(liste);
-        setContacts((enCours) => enCours.map((c) => (c.id === avecId ? { ...c, unread: 0 } : c)));
-      })
-      .catch((err) => actif && setErreur(err.message));
+        setGroupes((enCours) => enCours.map((g) => (g.id === groupeId ? { ...g, unread: 0 } : g)));
+      });
+    }
+    return api.lireConversation(avecId).then((liste) => {
+      if (!actif()) return;
+      setMessages(liste);
+      setContacts((enCours) => enCours.map((c) => (c.id === avecId ? { ...c, unread: 0 } : c)));
+    });
+  }, [avecId, groupeId]);
+
+  useEffect(() => {
+    setMessages([]);
+    setGroupe(null);
+    setMenuOuvert(false);
+    setErreur('');
+    if (!avecId && !groupeId) return undefined;
+    let actif = true;
+    ouvrir(() => actif).catch((err) => actif && setErreur(err.message));
     return () => { actif = false; };
-  }, [avecId]);
+  }, [avecId, groupeId, ouvrir]);
 
   useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 
-  // Message reçu ou envoyé depuis un autre onglet
+  const ajouterMessage = (m) =>
+    setMessages((enCours) => (enCours.some((x) => x.id === m.id) ? enCours : [...enCours, m]));
+
+  // Message à deux reçu, ou envoyé depuis un autre onglet
   useEvenement('message:new', useCallback((m) => {
     const autre = m.sender_id === utilisateur.id ? m.recipient_id : m.sender_id;
     if (autre === avecId) {
-      setMessages((enCours) => (enCours.some((x) => x.id === m.id) ? enCours : [...enCours, m]));
-      // Reçu dans la conversation ouverte : on le relit pour le marquer comme lu
+      ajouterMessage(m);
+      // Reçu dans la conversation ouverte : on la relit pour le marquer comme lu
       if (m.recipient_id === utilisateur.id) api.lireConversation(avecId).catch(() => {});
     }
     chargerContacts();
@@ -67,14 +103,33 @@ export default function Messagerie() {
     setMessages((enCours) => enCours.map((m) => (m.recipient_id === by && !m.read_at ? { ...m, read_at: maintenant } : m)));
   }, [avecId]));
 
+  useEvenement('group:message', useCallback((m) => {
+    if (m.group_id === groupeId) {
+      ajouterMessage(m);
+      if (m.sender_id !== utilisateur.id) api.lireGroupe(groupeId).catch(() => {});
+    }
+    chargerGroupes();
+  }, [utilisateur.id, groupeId, chargerGroupes]));
+
+  // Groupe créé, membres ajoutés ou retirés : on recharge; retiré du groupe ouvert, on le ferme
+  useEvenement('group:updated', useCallback(({ group_id: id }) => {
+    chargerGroupes();
+    if (id !== groupeId) return;
+    api.lireGroupe(groupeId)
+      .then(({ group }) => setGroupe(group))
+      .catch((err) => {
+        if (err.status === 403 || err.status === 404) setParams({});
+      });
+  }, [groupeId, chargerGroupes, setParams]));
+
   async function envoyer(e) {
     e.preventDefault();
     const corps = texte.trim();
-    if (!corps || !avecId) return;
+    if (!corps || (!avecId && !groupeId)) return;
     setEnCours(true);
     try {
-      const { data } = await api.envoyerMessage(avecId, corps);
-      setMessages((enCours) => (enCours.some((x) => x.id === data.id) ? enCours : [...enCours, data]));
+      const { data } = groupeId ? await api.envoyerAuGroupe(groupeId, corps) : await api.envoyerMessage(avecId, corps);
+      ajouterMessage(data);
       setTexte('');
       setErreur('');
     } catch (err) {
@@ -84,68 +139,214 @@ export default function Messagerie() {
     }
   }
 
+  async function quitterGroupe() {
+    if (!window.confirm(`Quitter le groupe « ${groupe.name} » ? Vous ne recevrez plus ses messages.`)) return;
+    try {
+      await api.retirerMembre(groupe.id, utilisateur.id);
+      setPanneau(null);
+      setParams({});
+      chargerGroupes();
+    } catch (err) {
+      setErreur(err.message);
+    }
+  }
+
+  function choisir(nouveauxParams) {
+    setPanneau(null);
+    setRecherche('');
+    setParams(nouveauxParams);
+  }
+
   const enLigne = new Set(presence.map((p) => p.id));
   const terme = recherche.trim().toLowerCase();
-  const filtres = contacts.filter((c) => !terme || `${nomAgent(c)} ${c.badge_number}`.toLowerCase().includes(terme));
+
+  const elementAgent = (c) => ({ cle: `a${c.id}`, agent: c, date: c.last_message_at, unread: Number(c.unread) || 0 });
+  const elementGroupe = (g) => ({ cle: `g${g.id}`, groupe: g, date: g.last_message_at ?? g.created_at, unread: Number(g.unread) || 0 });
+
+  // Sans recherche : seulement les conversations existantes, la plus récente en haut.
+  // Avec recherche : les groupes et TOUS les agents qui correspondent, pour commencer une conversation.
+  const liste = terme
+    ? [
+      ...groupes.filter((g) => g.name.toLowerCase().includes(terme)).map(elementGroupe),
+      ...contacts.filter((c) => libelleAgent(c).toLowerCase().includes(terme)).map(elementAgent),
+    ]
+    : [
+      ...contacts.filter((c) => c.last_message_at || c.id === avecId).map(elementAgent),
+      ...groupes.map(elementGroupe),
+    ].sort((a, b) => new Date(b.date ?? 0) - new Date(a.date ?? 0));
+
   const correspondant = contacts.find((c) => c.id === avecId);
+  const ouvert = groupeId ? groupe : correspondant;
 
   return (
     <>
       <header className="entete-registre">
         <div>
           <h1>Messagerie</h1>
-          <p>Messages privés entre agents, reçus en direct</p>
+          <p>Messages privés et groupes entre agents, reçus en direct</p>
         </div>
       </header>
 
       <div className="page messagerie">
         <aside className="carte messagerie-contacts">
-          <label className="registre-recherche">
-            <IconeRecherche taille={15} />
-            <input type="search" placeholder="Chercher un agent…" aria-label="Chercher un agent" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
-          </label>
+          <div className="messagerie-outils">
+            <label className="registre-recherche">
+              <IconeRecherche taille={15} />
+              <input
+                type="search"
+                placeholder="Matricule, nom ou groupe…"
+                aria-label="Chercher un agent ou un groupe"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="messagerie-bouton-icone"
+              title="Nouveau groupe"
+              aria-label="Nouveau groupe"
+              onClick={() => setPanneau('nouveau-groupe')}
+            >
+              <IconePlus taille={18} />
+            </button>
+          </div>
+
           <ul>
-            {filtres.map((c) => (
-              <li key={c.id}>
-                <button
-                  type="button"
-                  className={`messagerie-contact${c.id === avecId ? ' actif' : ''}`}
-                  onClick={() => setParams({ avec: c.id })}
-                >
-                  <span className={`messagerie-presence${enLigne.has(c.id) ? ' en-ligne' : ''}`} aria-label={enLigne.has(c.id) ? 'En ligne' : 'Hors ligne'} />
-                  <span className="messagerie-nom">
-                    {nomAgent(c)}
-                    <small>{c.badge_number} · {LIBELLES_ROLE[c.role]}</small>
-                  </span>
-                  {c.unread > 0 && <span className="messagerie-non-lus" aria-label={`${c.unread} non lus`}>{c.unread}</span>}
-                </button>
+            {liste.map(({ cle, agent, groupe: g, unread }) => {
+              const actif = agent ? agent.id === avecId : g.id === groupeId;
+              return (
+                <li key={cle}>
+                  <button
+                    type="button"
+                    className={`messagerie-contact${actif ? ' actif' : ''}`}
+                    onClick={() => choisir(agent ? { avec: agent.id } : { groupe: g.id })}
+                  >
+                    {agent ? (
+                      <span className="messagerie-pastille">
+                        <Avatar utilisateur={agent} className="avatar messagerie-avatar" />
+                        <span
+                          className={`messagerie-presence${enLigne.has(agent.id) ? ' en-ligne' : ''}`}
+                          aria-label={enLigne.has(agent.id) ? 'En ligne' : 'Hors ligne'}
+                        />
+                      </span>
+                    ) : (
+                      <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                    )}
+                    <span className="messagerie-nom">
+                      {agent ? nomAgent(agent) : g.name}
+                      <small>
+                        {agent
+                          ? `${agent.badge_number} · ${LIBELLES_ROLE[agent.role]}`
+                          : `Groupe · ${g.members.length} membres`}
+                      </small>
+                    </span>
+                    {unread > 0 && <span className="messagerie-non-lus" aria-label={`${unread} non lus`}>{unread}</span>}
+                  </button>
+                </li>
+              );
+            })}
+            {liste.length === 0 && (
+              <li className="registre-note">
+                {terme ? 'Aucun agent ni groupe.' : 'Aucune conversation. Cherchez un agent pour lui écrire.'}
               </li>
-            ))}
-            {filtres.length === 0 && <li className="registre-note">Aucun agent.</li>}
+            )}
           </ul>
         </aside>
 
         <section className="carte messagerie-fil">
-          {!correspondant ? (
-            <p className="messagerie-vide">Choisissez un agent pour commencer une conversation.</p>
+          {panneau === 'nouveau-groupe' ? (
+            <NouveauGroupe
+              agents={contacts}
+              onAnnuler={() => setPanneau(null)}
+              onCree={(g) => {
+                chargerGroupes();
+                choisir({ groupe: g.id });
+              }}
+            />
+          ) : panneau === 'membres' && groupe ? (
+            <MembresGroupe
+              groupe={groupe}
+              agents={contacts}
+              moiId={utilisateur.id}
+              onFermer={() => setPanneau(null)}
+              onQuitter={quitterGroupe}
+            />
+          ) : !ouvert ? (
+            <p className="messagerie-vide">
+              {avecId || groupeId ? 'Chargement…' : 'Choisissez une conversation, ou cherchez un agent pour lui écrire.'}
+            </p>
           ) : (
             <>
               <header className="messagerie-entete">
-                <strong>{nomAgent(correspondant)}</strong>
-                <small>{enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}</small>
+                {groupeId ? (
+                  <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                ) : (
+                  <Avatar utilisateur={correspondant} className="avatar messagerie-avatar" />
+                )}
+                <div className="messagerie-entete-titre">
+                  <strong>{groupeId ? groupe.name : nomAgent(correspondant)}</strong>
+                  <small>
+                    {groupeId
+                      ? groupe.members.map((m) => m.first_name).join(', ')
+                      : `${correspondant.badge_number} · ${enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}`}
+                  </small>
+                </div>
+                {groupeId && (
+                  <div className="messagerie-menu">
+                    <button
+                      type="button"
+                      className="messagerie-bouton-icone"
+                      aria-label="Options de la conversation"
+                      aria-expanded={menuOuvert}
+                      onClick={() => setMenuOuvert((o) => !o)}
+                      onKeyDown={(e) => e.key === 'Escape' && setMenuOuvert(false)}
+                    >
+                      <IconePoints taille={18} />
+                    </button>
+                    {menuOuvert && (
+                      <ul className="carte messagerie-menu-liste" role="menu">
+                        <li>
+                          <button type="button" role="menuitem" onClick={() => { setMenuOuvert(false); setPanneau('membres'); }}>
+                            <IconeGroupe taille={16} /> Membres
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" role="menuitem" onClick={() => { setMenuOuvert(false); quitterGroupe(); }}>
+                            <IconeQuitter taille={16} /> Quitter la conversation
+                          </button>
+                        </li>
+                      </ul>
+                    )}
+                  </div>
+                )}
               </header>
 
               <ol className="messagerie-messages">
-                {messages.map((m) => {
+                {messages.map((m, i) => {
                   const moi = m.sender_id === utilisateur.id;
+                  const precedent = messages[i - 1];
+                  const nouveauJour = !precedent || jourDe(precedent.created_at) !== jourDe(m.created_at);
+                  const suite = !nouveauJour && precedent.sender_id === m.sender_id;
+                  const auteur = groupeId
+                    ? { first_name: m.sender_first_name, last_name: m.sender_last_name }
+                    : correspondant;
                   return (
-                    <li key={m.id} className={`messagerie-bulle${moi ? ' moi' : ''}`}>
-                      <p>{m.body}</p>
-                      <small>
-                        {formaterDate(m.created_at, true)}
-                        {moi && (m.read_at ? ' · Lu' : ' · Envoyé')}
-                      </small>
-                    </li>
+                    <Fragment key={m.id}>
+                      {nouveauJour && <li className="messagerie-jour">{jourDe(m.created_at)}</li>}
+                      <li className={`messagerie-ligne${moi ? ' moi' : ''}`}>
+                        {!moi && (suite
+                          ? <span className="messagerie-avatar-vide" aria-hidden="true" />
+                          : <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />)}
+                        <div className={`messagerie-bulle${moi ? ' moi' : ''}`}>
+                          {groupeId && !moi && !suite && <strong className="messagerie-auteur">{nomAgent(auteur)}</strong>}
+                          <p>{m.body}</p>
+                          <small>
+                            {heureDe(m.created_at)}
+                            {moi && !groupeId && (m.read_at ? ' · Lu' : ' · Envoyé')}
+                          </small>
+                        </div>
+                      </li>
+                    </Fragment>
                   );
                 })}
                 {messages.length === 0 && <li className="messagerie-vide">Aucun message pour l'instant.</li>}
@@ -158,7 +359,7 @@ export default function Messagerie() {
                 <textarea
                   rows={2}
                   maxLength={MAX_MESSAGE}
-                  placeholder={`Écrire à ${correspondant.first_name}…`}
+                  placeholder={groupeId ? `Écrire à ${groupe.name}…` : `Écrire à ${correspondant.first_name}…`}
                   aria-label="Message"
                   value={texte}
                   onChange={(e) => setTexte(e.target.value)}
@@ -176,5 +377,115 @@ export default function Messagerie() {
         </section>
       </div>
     </>
+  );
+}
+
+// Création d'un groupe : un nom et au moins un autre agent
+function NouveauGroupe({ agents, onAnnuler, onCree }) {
+  const [nom, setNom] = useState('');
+  const [choisis, setChoisis] = useState([]);
+  const [erreur, setErreur] = useState('');
+  const [enCours, setEnCours] = useState(false);
+
+  async function creer(e) {
+    e.preventDefault();
+    if (!nom.trim()) return setErreur('Donnez un nom au groupe.');
+    if (choisis.length === 0) return setErreur('Choisissez au moins un agent.');
+    setEnCours(true);
+    try {
+      onCree(await api.creerGroupe(nom.trim(), choisis));
+    } catch (err) {
+      setErreur(err.message);
+      setEnCours(false);
+    }
+    return undefined;
+  }
+
+  return (
+    <form className="messagerie-panneau" onSubmit={creer}>
+      <h2>Nouveau groupe</h2>
+      <label className="messagerie-champ">
+        Nom du groupe
+        <input
+          type="text"
+          maxLength={MAX_NOM_GROUPE}
+          placeholder="Patrouille secteur nord"
+          value={nom}
+          onChange={(e) => setNom(e.target.value)}
+        />
+      </label>
+      <p className="messagerie-champ">Membres ({choisis.length} choisi{choisis.length > 1 ? 's' : ''})</p>
+      <SelecteurAgents agents={agents} choisis={choisis} onChange={setChoisis} />
+      {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
+      <div className="messagerie-panneau-actions">
+        <button type="button" className="registre-lien" onClick={onAnnuler}>Annuler</button>
+        <button type="submit" className="registre-bouton-principal" disabled={enCours}>Créer le groupe</button>
+      </div>
+    </form>
+  );
+}
+
+// Membres d'un groupe : le créateur ajoute et retire; chacun peut quitter
+function MembresGroupe({ groupe, agents, moiId, onFermer, onQuitter }) {
+  const [choisis, setChoisis] = useState([]);
+  const [erreur, setErreur] = useState('');
+  const [enCours, setEnCours] = useState(false);
+  const estCreateur = groupe.created_by === moiId;
+  const idsMembres = new Set(groupe.members.map((m) => m.id));
+
+  async function agir(action) {
+    setEnCours(true);
+    setErreur('');
+    try {
+      await action();
+    } catch (err) {
+      setErreur(err.message);
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  return (
+    <div className="messagerie-panneau">
+      <h2>Membres de « {groupe.name} »</h2>
+      <ul className="messagerie-membres">
+        {groupe.members.map((m) => (
+          <li key={m.id}>
+            <span>{libelleAgent(m)}{m.id === groupe.created_by && <small> · gère le groupe</small>}{m.id === moiId && <small> · vous</small>}</span>
+            {estCreateur && m.id !== moiId && (
+              <button
+                type="button"
+                className="registre-lien"
+                disabled={enCours}
+                onClick={() => agir(() => api.retirerMembre(groupe.id, m.id))}
+              >
+                Retirer
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {estCreateur && (
+        <>
+          <p className="messagerie-champ">Ajouter des membres</p>
+          <SelecteurAgents agents={agents.filter((a) => !idsMembres.has(a.id))} choisis={choisis} onChange={setChoisis} />
+          <button
+            type="button"
+            className="registre-bouton-principal"
+            disabled={enCours || choisis.length === 0}
+            onClick={() => agir(async () => { await api.ajouterMembres(groupe.id, choisis); setChoisis([]); })}
+          >
+            Ajouter {choisis.length > 0 ? `(${choisis.length})` : ''}
+          </button>
+        </>
+      )}
+
+      {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
+      <div className="messagerie-panneau-actions">
+        <button type="button" className="registre-lien" onClick={onQuitter}>Quitter le groupe</button>
+        <button type="button" className="registre-bouton-principal" onClick={onFermer}>Retour à la conversation</button>
+      </div>
+    </div>
   );
 }

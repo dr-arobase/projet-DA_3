@@ -20,8 +20,10 @@ const dbAvailable = await pool.query('SELECT 1').then(() => true, () => false);
 const describeDb = dbAvailable ? describe : describe.skip;
 
 const BADGE = 'TEST-JEST';
+const BADGE_2 = 'TEST-JEST-2'; // second agent, pour les groupes de la messagerie
 const PASSWORD = 'MotDePasseTest!';
 let userId;
+let userId2;
 
 // Jetons signés pour l'utilisateur de test, avec le rôle voulu (RBAC)
 const bearer = (role = 'policier') =>
@@ -29,6 +31,15 @@ const bearer = (role = 'policier') =>
 
 async function cleanUp() {
   const byTestUser = '(SELECT id FROM app_user WHERE badge_number = $1)';
+  // Groupes et messages des deux agents de test (la suppression du groupe emporte ses messages)
+  const testUsers = `(SELECT id FROM app_user WHERE badge_number IN ($1, $2))`;
+  await pool.query(`DELETE FROM message_group WHERE created_by IN ${testUsers}`, [BADGE, BADGE_2]);
+  await pool.query(`DELETE FROM message_group_member WHERE user_id IN ${testUsers}`, [BADGE, BADGE_2]);
+  await pool.query(
+    `DELETE FROM message WHERE sender_id IN ${testUsers} OR recipient_id IN ${testUsers}`,
+    [BADGE, BADGE_2]
+  );
+  await pool.query('DELETE FROM app_user WHERE badge_number = $1', [BADGE_2]);
   await pool.query(`DELETE FROM audit_log WHERE actor_id IN ${byTestUser}`, [BADGE]);
   await pool.query(`DELETE FROM alert WHERE issued_by IN ${byTestUser}`, [BADGE]);
   await pool.query(`DELETE FROM sighting WHERE reported_by IN ${byTestUser}`, [BADGE]);
@@ -51,6 +62,13 @@ beforeAll(async () => {
     [BADGE, hash]
   );
   userId = rows[0].id;
+  const second = await pool.query(
+    `INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash, role, grade)
+     VALUES ('Test', 'Jest Deux', $1, 'test-jest-2@crimetracker.local', $2, 'policier', 'sergent_autres_fonctions')
+     RETURNING id`,
+    [BADGE_2, hash]
+  );
+  userId2 = second.rows[0].id;
 });
 
 afterAll(async () => {
@@ -230,6 +248,63 @@ describeDb('Intégration PostgreSQL', () => {
       expect(res.status).toBe(200);
       const actions = res.body.data.filter((l) => l.actor === 'Test Jest').map((l) => l.action);
       expect(actions).toEqual(expect.arrayContaining(['ALERT_ISSUED', 'CRIMINAL_REMOVED']));
+    });
+  });
+
+  describe('API /api/messages/groups (groupes de la messagerie)', () => {
+    const agent2 = () => `Bearer ${signToken({ id: userId2, badge_number: BADGE_2, role: 'policier' })}`;
+    let groupId;
+
+    test('création : le créateur et le membre choisi sont dans le groupe', async () => {
+      const res = await request(app)
+        .post('/api/messages/groups')
+        .set('Authorization', bearer())
+        .send({ name: 'Groupe de test', member_ids: [userId2] });
+
+      expect(res.status).toBe(201);
+      expect(res.body.created_by).toBe(userId);
+      expect(res.body.members.map((m) => m.id).sort()).toEqual([userId, userId2].sort());
+      groupId = res.body.id;
+    });
+
+    test("un message du créateur est non lu pour l'autre membre, puis lu après lecture", async () => {
+      const envoi = await request(app)
+        .post(`/api/messages/groups/${groupId}/messages`)
+        .set('Authorization', bearer())
+        .send({ body: 'Rendez-vous au poste' });
+      expect(envoi.status).toBe(201);
+      expect(envoi.body.data.sender_last_name).toBe('Jest');
+
+      const avant = await request(app).get('/api/messages/groups').set('Authorization', agent2());
+      expect(Number(avant.body.find((g) => g.id === groupId).unread)).toBe(1);
+
+      const fil = await request(app).get(`/api/messages/groups/${groupId}`).set('Authorization', agent2());
+      expect(fil.body.messages.map((m) => m.body)).toEqual(['Rendez-vous au poste']);
+
+      const apres = await request(app).get('/api/messages/groups').set('Authorization', agent2());
+      expect(Number(apres.body.find((g) => g.id === groupId).unread)).toBe(0);
+    });
+
+    test("le créateur quitte : l'autre membre devient gestionnaire; il quitte à son tour : le groupe disparaît", async () => {
+      const depart = await request(app)
+        .delete(`/api/messages/groups/${groupId}/members/${userId}`)
+        .set('Authorization', bearer());
+      expect(depart.status).toBe(200);
+      expect(depart.body.created_by).toBe(userId2);
+
+      const dernier = await request(app)
+        .delete(`/api/messages/groups/${groupId}/members/${userId2}`)
+        .set('Authorization', agent2());
+      expect(dernier.body.created_by).toBeNull();
+
+      const { rows } = await pool.query('SELECT 1 FROM message_group WHERE id = $1', [groupId]);
+      expect(rows).toHaveLength(0);
+    });
+
+    test('la base refuse un message sans destinataire ni groupe', async () => {
+      await expect(
+        pool.query('INSERT INTO message (sender_id, body) VALUES ($1, $2)', [userId, 'Perdu'])
+      ).rejects.toThrow(/message_destination/);
     });
   });
 });
