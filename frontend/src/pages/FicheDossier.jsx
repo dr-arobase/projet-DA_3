@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement } from '../composants/TempsReelContext.js';
@@ -13,6 +13,7 @@ export default function FicheDossier() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { utilisateur } = useAuth();
+  const location = useLocation();
 
   const [dossier, setDossier] = useState(null);
   const [erreur, setErreur] = useState('');
@@ -24,9 +25,15 @@ export default function FicheDossier() {
   const [enCours, setEnCours] = useState(false);
   const [confirmerRetrait, setConfirmerRetrait] = useState(false);
 
+  // Dernière adresse connue (#64); l'avertissement peut venir de la page d'ajout
+  const [adresse, setAdresse] = useState('');
+  const [messageAdresse, setMessageAdresse] = useState(() =>
+    (location.state?.avertissement ? { type: 'erreur', texte: location.state.avertissement } : null));
+
   const afficher = useCallback((c) => {
     setDossier(c);
     setNouveauStatut(c.status);
+    setAdresse(c.last_known_address ?? '');
   }, []);
 
   useEffect(() => {
@@ -53,6 +60,23 @@ export default function FicheDossier() {
   useEvenement('criminal:removed', useCallback(({ id: retire }) => {
     if (String(retire) === String(id)) setRetireParAutre(true);
   }, [id]));
+
+  async function enregistrerAdresse(e) {
+    e.preventDefault();
+    setMessageAdresse(null);
+    setEnCours(true);
+    try {
+      const { criminal, warning } = await api.changerAdresse(dossier.id, adresse.trim());
+      afficher(criminal);
+      setMessageAdresse(warning
+        ? { type: 'erreur', texte: warning }
+        : { type: 'succes', texte: criminal.last_known_address ? 'Adresse enregistrée et placée sur la carte.' : 'Adresse effacée.' });
+    } catch (err) {
+      setMessageAdresse({ type: 'erreur', texte: err.message });
+    } finally {
+      setEnCours(false);
+    }
+  }
 
   async function enregistrerStatut(e) {
     e.preventDefault();
@@ -179,6 +203,37 @@ export default function FicheDossier() {
                 {message && (
                   <p className={`registre-message ${message.type}`} role={message.type === 'erreur' ? 'alert' : 'status'}>
                     {message.texte}
+                  </p>
+                )}
+              </form>
+            </section>
+
+            <section className="carte fiche-carte">
+              <h2 className="fiche-titre">Dernière adresse connue</h2>
+              <form className="fiche-corps fiche-formulaire" onSubmit={enregistrerAdresse}>
+                <label htmlFor="adresse">Adresse</label>
+                <input
+                  id="adresse"
+                  className="fiche-champ"
+                  maxLength={255}
+                  placeholder="Ex. : 3800 rue Sherbrooke Est, Montréal"
+                  value={adresse}
+                  onChange={(e) => setAdresse(e.target.value)}
+                  disabled={!modifiable}
+                />
+                <button
+                  type="submit"
+                  className="registre-bouton-principal"
+                  disabled={!modifiable || adresse.trim() === (dossier.last_known_address ?? '')}
+                >
+                  Enregistrer l'adresse
+                </button>
+                {dossier.latitude !== null && dossier.latitude !== undefined && (
+                  <Link to={`/carte?dossier=${dossier.id}`} className="registre-lien">Voir sur la carte</Link>
+                )}
+                {messageAdresse && (
+                  <p className={`registre-message ${messageAdresse.type}`} role={messageAdresse.type === 'erreur' ? 'alert' : 'status'}>
+                    {messageAdresse.texte}
                   </p>
                 )}
               </form>

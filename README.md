@@ -21,6 +21,15 @@ Puis ouvrir **http://localhost:8080**.
 - La documentation de l'API (Swagger) est sur http://localhost:8080/api-docs.
 - Les valeurs par défaut suffisent en local. Pour les changer, copier `.env.example` en `.env` à la racine.
 
+### Connexion GitHub
+
+La connexion « Se connecter avec GitHub » a besoin du fichier **`.env` à la racine du dépôt**, à côté de `compose.yml`. Chaque variable est expliquée dans [`.env.example`](.env.example).
+
+- `GITHUB_CLIENT_ID` et `GITHUB_CLIENT_SECRET` : ceux de l'OAuth App de l'équipe.
+- Dans l'OAuth App, l'adresse de retour (« Redirect URI ») **`http://localhost:8080/api/auth/github/callback`**, celle de `docker compose up`.
+
+Un compte GitHub qui se connecte pour la première fois reçoit un compte **policier**, le rôle par défaut. Il n'a pas de mot de passe, et son matricule est `GH-<numéro GitHub>`. Les autres rôles se testent avec les comptes de démonstration ci-dessous. Sans ces variables, l'application démarre quand même, mais le bouton GitHub affiche « connexion GitHub non configurée ».
+
 ## Comptes de démonstration
 
 Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
@@ -59,6 +68,8 @@ npm run dev
 `Ctrl+C` arrête les deux. Dans VS Code, on peut aussi cliquer sur **▷ Run Script** au-dessus du script `dev` dans `package.json`.
 
 Pour lancer une seule partie : `npm run dev:backend` ou `npm run dev:frontend`.
+
+En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse.
 
 ## Tests
 
