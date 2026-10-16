@@ -60,6 +60,13 @@ export const changerStatut = (id, status, version) =>
 
 export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method: 'DELETE' });
 
+// Dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte s'il la trouve
+export const changerAdresse = (id, last_known_address) =>
+  requete(`/api/criminals/${id}/address`, { method: 'PATCH', body: { last_known_address } });
+
+// Position d'une adresse écrite (géocodage par le serveur) : { latitude, longitude, display_name }
+export const localiser = (adresse) => requete(`/api/geocode?${qs({ q: adresse })}`);
+
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
 
 // severity : 'urgent' (alerte) ou 'info' (communiqué) ; réservé aux superviseurs et à la direction
