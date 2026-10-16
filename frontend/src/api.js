@@ -90,3 +90,21 @@ export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`)
 
 export const envoyerMessage = (recipient_id, body) =>
   requete('/api/messages', { method: 'POST', body: { recipient_id, body } });
+
+// Groupes de la messagerie
+export const listerGroupes = () => requete('/api/messages/groups');
+
+export const creerGroupe = (name, member_ids) =>
+  requete('/api/messages/groups', { method: 'POST', body: { name, member_ids } });
+
+export const lireGroupe = (groupeId) => requete(`/api/messages/groups/${groupeId}`);
+
+export const envoyerAuGroupe = (groupeId, body) =>
+  requete(`/api/messages/groups/${groupeId}/messages`, { method: 'POST', body: { body } });
+
+export const ajouterMembres = (groupeId, member_ids) =>
+  requete(`/api/messages/groups/${groupeId}/members`, { method: 'POST', body: { member_ids } });
+
+// Retirer un membre (créateur), ou se retirer soi-même pour quitter le groupe
+export const retirerMembre = (groupeId, agentId) =>
+  requete(`/api/messages/groups/${groupeId}/members/${agentId}`, { method: 'DELETE' });
