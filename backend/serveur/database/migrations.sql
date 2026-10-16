@@ -28,3 +28,9 @@ CREATE INDEX IF NOT EXISTS idx_message_unread ON message(recipient_id) WHERE rea
 -- (un compte créé par GitHub n'en a pas; il ne peut pas se connecter par matricule)
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS github_id BIGINT UNIQUE;
 ALTER TABLE app_user ALTER COLUMN password_hash DROP NOT NULL;
+
+-- Dernière adresse connue d'un dossier (#64), convertie en position par le serveur pour la carte.
+-- La position est facultative : une adresse introuvable est gardée telle quelle, sans position.
+ALTER TABLE criminal ADD COLUMN IF NOT EXISTS last_known_address VARCHAR(255);
+ALTER TABLE criminal ADD COLUMN IF NOT EXISTS latitude DOUBLE PRECISION;
+ALTER TABLE criminal ADD COLUMN IF NOT EXISTS longitude DOUBLE PRECISION;

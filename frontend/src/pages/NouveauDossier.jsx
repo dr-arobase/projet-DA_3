@@ -5,11 +5,11 @@ import { IconeEnregistrer } from '../composants/Icones.jsx';
 import '../styles/registre.css';
 
 const VIDE = {
-  first_name: '', last_name: '', date_of_birth: '', nationality: '', crimes: '', description: '',
+  first_name: '', last_name: '', date_of_birth: '', nationality: '', crimes: '', description: '', last_known_address: '',
 };
 
 // Longueurs maximales des colonnes de criminal (voir database/schema.sql)
-const MAX = { first_name: 100, last_name: 100, nationality: 100 };
+const MAX = { first_name: 100, last_name: 100, nationality: 100, last_known_address: 255 };
 
 // Ajout d'un dossier au registre (#6) : visible aussitôt par tous les agents connectés
 export default function NouveauDossier() {
@@ -41,8 +41,9 @@ export default function NouveauDossier() {
     setEnCours(true);
     try {
       const dossier = Object.fromEntries(Object.entries(champs).map(([k, v]) => [k, v.trim() || undefined]));
-      const { criminal } = await api.creerCriminel(dossier);
-      navigate(`/personnes-recherchees/${criminal.id}`, { replace: true });
+      const { criminal, warning } = await api.creerCriminel(dossier);
+      // Adresse introuvable : le dossier est créé, la fiche affiche l'avertissement
+      navigate(`/personnes-recherchees/${criminal.id}`, { replace: true, state: warning ? { avertissement: warning } : undefined });
     } catch (err) {
       setErreur(err.message);
       setEnCours(false);
@@ -89,7 +90,8 @@ export default function NouveauDossier() {
               {champ('date_of_birth', 'Date de naissance', { type: 'date' })}
               {champ('nationality', 'Nationalité')}
               {champ('crimes', 'Crimes reprochés', { complet: true })}
-              {champ('description', 'Description, signes distinctifs, dernier lieu connu', { complet: true, multiligne: true })}
+              {champ('last_known_address', 'Dernière adresse connue (placée sur la carte)', { complet: true })}
+              {champ('description', 'Description, signes distinctifs', { complet: true, multiligne: true })}
             </div>
 
             <p className="registre-note">Le statut de départ est « Recherché ». Les champs marqués * sont obligatoires.</p>

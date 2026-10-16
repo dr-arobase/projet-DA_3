@@ -51,6 +51,9 @@ erDiagram
         enum status "recherche | capture | libere"
         text description
         text crimes
+        string last_known_address "nullable"
+        float latitude "nullable"
+        float longitude "nullable"
         int added_by FK
         int updated_by FK
         int version
@@ -111,6 +114,7 @@ erDiagram
 - `SIGHTING.latitude` et `SIGHTING.longitude` (début du sprint 2) : position facultative d'un signalement, pour la carte. Les deux vont ensemble; un signalement peut n'avoir qu'un lieu écrit.
 - `MESSAGE` (début du sprint 2) : messagerie privée entre deux agents. `read_at` reste `null` tant que le destinataire n'a pas ouvert la conversation; une contrainte `CHECK` interdit de s'écrire à soi-même.
 - `USER.github_id` (sprint 2) : identifiant numérique du compte GitHub lié, `null` pour un compte à mot de passe. `password_hash` devient facultatif : un compte créé par GitHub n'a pas de mot de passe, ne peut pas se connecter par matricule et ne peut pas changer de mot de passe. Son matricule est `GH-<github_id>` (voir décision 10).
+- `CRIMINAL.last_known_address`, `latitude` et `longitude` (sprint 2, #64) : dernière adresse connue, convertie en position par le serveur pour la placer sur la carte (décision 11). Une adresse introuvable est gardée sans position.
 - Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
 - `AUDIT_LOG` : les actions `CRIMINAL_REMOVED`, `ALERT_ISSUED`, `USER_DEACTIVATED`, `USER_REACTIVATED` et `USER_PROMOTED` y sont déjà enregistrées, avec leur auteur, leur cible et la date. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
@@ -160,6 +164,8 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `PATCH` | `/api/criminals/:id/status` | Changer le statut, avec la `version` affichée (409 si conflit) | `policier` |
 | `PUT` | `/api/criminals/:id` | Modifier un dossier | `superviseur` |
 | `DELETE` | `/api/criminals/:id` | Retirer un dossier (journal d'audit) | `superviseur` |
+| `PATCH` | `/api/criminals/:id/address` | Changer la dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte | `policier` |
+| `GET` | `/api/geocode?q=` | Position d'une adresse écrite (`404` introuvable, `503` service indisponible) | `policier` |
 | `POST` | `/api/sightings` | Signaler une observation | `policier` |
 | `GET` | `/api/sightings?criminal_id=` | Historique des signalements d'un dossier | `superviseur` |
 | `GET` | `/api/sightings/recent?limit=` | Derniers signalements, tous dossiers, avec leur position (carte; 500 au plus) | `policier` |
@@ -406,3 +412,26 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 **Prix de ce choix** :
 - L'adresse de retour dépend du port : l'OAuth App doit déclarer celle de `docker compose up` (`localhost:8080`) et celle de Vite (`localhost:5173`), et `GITHUB_CALLBACK_URL` doit choisir la bonne.
 - Le jeton d'accès GitHub n'est pas conservé : on ne s'en sert qu'une fois, pour lire le profil.
+
+---
+
+### Décision 11 — Adresses converties en position par le serveur, avec Nominatim (OpenStreetMap)
+
+**Question** : comment placer sur la carte une adresse écrite, celle d'un dossier (#64) ou d'un signalement (#65) ?
+
+**Options envisagées** :
+- Le navigateur interroge directement un service de géocodage.
+- Le serveur interroge Nominatim, le service d'OpenStreetMap, et ne renvoie que la position.
+- Un service payant (Google, Mapbox), qui demande une clé et un compte.
+
+**Choix retenu** : le serveur interroge Nominatim (`services/geocoding.service.js`). La route `GET /api/geocode` sert au formulaire de signalement. L'ajout d'un dossier et `PATCH /api/criminals/:id/address` placent l'adresse eux-mêmes.
+
+**Raison** :
+- Nominatim est gratuit, sans clé, et c'est la même source que les tuiles de la carte.
+- Sa politique d'utilisation exige un User-Agent qui identifie l'application et au plus une requête par seconde. Le serveur peut garantir ces deux règles pour tous les agents : il espace les requêtes et garde les réponses en mémoire.
+- La route exige une session, pour que l'API ne serve pas de relais ouvert.
+
+**Prix de ce choix** :
+- L'API doit pouvoir joindre Internet.
+- Si Nominatim ne répond pas, le dossier est enregistré **sans** position. Le formulaire de signalement propose alors de cliquer sur la carte.
+- Une requête par seconde suffit pour une équipe, mais pas pour un import massif de dossiers.
