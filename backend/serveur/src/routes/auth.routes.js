@@ -8,6 +8,10 @@ const router = express.Router();
 // Route publique : Connexion
 router.post('/login', authController.login);
 
+// Routes publiques : connexion GitHub (OAuth 2). Le navigateur y est envoyé, il ne les appelle pas en fetch
+router.get('/github', authController.githubStart);
+router.get('/github/callback', authController.githubCallback);
+
 // Route protégée : Déconnexion
 router.post('/logout', verifyToken, authController.logout);
 

@@ -29,6 +29,14 @@ export default function AuthProvider({ children }) {
     return user;
   }
 
+  // Retour de GitHub : le serveur a déjà posé le cookie de session, on lit le profil
+  async function terminerConnexionGithub() {
+    const { user } = await api.moi();
+    enregistrerSession(user, false);
+    setUtilisateur(user);
+    return user;
+  }
+
   // Le profil a changé côté serveur (photo, etc.) : on garde l'interface et la session à jour
   function mettreAJourUtilisateur(user) {
     mettreAJourSession(user);
@@ -49,6 +57,7 @@ export default function AuthProvider({ children }) {
     utilisateur,
     estConnecte: Boolean(utilisateur),
     seConnecter,
+    terminerConnexionGithub,
     seDeconnecter,
     mettreAJourUtilisateur,
   };
