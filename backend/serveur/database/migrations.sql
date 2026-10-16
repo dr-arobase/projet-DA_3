@@ -23,3 +23,8 @@ CREATE TABLE IF NOT EXISTS message (
 
 CREATE INDEX IF NOT EXISTS idx_message_sender_recipient ON message(sender_id, recipient_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_message_unread ON message(recipient_id) WHERE read_at IS NULL;
+
+-- Connexion GitHub (OAuth 2) : le compte GitHub lié, et plus de mot de passe obligatoire
+-- (un compte créé par GitHub n'en a pas; il ne peut pas se connecter par matricule)
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS github_id BIGINT UNIQUE;
+ALTER TABLE app_user ALTER COLUMN password_hash DROP NOT NULL;

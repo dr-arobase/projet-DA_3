@@ -33,11 +33,12 @@ erDiagram
         string last_name
         string badge_number UK
         string email UK
-        string password_hash
+        string password_hash "nullable (compte GitHub)"
         enum role "policier | superviseur | direction"
         enum grade "sergent_autres_fonctions | sergent_gestionnaire | sergent_responsable_de_poste | lieutenant | capitaine | inspecteur | inspecteur_chef | directeur_general_adjoint | directeur_general"
         bool is_active
         string avatar_url "nullable"
+        bigint github_id UK "nullable"
         timestamp created_at
     }
     CRIMINAL {
@@ -109,6 +110,7 @@ erDiagram
 - `SIGHTING` et `ALERT` : leurs routes existaient dès le sprint 1; leurs écrans (Carte, Alertes, Communiqués) ont été ajoutés au début du sprint 2.
 - `SIGHTING.latitude` et `SIGHTING.longitude` (début du sprint 2) : position facultative d'un signalement, pour la carte. Les deux vont ensemble; un signalement peut n'avoir qu'un lieu écrit.
 - `MESSAGE` (début du sprint 2) : messagerie privée entre deux agents. `read_at` reste `null` tant que le destinataire n'a pas ouvert la conversation; une contrainte `CHECK` interdit de s'écrire à soi-même.
+- `USER.github_id` (sprint 2) : identifiant numérique du compte GitHub lié, `null` pour un compte à mot de passe. `password_hash` devient facultatif : un compte créé par GitHub n'a pas de mot de passe, ne peut pas se connecter par matricule et ne peut pas changer de mot de passe. Son matricule est `GH-<github_id>` (voir décision 10).
 - Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
 - `AUDIT_LOG` : les actions `CRIMINAL_REMOVED`, `ALERT_ISSUED`, `USER_DEACTIVATED`, `USER_REACTIVATED` et `USER_PROMOTED` y sont déjà enregistrées, avec leur auteur, leur cible et la date. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
@@ -141,11 +143,13 @@ Toute autre route affiche une page 404 « Page introuvable ». Les pages sont pr
 
 ### API REST
 
-Toutes les routes sauf `POST /api/auth/login` exigent une session (cookie `crimetracker_session`, ou en-tête `Authorization: Bearer` pour Swagger et les scripts). Un rôle supérieur a les droits des rôles inférieurs (`policier` < `superviseur` < `direction`). La documentation complète est dans Swagger (`/api-docs`).
+Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/github` exigent une session (cookie `crimetracker_session`, ou en-tête `Authorization: Bearer` pour Swagger et les scripts). Un rôle supérieur a les droits des rôles inférieurs (`policier` < `superviseur` < `direction`). La documentation complète est dans Swagger (`/api-docs`).
 
 | Méthode | Route | Description | Rôle requis |
 |---|---|---|---|
 | `POST` | `/api/auth/login` | Connexion, pose le cookie de session httpOnly | — |
+| `GET` | `/api/auth/github` | Départ de la connexion GitHub : pose le cookie du `state` et redirige vers GitHub | — |
+| `GET` | `/api/auth/github/callback` | Retour de GitHub : vérifie le `state`, crée le compte à la première connexion, pose le cookie de session et redirige vers `/connexion?github=ok` | — |
 | `POST` | `/api/auth/logout` | Déconnexion, efface le cookie | Connecté |
 | `GET` | `/api/auth/me` | Profil de l'agent connecté (vérifie la session) | Connecté |
 | `POST` | `/api/auth/change-password` | Changer son mot de passe (ancien mot de passe exigé) | Connecté |
@@ -374,3 +378,31 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 **Raison** : un seul fichier par requête, sans champ de formulaire : `express.raw` suffit, sans dépendance de plus. L'API vérifie les premiers octets du fichier (un `Content-Type` se falsifie facilement), choisit elle-même le nom du fichier, et ne sert les photos qu'aux agents connectés.
 
 **Prix de ce choix** : les fichiers sont sur le disque du conteneur de l'API (dans un volume Docker); si l'application tourne un jour sur plusieurs serveurs, il faudra un stockage partagé.
+
+---
+
+### Décision 10 — Connexion GitHub (OAuth 2) avec arctic, compte créé avec le rôle policier
+
+**Question** : comment un agent se connecte-t-il avec son compte GitHub, et quel rôle reçoit un compte jamais vu ?
+
+**Options envisagées** :
+- Passport (`passport-github2`) : très répandu, mais sa protection par `state` exige une session côté serveur, que nous n'avons pas (décision 5).
+- arctic : une petite bibliothèque OAuth 2 (celle de Lucia) qui construit l'adresse d'autorisation et échange le code contre un jeton, sans imposer de session.
+- Écrire l'échange OAuth nous-mêmes : refusé, l'énoncé exige une bibliothèque reconnue.
+
+**Choix retenu** : arctic, avec ce flux :
+1. `GET /api/auth/github` génère un `state` aléatoire, le pose dans un cookie `httpOnly` limité à `/api/auth/github` (10 min), puis redirige vers GitHub.
+2. Au retour, `GET /api/auth/github/callback` exige le même `state` dans l'adresse et dans le cookie, ce qui protège le flux contre la falsification de requête (CSRF). Il échange ensuite le code (arctic) et lit le profil public (`https://api.github.com/user`).
+3. Le compte est retrouvé par `github_id`, ou créé à la première connexion.
+4. La session est ensuite **la même** que pour un mot de passe : JWT dans le cookie `crimetracker_session` (décision 5). Les rôles, les permissions et Socket.IO ne font aucune différence entre les deux connexions.
+
+**Rôle d'un nouveau compte GitHub** : `policier`, grade « sergent autres fonctions », le rôle qui a le moins de droits. Un superviseur ou la direction peut ensuite le désactiver, et la direction peut le promouvoir.
+
+**Autres choix** :
+- Aucune portée n'est demandée : le profil public suffit.
+- Le courriel est le courriel public du compte GitHub s'il est libre, sinon l'adresse `<id>+<login>@users.noreply.github.com`. Un compte GitHub n'est **jamais** lié automatiquement à un compte existant par son courriel, pour éviter qu'on prenne le compte de quelqu'un d'autre.
+- Le secret de l'OAuth App reste dans le `.env` du serveur; le navigateur ne voit passer que le code et le `state`.
+
+**Prix de ce choix** :
+- L'adresse de retour dépend du port : l'OAuth App doit déclarer celle de `docker compose up` (`localhost:8080`) et celle de Vite (`localhost:5173`), et `GITHUB_CALLBACK_URL` doit choisir la bonne.
+- Le jeton d'accès GitHub n'est pas conservé : on ne s'en sert qu'une fois, pour lire le profil.
