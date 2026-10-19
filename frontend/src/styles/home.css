@@ -124,7 +124,6 @@
   text-decoration: none;
 }
 .action:hover { border-color: var(--marine-600); }
-.action .a-venir { margin-left: auto; color: var(--texte-doux); }
 .action-principale { border-color: var(--marine-700); background: var(--marine-700); color: #fff; }
 .action-principale:hover { background: var(--marine-600); }
 

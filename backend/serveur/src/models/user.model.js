@@ -20,6 +20,30 @@ export const findByBadge = async (badge_number) => {
   return result.rows[0] || null;
 };
 
+// Récupérer le compte lié à un compte GitHub (identifiant numérique, qui ne change jamais)
+export const findByGithubId = async (github_id) => {
+  const result = await pool.query(`SELECT ${PUBLIC_FIELDS} FROM app_user WHERE github_id = $1`, [github_id]);
+  return result.rows[0] || null;
+};
+
+// Vrai si un compte utilise déjà ce courriel (la colonne est UNIQUE)
+export const emailExists = async (email) => {
+  const result = await pool.query('SELECT 1 FROM app_user WHERE email = $1', [email]);
+  return result.rows.length > 0;
+};
+
+// Créer le compte d'un agent à sa première connexion GitHub : rôle par défaut (policier),
+// pas de mot de passe, matricule « GH-<id GitHub> »
+export const createFromGithub = async ({ github_id, first_name, last_name, email }) => {
+  const query = `
+    INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash, role, grade, github_id)
+    VALUES ($1, $2, $3, $4, NULL, 'policier', 'sergent_autres_fonctions', $5)
+    RETURNING ${PUBLIC_FIELDS}
+  `;
+  const result = await pool.query(query, [first_name, last_name, `GH-${github_id}`, email, github_id]);
+  return result.rows[0];
+};
+
 // Créer un compte policier
 export const create = async ({ first_name, last_name, badge_number, email, password_hash, role, grade }) => {
   const query = `

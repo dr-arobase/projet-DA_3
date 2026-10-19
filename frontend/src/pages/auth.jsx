@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
-import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron } from '../composants/Icones.jsx';
+import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithub } from '../composants/Icones.jsx';
 import '../styles/auth.css';
 
 // Chiffres de démonstration, pas encore lus dans l'API : signalés à l'écran (voir README)
@@ -11,16 +11,35 @@ const STATS = [
   { valeur: 6, libelle: "Alertes aujourd'hui" },
 ];
 
+// Retour du serveur après la connexion GitHub : /connexion?erreur=…
+const ERREURS_GITHUB = {
+  github: 'La connexion avec GitHub a échoué. Réessayez.',
+  'github-annule': 'Connexion avec GitHub annulée.',
+  'github-non-configure': "La connexion GitHub n'est pas configurée sur ce serveur (voir le README).",
+  inactif: 'Ce compte est désactivé.',
+};
+
 export default function Auth() {
-  const { estConnecte, seConnecter } = useAuth();
+  const { estConnecte, seConnecter, terminerConnexionGithub } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [parametres, setParametres] = useSearchParams();
 
   const [matricule, setMatricule] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [seSouvenir, setSeSouvenir] = useState(false);
-  const [erreur, setErreur] = useState('');
+  const [erreur, setErreur] = useState(() => ERREURS_GITHUB[parametres.get('erreur')] ?? '');
   const [enCours, setEnCours] = useState(false);
+
+  // Retour de GitHub réussi : le cookie de session est posé, on charge le profil
+  const retourGithub = parametres.get('github') === 'ok';
+  useEffect(() => {
+    if (!retourGithub) return;
+    terminerConnexionGithub().catch(() => {
+      setErreur(ERREURS_GITHUB.github);
+      setParametres({}, { replace: true });
+    });
+  }, [retourGithub]);
 
   if (estConnecte) return <Navigate to="/" replace />;
 
@@ -119,6 +138,14 @@ export default function Auth() {
             {enCours ? 'Connexion…' : 'Connexion sécurisée'}
             {!enCours && <IconeChevron taille={16} />}
           </button>
+
+          <p className="auth-separateur"><span>ou</span></p>
+
+          {/* Navigation complète, pas un fetch : le serveur redirige vers GitHub puis revient ici */}
+          <a className="bouton-github" href="/api/auth/github">
+            <IconeGithub />
+            Se connecter avec GitHub
+          </a>
 
           <p className="auth-info">
             <IconeCadenas taille={14} /> Authentification à deux facteurs : à venir

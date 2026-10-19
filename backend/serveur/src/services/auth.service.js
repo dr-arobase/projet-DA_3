@@ -19,7 +19,10 @@ export const loginUser = async (badge_number, password) => {
 
   const user = result.rows[0];
 
-  // 2. Vérification du mot de passe avec bcrypt
+  // 2. Vérification du mot de passe avec bcrypt (un compte GitHub n'en a pas)
+  if (!user.password_hash) {
+    throw new Error('INVALID_CREDENTIALS');
+  }
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
   if (!isPasswordValid) {
     throw new Error('INVALID_CREDENTIALS');
@@ -47,6 +50,37 @@ export const loginUser = async (badge_number, password) => {
       avatar_url: user.avatar_url ?? null
     }
   };
+};
+
+// Connexion par GitHub : retrouve le compte lié au profil GitHub, ou le crée à la
+// première connexion avec le rôle par défaut (policier, voir docs/03-conception.md).
+export const loginWithGithub = async ({ id, login, name, email }) => {
+  let user = await userModel.findByGithubId(id);
+
+  if (!user) {
+    // « Ada Lovelace » -> Ada / Lovelace; sans nom affiché, on prend l'identifiant GitHub
+    const [first_name, ...rest] = (name?.trim() || login).split(/\s+/);
+    // Courriel public s'il est libre, sinon l'adresse « noreply » propre à ce compte GitHub
+    const emailLibre = email && !(await userModel.emailExists(email));
+    user = await userModel.createFromGithub({
+      github_id: id,
+      first_name: first_name.slice(0, 100),
+      last_name: rest.join(' ').slice(0, 100),
+      email: emailLibre ? email : `${id}+${login}@users.noreply.github.com`,
+    });
+  }
+
+  if (!user.is_active) {
+    throw new Error('INVALID_CREDENTIALS');
+  }
+
+  const token = signToken({
+    id: user.id,
+    badge_number: user.badge_number,
+    role: user.role,
+    grade: user.grade
+  });
+  return { token, user: publicProfile(user) };
 };
 
 export const logoutUser = async (userId) => {
@@ -79,6 +113,9 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
   );
   if (result.rows.length === 0) {
     throw new Error('INVALID_CREDENTIALS');
+  }
+  if (!result.rows[0].password_hash) {
+    throw new Error('NO_PASSWORD');
   }
 
   const isPasswordValid = await bcrypt.compare(oldPassword, result.rows[0].password_hash);

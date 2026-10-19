@@ -214,7 +214,8 @@
 .champ-registre { display: flex; flex-direction: column; }
 .champ-registre.complet { grid-column: 1 / -1; }
 .champ-registre input,
-.champ-registre textarea {
+.champ-registre textarea,
+.fiche-champ {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--bordure);
@@ -226,7 +227,8 @@
 }
 .champ-registre textarea { resize: vertical; }
 .champ-registre input:focus,
-.champ-registre textarea:focus { outline: 0; border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
+.champ-registre textarea:focus,
+.fiche-champ:focus { outline: 0; border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
 .champ-registre input[aria-invalid='true'] { border-color: var(--danger); }
 .champ-erreur { margin-top: 4px; color: var(--danger); font-size: 12px; }
 .requis { color: var(--danger); }

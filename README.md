@@ -21,6 +21,15 @@ Puis ouvrir **http://localhost:8080**.
 - La documentation de l'API (Swagger) est sur http://localhost:8080/api-docs.
 - Les valeurs par défaut suffisent en local. Pour les changer, copier `.env.example` en `.env` à la racine.
 
+### Connexion GitHub
+
+La connexion « Se connecter avec GitHub » a besoin du fichier **`.env` à la racine du dépôt**, à côté de `compose.yml`. Chaque variable est expliquée dans [`.env.example`](.env.example).
+
+- `GITHUB_CLIENT_ID` et `GITHUB_CLIENT_SECRET` : ceux de l'OAuth App de l'équipe.
+- Dans l'OAuth App, l'adresse de retour (« Redirect URI ») **`http://localhost:8080/api/auth/github/callback`**, celle de `docker compose up`.
+
+Un compte GitHub qui se connecte pour la première fois reçoit un compte **policier**, le rôle par défaut. Il n'a pas de mot de passe, et son matricule est `GH-<numéro GitHub>`. Les autres rôles se testent avec les comptes de démonstration ci-dessous. Sans ces variables, l'application démarre quand même, mais le bouton GitHub affiche « connexion GitHub non configurée ».
+
 ## Comptes de démonstration
 
 Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
@@ -60,6 +69,8 @@ npm run dev
 
 Pour lancer une seule partie : `npm run dev:backend` ou `npm run dev:frontend`.
 
+En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse.
+
 ## Tests
 
 ```bash
@@ -77,8 +88,9 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine.
 
 ## Ce qui est simulé dans l'alpha
 
-Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration », mention « à venir », ou « À venir » dans le menu.
+Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « à venir ».
 
+<<<<<<< HEAD
 | Élément                                                                                                        | Où                            | Ce qui le remplacera                       | Sprint           |
 | ---------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------ | ---------------- |
 | Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion              | Les vrais compteurs, lus dans l'API        | 3 (statistiques) |
@@ -87,8 +99,24 @@ Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Ch
 | Pages Alertes, Communiqués, Utilisateurs (« À venir » dans le menu et sur « Diffuser un communiqué »)     | Menu latéral, tableau de bord | Diffusion d'alertes, gestion des comptes   | 2                |
 | Pages Annuaire, Statistiques (« À venir » dans le menu)                                                       | Menu latéral                  | Agents connectés, statistiques globales   | 3                |
 | Pages Messagerie, Carte (« À venir » dans le menu)                                                            | Menu latéral                  | Hors portée de l'alpha (récits*Could*) | —               |
+=======
+| Élément | Où | Ce qui le remplacera | Sprint |
+|---|---|---|---|
+| Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
+| « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
+| « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
+>>>>>>> 1a2b3c3b266a1da7d4f29d4d1a43258334342881
 
-Le reste est réel : le tableau de bord (compteurs, activité récente, dernier communiqué) et le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait) lisent et écrivent dans la base, et se mettent à jour en temps réel (Socket.IO).
+Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
+
+- le tableau de bord (compteurs, activité récente, dernier communiqué);
+- le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait);
+- les alertes et les communiqués (diffusion réservée aux superviseurs et à la direction);
+- l'annuaire (agents connectés pour tous, annuaire complet pour les superviseurs et la direction);
+- les statistiques (dossiers par statut, taux de capture, alertes du jour, agents connectés);
+- la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction);
+- la messagerie privée entre agents (reçue en direct, avec les non-lus et l'accusé « Lu »);
+- la carte des signalements terrain (OpenStreetMap; un clic sur la carte place un nouveau signalement).
 
 ---
 

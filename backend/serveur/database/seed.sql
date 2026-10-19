@@ -3,6 +3,9 @@
 -- Comptes de démonstration : mot de passe Alpha2026! pour les quatre (hachés avec bcrypt).
 -- Base déjà créée avant ce seed : dans backend/, « node scripts/set-passwords.js Alpha2026! » (change TOUS les comptes)
 
+-- Toujours lire ce fichier en UTF-8, même lancé par psql depuis une console Windows (#62)
+SET client_encoding = 'UTF8';
+
 BEGIN;
 
 INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash, role, grade, is_active) VALUES
@@ -16,8 +19,8 @@ INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash,
 INSERT INTO criminal (first_name, last_name, date_of_birth, nationality, status, description, crimes, added_by) VALUES
 ('Jean', 'Dupont', '1985-04-12', 'Canadienne', 'recherche', 'Vu pour la dernière fois à Montréal.', 'Vol qualifié', 3);
 
-INSERT INTO sighting (criminal_id, reported_by, location, notes) VALUES
-(1, 4, 'Métro Berri-UQAM', 'Individu correspondant au signalement, non intercepté.');
+INSERT INTO sighting (criminal_id, reported_by, location, notes, latitude, longitude) VALUES
+(1, 4, 'Métro Berri-UQAM', 'Individu correspondant au signalement, non intercepté.', 45.5153, -73.5610);
 
 INSERT INTO alert (issued_by, criminal_id, message, severity) VALUES
 (2, 1, 'Individu potentiellement armé, prudence recommandée.', 'urgent');
