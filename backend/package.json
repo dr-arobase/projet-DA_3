@@ -20,6 +20,8 @@
     "swagger-ui-express": "^5.0.0"
   },
   "devDependencies": {
+    "@emnapi/core": "^1.11.3",
+    "@emnapi/runtime": "^1.11.3",
     "jest": "^30.5.2",
     "nodemon": "^3.1.0",
     "socket.io-client": "^4.8.4",

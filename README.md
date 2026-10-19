@@ -25,12 +25,12 @@ Puis ouvrir **http://localhost:8080**.
 
 Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
 
-| Matricule | Nom | Rôle | Grade |
-|---|---|---|---|
-| `PO-001` | Massyle Riahi | Direction | Directeur général |
-| `SM-002` | Eric Tremblay | Superviseur | Lieutenant |
-| `PL-003` | Chrysler Jean | Policier | Sergent (autres fonctions) |
-| `PL-004` | Michael Fortin | Policier | Sergent (autres fonctions) |
+| Matricule  | Nom            | Rôle       | Grade                      |
+| ---------- | -------------- | ----------- | -------------------------- |
+| `PO-001` | Massyle Riahi  | Direction   | Directeur général        |
+| `SM-002` | Eric Tremblay  | Superviseur | Lieutenant                 |
+| `PL-003` | Chrysler Jean  | Policier    | Sergent (autres fonctions) |
+| `PL-004` | Michael Fortin | Policier    | Sergent (autres fonctions) |
 
 **Compte rapide de l'équipe** (tests en local) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve. Pour l'ajouter à une base déjà créée, sans rien effacer :
 
@@ -79,14 +79,14 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine.
 
 Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration », mention « à venir », ou « À venir » dans le menu.
 
-| Élément | Où | Ce qui le remplacera | Sprint |
-|---|---|---|---|
-| Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
-| « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
-| « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
-| Pages Alertes, Communiqués, Utilisateurs (« À venir » dans le menu et sur « Diffuser un communiqué ») | Menu latéral, tableau de bord | Diffusion d'alertes, gestion des comptes | 2 |
-| Pages Annuaire, Statistiques (« À venir » dans le menu) | Menu latéral | Agents connectés, statistiques globales | 3 |
-| Pages Messagerie, Carte (« À venir » dans le menu) | Menu latéral | Hors portée de l'alpha (récits *Could*) | — |
+| Élément                                                                                                        | Où                            | Ce qui le remplacera                       | Sprint           |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------ | ---------------- |
+| Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion              | Les vrais compteurs, lus dans l'API        | 3 (statistiques) |
+| « Mot de passe oublié ? (à venir) »                                                                          | Page de connexion              | Réinitialisation par un superviseur       | 2                |
+| « Authentification à deux facteurs : à venir »                                                               | Page de connexion              | Authentification externe (OAuth 2 / OIDC)  | 2                |
+| Pages Alertes, Communiqués, Utilisateurs (« À venir » dans le menu et sur « Diffuser un communiqué »)     | Menu latéral, tableau de bord | Diffusion d'alertes, gestion des comptes   | 2                |
+| Pages Annuaire, Statistiques (« À venir » dans le menu)                                                       | Menu latéral                  | Agents connectés, statistiques globales   | 3                |
+| Pages Messagerie, Carte (« À venir » dans le menu)                                                            | Menu latéral                  | Hors portée de l'alpha (récits*Could*) | —               |
 
 Le reste est réel : le tableau de bord (compteurs, activité récente, dernier communiqué) et le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait) lisent et écrivent dans la base, et se mettent à jour en temps réel (Socket.IO).
 
@@ -94,13 +94,13 @@ Le reste est réel : le tableau de bord (compteurs, activité récente, dernier 
 
 ## Structure du dépôt
 
-| Dossier | Contenu |
-|---|---|
-| `backend/` | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
-| `frontend/` | Application React (Vite), servie par nginx en production |
-| `docs/` | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives |
-| `deploy/` | Déploiement sur un serveur avec les images publiées sur ghcr.io |
-| `scripts/` | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`) |
+| Dossier       | Contenu                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `backend/`  | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
+| `frontend/` | Application React (Vite), servie par nginx en production                                                                     |
+| `docs/`     | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives                                  |
+| `deploy/`   | Déploiement sur un serveur avec les images publiées sur ghcr.io                                                            |
+| `scripts/`  | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`)                                     |
 
 ## Liens
 
@@ -110,7 +110,7 @@ Le reste est réel : le tableau de bord (compteurs, activité récente, dernier 
 - [Backlog produit](docs/02-backlog.md)
 - [Conception technique](docs/03-conception.md)
 - [Plan des sprints](docs/04-sprints.md)
-- [Organisation de l'équipe](docs/05-equipe.md)
+- [Organisation de l&#39;équipe](docs/05-equipe.md)
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
 - [Maquettes](docs/maquettes/README.md)
