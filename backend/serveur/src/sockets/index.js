@@ -32,6 +32,8 @@ export default function registerSockets(server) {
   io.on('connection', (socket) => {
     const { id, badge_number, role, grade } = socket.user;
     connectedUsers.set(socket.id, { id, badge_number, role, grade });
+    // Salle privée de l'agent (tous ses onglets) : messages destinés à lui seul
+    socket.join(roomOf(id));
     io.emit('presence:update', getPresenceList());
 
     socket.on('disconnect', () => {
@@ -46,4 +48,11 @@ export default function registerSockets(server) {
 // Utilisé par les contrôleurs pour diffuser un événement, après un COMMIT réussi en base
 export function emitEvent(event, payload) {
   if (io) io.emit(event, payload);
+}
+
+const roomOf = (userId) => `agent:${userId}`;
+
+// Envoie un événement aux seuls agents indiqués (ex. un message privé : destinataire et expéditeur)
+export function emitToUsers(userIds, event, payload) {
+  if (io) io.to([...new Set(userIds)].map(roomOf)).emit(event, payload);
 }

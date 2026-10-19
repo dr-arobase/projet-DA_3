@@ -13,6 +13,7 @@ router.get('/', criminalController.getAll);
 router.get('/:id', criminalController.getById);
 router.post('/', criminalController.create);
 router.patch('/:id/status', criminalController.updateStatus);
+router.patch('/:id/address', criminalController.updateAddress);
 
 // Modifier ou retirer un dossier : superviseur ou direction
 router.put('/:id', requireRole('superviseur'), criminalController.update);

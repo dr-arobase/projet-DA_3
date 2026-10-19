@@ -179,6 +179,36 @@
 .bouton-principal:hover { background: var(--marine-600); }
 .bouton-principal:disabled { opacity: 0.7; cursor: progress; }
 
+.auth-separateur {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--texte-pale);
+  font-size: 12px;
+}
+.auth-separateur::before,
+.auth-separateur::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid #d5dae1;
+}
+
+.bouton-github {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border-radius: 8px;
+  background: #24292f;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.bouton-github:hover { background: #32383f; }
+
 .auth-erreur {
   margin: -8px 0 14px;
   padding: 10px 12px;

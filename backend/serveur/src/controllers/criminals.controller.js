@@ -2,6 +2,8 @@ import * as criminalService from '../services/criminals.service.js';
 
 // Les erreurs métier du service portent un statusCode (400, 404, 409) ;
 // toute autre erreur est une panne serveur.
+const ADDRESS_WARNING = "L'adresse est enregistrée, mais elle n'a pas pu être placée sur la carte. Précisez la ville ou le code postal.";
+
 const handleError = (res, error, context) => {
   if (error.statusCode) {
     const body = { message: error.message };
@@ -35,8 +37,12 @@ export const getById = async (req, res) => {
 
 export const create = async (req, res) => {
   try {
-    const criminal = await criminalService.createCriminal(req.body, req.user.id);
-    return res.status(201).json({ message: 'Dossier créé avec succès', criminal });
+    const { criminal, addressNotLocated } = await criminalService.createCriminal(req.body, req.user.id);
+    return res.status(201).json({
+      message: 'Dossier créé avec succès',
+      criminal,
+      ...(addressNotLocated && { warning: ADDRESS_WARNING }),
+    });
   } catch (error) {
     return handleError(res, error, 'de la création du dossier');
   }
@@ -48,6 +54,22 @@ export const update = async (req, res) => {
     return res.json({ message: 'Dossier mis à jour avec succès', criminal });
   } catch (error) {
     return handleError(res, error, 'de la mise à jour du dossier');
+  }
+};
+
+// PATCH /api/criminals/:id/address { last_known_address } (vide pour effacer)
+export const updateAddress = async (req, res) => {
+  try {
+    const { criminal, addressNotLocated } = await criminalService.updateCriminalAddress(
+      req.params.id, req.body.last_known_address, req.user.id
+    );
+    return res.json({
+      message: 'Adresse mise à jour',
+      criminal,
+      ...(addressNotLocated && { warning: ADDRESS_WARNING }),
+    });
+  } catch (error) {
+    return handleError(res, error, "du changement d'adresse");
   }
 };
 

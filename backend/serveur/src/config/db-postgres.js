@@ -22,8 +22,8 @@ export async function initializeDatabase() {
     if (err.code !== '42710' && err.code !== '42P07') throw err;
   }
 
-  // Colonnes ajoutées après la création de la base : schema.sql ne s'applique pas à une base existante
-  await pool.query('ALTER TABLE app_user ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500)');
+  // Colonnes et tables ajoutées après la création de la base : schema.sql ne s'applique pas à une base existante
+  await pool.query(await readSql('migrations.sql'));
 
   const { rows } = await pool.query('SELECT COUNT(*) AS n FROM app_user');
   if (rows[0].n === 0) {
@@ -37,6 +37,15 @@ export async function initializeDatabase() {
       SELECT setval(pg_get_serial_sequence('alert', 'id'), (SELECT MAX(id) FROM alert));
     `);
   }
+
+  // Compte rapide de l'équipe (matricule 1, mot de passe 2) : seed.sql ne s'applique
+  // pas à une base déjà remplie, on l'ajoute donc ici s'il manque (ex. sur le serveur)
+  await pool.query(`
+    INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash, role, grade, is_active)
+    VALUES ('Test', 'Équipe', '1', 'equipe@crimetracker.local',
+            '$2b$10$MbLJKBM6lydf2i9hrN8J/.6JUoz3Vexbkv2RV07kvi69KKFi40e.a', 'direction', 'directeur_general', TRUE)
+    ON CONFLICT DO NOTHING
+  `);
 }
 
 async function readSql(name) {

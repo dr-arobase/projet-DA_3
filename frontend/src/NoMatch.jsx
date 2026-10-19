@@ -1,12 +1,18 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import './styles/pages.css';
 
-// Page affichée pour les sections pas encore développées ou les URL inconnues
+// Adresse inconnue (404)
 export default function NoMatch() {
+  const { pathname } = useLocation();
   return (
-    <div className="page page-vide">
-      <h1>Page en construction</h1>
-      <p>Cette section n'est pas encore disponible.</p>
-      <Link to="/">Retour au tableau de bord</Link>
+    <div className="page pages-introuvable">
+      <p className="pages-code">404</p>
+      <h1>Page introuvable</h1>
+      <p>L'adresse <code>{pathname}</code> ne correspond à aucune page de CrimeTracker.</p>
+      <div className="pages-liens">
+        <Link to="/">Tableau de bord</Link>
+        <Link to="/personnes-recherchees">Personnes recherchées</Link>
+      </div>
     </div>
   );
 }

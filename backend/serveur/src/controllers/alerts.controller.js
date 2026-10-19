@@ -29,7 +29,8 @@ export const createAlert = async (req, res) => {
       details: { severity: finalSeverity, criminal_id: criminal_id || null }
     });
 
-    emitEvent('alert:broadcast', alert);
+    // issued_by_id : l'émetteur ne reçoit pas sa propre notification (le nom seul ne suffit pas)
+    emitEvent('alert:broadcast', { ...alert, issued_by_id: issued_by });
     
     return res.status(201).json({ message: 'Alerte diffusée avec succès', alert });
   } catch (error) {

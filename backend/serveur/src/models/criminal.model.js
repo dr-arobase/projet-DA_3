@@ -5,6 +5,7 @@ const SELECT_WITH_NAMES = `
   SELECT
     c.id, c.first_name, c.last_name, c.date_of_birth, c.nationality,
     c.photo_url, c.status, c.description, c.crimes, c.version,
+    c.last_known_address, c.latitude, c.longitude,
     c.added_at, c.updated_at,
     (au.first_name || ' ' || au.last_name) AS added_by,
     (uu.first_name || ' ' || uu.last_name) AS updated_by
@@ -57,18 +58,21 @@ export const findById = async (id) => {
 
 export const create = async ({
   first_name, last_name, date_of_birth, nationality,
-  description, crimes, status, photo_url, added_by
+  description, crimes, status, photo_url, added_by,
+  last_known_address, latitude, longitude
 }) => {
   const query = `
     INSERT INTO criminal
-      (first_name, last_name, date_of_birth, nationality, description, crimes, status, photo_url, added_by)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      (first_name, last_name, date_of_birth, nationality, description, crimes, status, photo_url, added_by,
+       last_known_address, latitude, longitude)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     RETURNING *
   `;
   const values = [
     first_name, last_name, date_of_birth || null, nationality || null,
     description || null, crimes || null, status || 'recherche',
-    photo_url || null, added_by
+    photo_url || null, added_by,
+    last_known_address || null, latitude ?? null, longitude ?? null
   ];
   const result = await pool.query(query, values);
   return result.rows[0];
@@ -111,6 +115,18 @@ export const updateStatus = async (id, status, expectedVersion, updated_by) => {
     RETURNING *
   `;
   const result = await pool.query(query, [status, updated_by, id, expectedVersion]);
+  return result.rows[0] || null;
+};
+
+// Dernière adresse connue et sa position (null si introuvable, ou pour effacer l'adresse)
+export const setAddress = async (id, { last_known_address, latitude, longitude, updated_by }) => {
+  const result = await pool.query(
+    `UPDATE criminal
+     SET last_known_address = $1, latitude = $2, longitude = $3, updated_by = $4
+     WHERE id = $5
+     RETURNING id`,
+    [last_known_address || null, latitude ?? null, longitude ?? null, updated_by, id]
+  );
   return result.rows[0] || null;
 };
 
