@@ -44,17 +44,6 @@ Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 
 État final au 6 octobre. Rappel de l'énoncé : un récit à moitié fait vaut **zéro** point; un récit est livré seulement s'il respecte la définition de « terminé » de `05-equipe.md` (PR revue, CI verte, ticket fermé).
 
-<<<<<<< HEAD
-| Ticket | Récit                                    | Points | Backend (API + tests)                  | Page dans le navigateur | Livré ?      |
-| ------ | ----------------------------------------- | ------ | -------------------------------------- | ----------------------- | ------------- |
-| #3     | S'authentifier avec badge et mot de passe | 5      | Fait                                   | Fait                    | Ticket fermé |
-| #4     | Consulter la liste paginée               | 2      | Fait                                   | Fait                    | PR à revoir  |
-| #5     | Voir la fiche complète d'un dossier      | 3      | Fait                                   | Fait                    | PR à revoir  |
-| #6     | Ajouter un dossier                        | 5      | Fait                                   | Fait                    | PR à revoir  |
-| #7     | Retirer un dossier (superviseur)          | 3      | Fait                                   | Fait                    | PR à revoir  |
-| #8     | Mettre à jour le statut                  | 3      | Fait (avec`version`, 409 si conflit) | Pas complété          | PR à revoir  |
-| #9     | Filtrer et rechercher                     | 3      | Fait (statut + nom)                    | Fait                    | PR à revoir  |
-=======
 | Ticket | Récit | Points | Backend (API + tests) | Page dans le navigateur | Fermé par | Livré selon la DoD ? |
 |---|---|---|---|---|---|---|
 | #3 | S'authentifier avec badge et mot de passe | 5 | Fait | Fait | Poussées directes sur `main` (30 sept.) | **Non** : fonctionnel, mais jamais passé par une PR revue |
@@ -64,19 +53,11 @@ Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 | #7 | Retirer un dossier (superviseur) | 3 | Fait | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
 | #8 | Mettre à jour le statut | 3 | Fait (avec `version`, 409 si conflit) | Fait, conflit affiché | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
 | #9 | Filtrer et rechercher | 3 | Fait (statut + nom) | Fait | [PR #35](https://github.com/dr-arobase/projet-DA_3/pull/35) | Oui |
->>>>>>> de6c6382429caa554a278e36dba2b83916b65338
 
 Les sept parcours fonctionnent de bout en bout dans le navigateur. Les écrans du registre (#4 à #9) ont été écrits tard, le 2 octobre, et livrés dans une seule PR (#35) revue par Eric : des PR plus petites, une par ticket, auraient permis une revue plus utile. L'authentification (#3) a été construite par poussées directes sur `main`, avant que la branche soit protégée : on ne la compte pas comme livrée au sens strict de notre définition de « terminé ».
 
 Bilan en cinq lignes :
 
-<<<<<<< HEAD
-1. **Points engagés** : 24
-2. **Points livrés** : 21
-3. **Vélocité réelle** : 24 points
-4. **Récits abandonnés et pourquoi** :- Mettre à jour le statut d'un dossier; Ce recit a été laissé pour compte à cause du manque de temps, la section pour le faire est rajouté dans le front end mais, aucune fonction n'y est implémenté.
-5. **Ce qu'on change** : voir la rétrospective (`retrospectives/sprint-1.md`)
-=======
 1. **Points engagés** : 24 (tickets #3 à #9).
 2. **Points livrés** : 19 selon la définition de « terminé » (#4 à #9); 24 si l'on compte #3, fonctionnel et testé mais fusionné sans PR revue.
 3. **Vélocité réelle** : **19 points**, valeur retenue pour planifier le sprint 2 (le plan actuel du sprint 2, 23 points, sera ramené à cette capacité).
@@ -84,7 +65,6 @@ Bilan en cinq lignes :
 5. **Ce qu'on change** : voir la rétrospective (`retrospectives/sprint-1.md`).
 
 **Note sur le journal** : les entrées des blocs du sprint 1 dans `journal.md` n'ont pas été commises le jour de chaque bloc; elles ont été ajoutées après coup, le 6 octobre ([PR #37](https://github.com/dr-arobase/projet-DA_3/pull/37)). L'historique Git fait foi pour les dates réelles du travail.
->>>>>>> de6c6382429caa554a278e36dba2b83916b65338
 
 ---
 
