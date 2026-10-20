@@ -16,7 +16,16 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+const disconnectUser = jest.fn();
+jest.unstable_mockModule('../../src/sockets/index.js', () => ({
+  default: jest.fn(),
+  emitEvent: jest.fn(),
+  emitToUsers: jest.fn(),
+  disconnectUser,
+}));
+
 const { default: app } = await import('../../src/app.js');
+const { isAccountActive, setAccountActive } = await import('../../src/utils/account-status.js');
 
 const bearer = (role) =>
   `Bearer ${jwt.sign({ id: 1, badge_number: 'SUP-001', role, grade: 'lieutenant' }, 'test-secret')}`;
@@ -25,6 +34,8 @@ const agent = { id: 5, first_name: 'Marc', last_name: 'Roy', badge_number: 'PL-0
 
 beforeEach(() => {
   query.mockReset();
+  disconnectUser.mockReset();
+  setAccountActive(5, true);
 });
 
 describe('contrôle des rôles', () => {
@@ -131,6 +142,9 @@ describe('activation, désactivation et promotion', () => {
     expect(res.status).toBe(200);
     expect(query.mock.calls[0][1]).toEqual([isActive, '5']);
     expect(query.mock.calls[1][1].slice(0, 4)).toEqual([1, action, 'user', 5]);
+    expect(isAccountActive(5)).toBe(isActive);
+    if (!isActive) expect(disconnectUser).toHaveBeenCalledWith(5);
+    else expect(disconnectUser).not.toHaveBeenCalled();
   });
 
   test('PATCH /:id/promote change rôle et grade (direction)', async () => {

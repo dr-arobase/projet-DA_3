@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import * as userModel from '../models/user.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
+import { setAccountActive } from '../utils/account-status.js';
+import { disconnectUser } from '../sockets/index.js';
 
 const VALID_ROLES = ['policier', 'superviseur', 'direction'];
 const VALID_GRADES = [
@@ -71,8 +73,11 @@ export const createUser = async (req, res) => {
 // PATCH /api/users/:id/deactivate
 export const deactivateUser = async (req, res) => {
   try {
-        const user = await userModel.setActive(req.params.id, false);
+    const user = await userModel.setActive(req.params.id, false);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+
+    setAccountActive(user.id, false);
+    disconnectUser(user.id);
 
     await auditLogModel.record({
       actor_id: req.user.id,
@@ -93,12 +98,14 @@ export const reactivateUser = async (req, res) => {
   try {
     const user = await userModel.setActive(req.params.id, true);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    
+
+    setAccountActive(user.id, true);
+
     await auditLogModel.record({
-        actor_id: req.user.id,
-        action: 'USER_REACTIVATED',
-        target_type:'user',
-        target_id: user.id
+      actor_id: req.user.id,
+      action: 'USER_REACTIVATED',
+      target_type: 'user',
+      target_id: user.id
     });
 
     return res.json({ message: 'Compte réactivé', user });
