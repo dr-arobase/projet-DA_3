@@ -19,10 +19,12 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const emitToUsers = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers,
+  disconnectUser,
 }));
 
 const { default: app } = await import('../../src/app.js');

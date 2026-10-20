@@ -90,7 +90,6 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine.
 
 Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « à venir ».
 
-<<<<<<< HEAD
 | Élément                                                                                                        | Où                            | Ce qui le remplacera                       | Sprint           |
 | ---------------------------------------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------ | ---------------- |
 | Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion              | Les vrais compteurs, lus dans l'API        | 3 (statistiques) |
@@ -99,13 +98,6 @@ Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Ch
 | Pages Alertes, Communiqués, Utilisateurs (« À venir » dans le menu et sur « Diffuser un communiqué »)     | Menu latéral, tableau de bord | Diffusion d'alertes, gestion des comptes   | 2                |
 | Pages Annuaire, Statistiques (« À venir » dans le menu)                                                       | Menu latéral                  | Agents connectés, statistiques globales   | 3                |
 | Pages Messagerie, Carte (« À venir » dans le menu)                                                            | Menu latéral                  | Hors portée de l'alpha (récits*Could*) | —               |
-=======
-| Élément | Où | Ce qui le remplacera | Sprint |
-|---|---|---|---|
-| Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
-| « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
-| « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
->>>>>>> 1a2b3c3b266a1da7d4f29d4d1a43258334342881
 
 Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 

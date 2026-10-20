@@ -17,10 +17,12 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const emitEvent = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent,
   emitToUsers: jest.fn(),
+  disconnectUser,
 }));
 
 const geocode = jest.fn();

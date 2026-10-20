@@ -8,8 +8,9 @@ import { io as ioClient } from 'socket.io-client';
 
 process.env.JWT_SECRET = 'test-secret';
 
-const { default: registerSockets, emitEvent } = await import('../../src/sockets/index.js');
+const { default: registerSockets, emitEvent, disconnectUser } = await import('../../src/sockets/index.js');
 const { signToken } = await import('../../src/utils/jwt.js');
+const { setAccountActive } = await import('../../src/utils/account-status.js');
 
 let server;
 let io;
@@ -57,6 +58,14 @@ describe('Socket.IO', () => {
     expect(err.message).toBe('Authentification Socket.IO échouée');
   });
 
+  test('refuse un jeton encore valide si le compte a été désactivé', async () => {
+    setAccountActive(7, false);
+    const err = await once(connect(signToken({ id: 7, role: 'policier' })), 'connect_error');
+    setAccountActive(7, true);
+
+    expect(err.message).toBe('Authentification Socket.IO échouée');
+  });
+
   test('accepte un jeton valide et diffuse la présence', async () => {
     const socket = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }));
     const presence = await once(socket, 'presence:update');
@@ -97,5 +106,15 @@ describe('Socket.IO', () => {
     b.disconnect();
 
     expect((await afterLeave).map((u) => u.id)).toEqual([1]);
+  });
+
+  test('déconnecte tous les onglets d’un agent désactivé', async () => {
+    const socket = connect(signToken({ id: 12, badge_number: 'PL-012', role: 'policier' }));
+    await once(socket, 'connect');
+    const disconnected = once(socket, 'disconnect');
+
+    disconnectUser(12);
+
+    expect(await disconnected).toBe('io server disconnect');
   });
 });

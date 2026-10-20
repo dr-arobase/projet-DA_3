@@ -4,6 +4,7 @@
 import { jest, describe, test, expect } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import { verifyToken } from '../../src/middleware/auth.middleware.js';
+import { setAccountActive } from '../../src/utils/account-status.js';
 
 process.env.JWT_SECRET = 'test-secret';
 
@@ -67,5 +68,16 @@ describe('verifyToken', () => {
     expect(next).toHaveBeenCalledTimes(1);
     expect(res.status).not.toHaveBeenCalled();
     expect(req.user).toMatchObject({ id: 3, role: 'policier' });
+  });
+
+  test('401 si le compte a été désactivé après la création du jeton', () => {
+    setAccountActive(3, false);
+    const token = jwt.sign({ id: 3, role: 'policier' }, 'test-secret');
+    const { res, next } = run(['Bearer', token].join(' '));
+    setAccountActive(3, true);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ message: 'Compte désactivé.' });
+    expect(next).not.toHaveBeenCalled();
   });
 });

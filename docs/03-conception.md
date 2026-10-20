@@ -346,7 +346,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Raison** : le JavaScript de la page ne peut pas lire un cookie `httpOnly` : une faille XSS ne permet pas de voler le jeton. `SameSite=Lax` empêche l'envoi du cookie par un formulaire venant d'un autre site. Le même jeton authentifie aussi la connexion Socket.IO.
 
-**Prix de ce choix** : un JWT ne se révoque pas avant son expiration. Pour limiter ce risque, `GET /api/auth/me` relit le compte en base à chaque chargement de l'application : un compte désactivé perd l'accès à l'interface. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
+**Révocation d'un compte** : au démarrage, l'API charge en mémoire les identifiants des comptes désactivés. Le middleware refuse ensuite leur JWT sur chaque route protégée, et Socket.IO refuse toute nouvelle connexion. Lorsqu'un superviseur désactive un compte, son identifiant est ajouté à cette liste et toutes ses connexions Socket.IO ouvertes sont coupées; la réactivation le retire de la liste. La base reste la source persistante et la liste est rechargée au prochain démarrage. Ce mécanisme suppose une seule instance de l'API; plusieurs instances nécessiteraient un stockage partagé pour propager les révocations. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
 
 ---
 
