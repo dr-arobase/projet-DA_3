@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
+import { isAccountActive } from '../utils/account-status.js';
 
 let io;
 
@@ -23,6 +24,7 @@ export default function registerSockets(server) {
       const token = socket.handshake.auth?.token || tokenFrom(socket.handshake.headers);
       if (!token) throw new Error('Jeton manquant');
       socket.user = verifyToken(token);
+      if (!isAccountActive(socket.user.id)) throw new Error('Compte désactivé');
       next();
     } catch {
       next(new Error('Authentification Socket.IO échouée'));
@@ -55,4 +57,8 @@ const roomOf = (userId) => `agent:${userId}`;
 // Envoie un événement aux seuls agents indiqués (ex. un message privé : destinataire et expéditeur)
 export function emitToUsers(userIds, event, payload) {
   if (io) io.to([...new Set(userIds)].map(roomOf)).emit(event, payload);
+}
+
+export function disconnectUser(userId) {
+  if (io) io.in(roomOf(userId)).disconnectSockets(true);
 }
