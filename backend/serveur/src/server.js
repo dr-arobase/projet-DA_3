@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
 import registerSockets, { disconnectUser } from './sockets/index.js';
 import { listenForAccountDeactivations } from './utils/account-status.js';
+import { assertJwtSecret } from './utils/jwt.js';
 
 dotenv.config();
 
@@ -10,6 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
+    assertJwtSecret();
+
     // Initialisation du pool ou des tables si nécessaire
     if (typeof initializeDatabase === 'function') {
       await initializeDatabase();

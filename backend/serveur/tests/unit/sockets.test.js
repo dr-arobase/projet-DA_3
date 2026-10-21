@@ -7,10 +7,17 @@ import http from 'node:http';
 import { io as ioClient } from 'socket.io-client';
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.SOCKET_ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:8080';
 
 const inactiveUsers = new Set();
 const query = jest.fn(async (_sql, [id]) => ({
-  rows: [{ is_active: !inactiveUsers.has(Number(id)) }],
+  rows: [{
+    id: Number(id),
+    badge_number: `PL-${String(id).padStart(3, '0')}`,
+    role: 'policier',
+    grade: 'sergent',
+    is_active: !inactiveUsers.has(Number(id)),
+  }],
 }));
 jest.unstable_mockModule('../../src/config/db.js', () => ({
   pool: { query },
@@ -24,8 +31,13 @@ let io;
 let url;
 const clients = [];
 
-const connect = (token) => {
-  const socket = ioClient(url, { auth: token ? { token } : {}, reconnection: false, forceNew: true });
+const connect = (token, origin) => {
+  const socket = ioClient(url, {
+    auth: token ? { token } : {},
+    reconnection: false,
+    forceNew: true,
+    ...(origin ? { extraHeaders: { Origin: origin } } : {}),
+  });
   clients.push(socket);
   return socket;
 };
@@ -74,10 +86,31 @@ describe('Socket.IO', () => {
   });
 
   test('accepte un jeton valide et diffuse la présence', async () => {
-    const socket = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }));
+    const socket = connect(
+      signToken({ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }),
+      'http://localhost:5173'
+    );
     const presence = await once(socket, 'presence:update');
 
-    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }]);
+    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'sergent' }]);
+  });
+
+  test('refuse une origine navigateur qui ne figure pas dans la liste autorisée', async () => {
+    const err = await once(
+      connect(signToken({ id: 1, role: 'policier' }), 'https://site-malveillant.example'),
+      'connect_error'
+    );
+
+    expect(err.message).toBe('Authentification Socket.IO échouée');
+  });
+
+  test('utilise les informations courantes de la base, pas le rôle du jeton', async () => {
+    const socket = connect(signToken({
+      id: 1, badge_number: 'ANCIEN-001', role: 'direction', grade: 'general',
+    }));
+    const presence = await once(socket, 'presence:update');
+
+    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'sergent' }]);
   });
 
   test('accepte le cookie de session du navigateur', async () => {
