@@ -25,15 +25,19 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   disconnectUser,
 }));
 
+let authenticatedRole = 'policier';
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-007', role: authenticatedRole, grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
 
-const bearer = (role = 'policier') =>
+const bearer = (role = 'policier') => (authenticatedRole = role) &&
   `Bearer ${jwt.sign({ id: 7, badge_number: 'PL-007', role, grade: 'sergent_autres_fonctions' }, 'test-secret')}`;
 
 const dossier = { id: 1, first_name: 'Jean', last_name: 'Dupont', status: 'recherche', version: 1 };

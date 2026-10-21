@@ -18,14 +18,24 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/middleware/login-rate-limit.middleware.js', () => ({
+  limitLoginAttempts: (req, res, next) => next(),
+}));
+
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-003', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
-const { readCookie, tokenFrom, COOKIE_NAME } = await import('../../src/utils/session.js');
+const {
+  readCookie, tokenFrom, COOKIE_NAME, CSRF_COOKIE_NAME,
+} = await import('../../src/utils/session.js');
+const { createCsrfToken, verifyCsrfToken } = await import('../../src/utils/csrf.js');
 
 let passwordHash;
 beforeAll(async () => {
@@ -42,6 +52,8 @@ const agent = (extra = {}) => ({
 });
 
 const cookieDe = (res) => (res.headers['set-cookie'] ?? []).find((c) => c.startsWith(`${COOKIE_NAME}=`));
+const csrfCookieDe = (res) => (res.headers['set-cookie'] ?? [])
+  .find((c) => c.startsWith(`${CSRF_COOKIE_NAME}=`));
 
 async function seConnecter(body = {}) {
   query.mockResolvedValueOnce({ rows: [agent()] });
@@ -71,6 +83,12 @@ describe('POST /api/auth/login', () => {
     expect(cookie).toMatch(/HttpOnly/i);
     expect(cookie).toMatch(/SameSite=Lax/i);
     expect(cookie).toContain(`${COOKIE_NAME}=${res.body.token}`);
+
+    const csrfCookie = csrfCookieDe(res);
+    const csrfToken = csrfCookie.split(';')[0].slice(CSRF_COOKIE_NAME.length + 1);
+    expect(csrfCookie).toMatch(/SameSite=Lax/i);
+    expect(csrfCookie).not.toMatch(/HttpOnly/i);
+    expect(verifyCsrfToken(csrfToken)).toBe(true);
   });
 
   test('sans « se souvenir de moi » : cookie de session (pas de date d\'expiration)', async () => {
@@ -147,11 +165,38 @@ describe('routes protégées avec le cookie seul', () => {
 describe('POST /api/auth/logout', () => {
   test('efface le cookie de session', async () => {
     const token = jwt.sign({ id: 3, role: 'policier' }, 'test-secret');
+    const csrfToken = createCsrfToken();
 
-    const res = await request(app).post('/api/auth/logout').set('Cookie', `${COOKIE_NAME}=${token}`);
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', `${COOKIE_NAME}=${token}; ${CSRF_COOKIE_NAME}=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken);
 
     expect(res.status).toBe(200);
     expect(cookieDe(res)).toMatch(new RegExp(`^${COOKIE_NAME}=;`));
     expect(cookieDe(res)).toMatch(/Expires=Thu, 01 Jan 1970/);
+    expect(csrfCookieDe(res)).toMatch(new RegExp(`^${CSRF_COOKIE_NAME}=;`));
+  });
+
+  test('refuse la déconnexion par cookie sans jeton CSRF', async () => {
+    const token = jwt.sign({ id: 3, role: 'policier' }, 'test-secret');
+
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Cookie', `${COOKIE_NAME}=${token}`);
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: 'Jeton CSRF manquant ou invalide.' });
+  });
+
+  test('conserve la déconnexion par Bearer sans jeton CSRF', async () => {
+    const token = jwt.sign({ id: 3, role: 'policier' }, 'test-secret');
+
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', `${COOKIE_NAME}=${token}`);
+
+    expect(res.status).toBe(200);
   });
 });

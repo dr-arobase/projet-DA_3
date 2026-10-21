@@ -17,6 +17,10 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/middleware/login-rate-limit.middleware.js', () => ({
+  limitLoginAttempts: (req, res, next) => next(),
+}));
+
 const github = {
   isConfigured: jest.fn(),
   authorizationUrl: jest.fn(),
@@ -26,12 +30,16 @@ jest.unstable_mockModule('../../src/services/github.service.js', () => github);
 
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'GH-4242', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
-const { COOKIE_NAME } = await import('../../src/utils/session.js');
+const { COOKIE_NAME, CSRF_COOKIE_NAME } = await import('../../src/utils/session.js');
+const { createCsrfToken, verifyCsrfToken } = await import('../../src/utils/csrf.js');
 
 const STATE_COOKIE = 'crimetracker_oauth_state';
 
@@ -112,6 +120,9 @@ describe('GET /api/auth/github/callback', () => {
     expect(session).toMatch(/HttpOnly/i);
     const jeton = session.split(';')[0].slice(COOKIE_NAME.length + 1);
     expect(jwt.verify(jeton, 'test-secret')).toMatchObject({ id: 12, role: 'policier' });
+    const csrfCookie = cookieDe(res, CSRF_COOKIE_NAME);
+    expect(csrfCookie).not.toMatch(/HttpOnly/i);
+    expect(verifyCsrfToken(csrfCookie.split(';')[0].slice(CSRF_COOKIE_NAME.length + 1))).toBe(true);
   });
 
   test('compte déjà lié : aucune création', async () => {
@@ -191,8 +202,13 @@ describe('GET /api/auth/github/callback', () => {
     base();
     github.fetchProfile.mockResolvedValue(profilGithub);
     const session = cookieDe(await retour(), COOKIE_NAME).split(';')[0];
+    const csrfToken = createCsrfToken();
 
-    const res = await request(app).post('/api/users').set('Cookie', session).send({});
+    const res = await request(app)
+      .post('/api/users')
+      .set('Cookie', `${session}; ${CSRF_COOKIE_NAME}=${csrfToken}`)
+      .set('X-CSRF-Token', csrfToken)
+      .send({});
 
     expect(res.status).toBe(403);
   });

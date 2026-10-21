@@ -25,16 +25,21 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
 }));
 
 const isAccountActive = jest.fn(async () => true);
+let authenticatedRole = 'policier';
+const getAccountAuthInfo = jest.fn(async (id) => ({
+  id, badge_number: 'SUP-001', role: authenticatedRole, grade: 'lieutenant', is_active: true,
+}));
 const publishAccountDeactivated = jest.fn();
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive,
+  getAccountAuthInfo,
   publishAccountDeactivated,
   listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
 
-const bearer = (role) =>
+const bearer = (role) => (authenticatedRole = role) &&
   `Bearer ${jwt.sign({ id: 1, badge_number: 'SUP-001', role, grade: 'lieutenant' }, 'test-secret')}`;
 
 const agent = { id: 5, first_name: 'Marc', last_name: 'Roy', badge_number: 'PL-005', role: 'policier' };
@@ -43,6 +48,8 @@ beforeEach(() => {
   query.mockReset();
   disconnectUser.mockReset();
   isAccountActive.mockResolvedValue(true);
+  authenticatedRole = 'policier';
+  getAccountAuthInfo.mockClear();
   publishAccountDeactivated.mockReset();
 });
 
@@ -137,6 +144,37 @@ describe('POST /api/users', () => {
 });
 
 describe('activation, désactivation et promotion', () => {
+  test('403 si un superviseur tente de désactiver son propre compte', async () => {
+    const res = await request(app)
+      .patch('/api/users/1/deactivate')
+      .set('Authorization', bearer('superviseur'));
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: 'Vous ne pouvez pas désactiver votre propre compte.' });
+    expect(query).not.toHaveBeenCalled();
+    expect(disconnectUser).not.toHaveBeenCalled();
+    expect(publishAccountDeactivated).not.toHaveBeenCalled();
+  });
+
+  test('403 si un superviseur tente de désactiver un compte de direction', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...agent, id: 8, role: 'direction' }] });
+
+    const res = await request(app)
+      .patch('/api/users/8/deactivate')
+      .set('Authorization', bearer('superviseur'));
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      message: 'Un superviseur ne peut pas désactiver un compte de direction.',
+    });
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[0][0]).toMatch(/role <> 'direction'/);
+    expect(disconnectUser).not.toHaveBeenCalled();
+    expect(publishAccountDeactivated).not.toHaveBeenCalled();
+  });
+
   test.each([
     ['deactivate', 'USER_DEACTIVATED', false],
     ['reactivate', 'USER_REACTIVATED', true],
@@ -148,7 +186,12 @@ describe('activation, désactivation et promotion', () => {
     const res = await request(app).patch(`/api/users/5/${route}`).set('Authorization', bearer('superviseur'));
 
     expect(res.status).toBe(200);
-    expect(query.mock.calls[0][1]).toEqual([isActive, '5']);
+    if (isActive) {
+      expect(query.mock.calls[0][1]).toEqual([isActive, '5']);
+    } else {
+      expect(query.mock.calls[0][1]).toEqual(['5', 'superviseur']);
+      expect(query.mock.calls[0][0]).toMatch(/role <> 'direction'/);
+    }
     expect(query.mock.calls[1][1].slice(0, 4)).toEqual([1, action, 'user', 5]);
     if (!isActive) {
       expect(disconnectUser).toHaveBeenCalledWith(5);

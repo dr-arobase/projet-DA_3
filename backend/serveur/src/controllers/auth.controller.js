@@ -1,6 +1,9 @@
 import * as authService from '../services/auth.service.js';
 import * as githubService from '../services/github.service.js';
-import { COOKIE_NAME, cookieOptions, readCookie } from '../utils/session.js';
+import {
+  COOKIE_NAME, CSRF_COOKIE_NAME, cookieOptions, csrfCookieOptions, readCookie,
+} from '../utils/session.js';
+import { createCsrfToken } from '../utils/csrf.js';
 
 export const login = async (req, res) => {
   const { badge_number, password, se_souvenir } = req.body;
@@ -16,6 +19,7 @@ export const login = async (req, res) => {
     // la réponse pour les clients sans cookie (Swagger, scripts, Socket.IO en Node).
     const seSouvenir = se_souvenir === true || se_souvenir === 'true';
     res.cookie(COOKIE_NAME, data.token, cookieOptions(seSouvenir));
+    res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), csrfCookieOptions(seSouvenir));
     return res.json(data);
   } catch (error) {
     // Gestion des erreurs métiers renvoyées par le service
@@ -67,6 +71,7 @@ export const githubCallback = async (req, res) => {
     const profile = await githubService.fetchProfile(code);
     const data = await authService.loginWithGithub(profile);
     res.cookie(COOKIE_NAME, data.token, cookieOptions());
+    res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), csrfCookieOptions());
     return versConnexion(res, 'github=ok');
   } catch (err) {
     if (err.message === 'INVALID_CREDENTIALS') {
@@ -80,9 +85,11 @@ export const githubCallback = async (req, res) => {
 export const logout = async (req, res) => {
   try {
     // req.user est disponible grâce au middleware verifyToken
-    const result = await authService.logoutUser(req.user.id);
-    const { maxAge, ...options } = cookieOptions();
+    const result = await authService.logoutUser();
+    const options = cookieOptions();
+    delete options.maxAge;
     res.clearCookie(COOKIE_NAME, options);
+    res.clearCookie(CSRF_COOKIE_NAME, csrfCookieOptions());
     return res.status(200).json(result);
   } catch (error) {
     console.error('Erreur lors du logout:', error);

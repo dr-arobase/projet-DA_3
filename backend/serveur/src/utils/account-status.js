@@ -3,6 +3,19 @@ import { pool } from '../config/db.js';
 const CHANNEL = 'account_deactivated';
 const USE_POSTGRES = !process.env.DATABASE_URL?.startsWith('sqlite:');
 
+export async function getAccountAuthInfo(id) {
+  const result = await pool.query(
+    'SELECT id, badge_number, role, grade, is_active FROM app_user WHERE id = $1',
+    [id]
+  );
+  const account = result.rows[0];
+  if (!account) return null;
+  return {
+    ...account,
+    is_active: account.is_active === true || account.is_active === 1,
+  };
+}
+
 export async function isAccountActive(id) {
   const result = await pool.query('SELECT is_active FROM app_user WHERE id = $1', [id]);
   const isActive = result.rows[0]?.is_active;

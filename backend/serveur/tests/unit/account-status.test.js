@@ -14,7 +14,7 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const {
-  isAccountActive, publishAccountDeactivated, listenForAccountDeactivations,
+  getAccountAuthInfo, isAccountActive, publishAccountDeactivated, listenForAccountDeactivations,
 } = await import('../../src/utils/account-status.js');
 
 describe('statut des comptes dans PostgreSQL', () => {
@@ -33,6 +33,29 @@ describe('statut des comptes dans PostgreSQL', () => {
     await expect(isAccountActive(8)).resolves.toBe(false);
     await expect(isAccountActive(9)).resolves.toBe(false);
     expect(query).toHaveBeenCalledWith('SELECT is_active FROM app_user WHERE id = $1', [7]);
+  });
+
+  test('charge les informations d’autorisation actuelles du compte', async () => {
+    const account = {
+      id: 7,
+      badge_number: 'SUP-007',
+      role: 'policier',
+      grade: 'sergent',
+      is_active: true,
+    };
+    query.mockResolvedValueOnce({ rows: [account] });
+
+    await expect(getAccountAuthInfo(7)).resolves.toEqual(account);
+    expect(query).toHaveBeenCalledWith(
+      'SELECT id, badge_number, role, grade, is_active FROM app_user WHERE id = $1',
+      [7]
+    );
+  });
+
+  test('retourne null si le compte n’existe plus', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+
+    await expect(getAccountAuthInfo(404)).resolves.toBeNull();
   });
 
   test('publie la désactivation sur le canal PostgreSQL', async () => {
