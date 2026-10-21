@@ -2,15 +2,22 @@
  * Tests de Socket.IO : authentification par JWT, présence et diffusion d'événements.
  * Un vrai serveur HTTP est lancé sur un port libre, avec de vrais clients socket.io-client.
  */
-import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { jest, describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import http from 'node:http';
 import { io as ioClient } from 'socket.io-client';
 
 process.env.JWT_SECRET = 'test-secret';
 
+const inactiveUsers = new Set();
+const query = jest.fn(async (_sql, [id]) => ({
+  rows: [{ is_active: !inactiveUsers.has(Number(id)) }],
+}));
+jest.unstable_mockModule('../../src/config/db.js', () => ({
+  pool: { query },
+}));
+
 const { default: registerSockets, emitEvent, disconnectUser } = await import('../../src/sockets/index.js');
 const { signToken } = await import('../../src/utils/jwt.js');
-const { setAccountActive } = await import('../../src/utils/account-status.js');
 
 let server;
 let io;
@@ -39,6 +46,7 @@ afterEach(async () => {
   while (io.of('/').sockets.size > 0) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
+  inactiveUsers.clear();
 });
 
 afterAll(async () => {
@@ -59,9 +67,8 @@ describe('Socket.IO', () => {
   });
 
   test('refuse un jeton encore valide si le compte a été désactivé', async () => {
-    setAccountActive(7, false);
+    inactiveUsers.add(7);
     const err = await once(connect(signToken({ id: 7, role: 'policier' })), 'connect_error');
-    setAccountActive(7, true);
 
     expect(err.message).toBe('Authentification Socket.IO échouée');
   });

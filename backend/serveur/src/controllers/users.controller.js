@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import * as userModel from '../models/user.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
-import { setAccountActive } from '../utils/account-status.js';
+import { publishAccountDeactivated } from '../utils/account-status.js';
 import { disconnectUser } from '../sockets/index.js';
 
 const VALID_ROLES = ['policier', 'superviseur', 'direction'];
@@ -76,8 +76,8 @@ export const deactivateUser = async (req, res) => {
     const user = await userModel.setActive(req.params.id, false);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
 
-    setAccountActive(user.id, false);
     disconnectUser(user.id);
+    await publishAccountDeactivated(user.id);
 
     await auditLogModel.record({
       actor_id: req.user.id,
@@ -98,8 +98,6 @@ export const reactivateUser = async (req, res) => {
   try {
     const user = await userModel.setActive(req.params.id, true);
     if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-
-    setAccountActive(user.id, true);
 
     await auditLogModel.record({
       actor_id: req.user.id,

@@ -1,19 +1,86 @@
 import { pool } from '../config/db.js';
 
-const inactiveAccountIds = new Set();
+const CHANNEL = 'account_deactivated';
+const USE_POSTGRES = !process.env.DATABASE_URL?.startsWith('sqlite:');
 
-export async function loadInactiveAccounts() {
-  const result = await pool.query('SELECT id FROM app_user WHERE is_active = FALSE');
-  inactiveAccountIds.clear();
-  for (const { id } of result.rows) inactiveAccountIds.add(Number(id));
+export async function isAccountActive(id) {
+  const result = await pool.query('SELECT is_active FROM app_user WHERE id = $1', [id]);
+  const isActive = result.rows[0]?.is_active;
+  return isActive === true || isActive === 1;
 }
 
-export function setAccountActive(id, isActive) {
-  const accountId = Number(id);
-  if (isActive) inactiveAccountIds.delete(accountId);
-  else inactiveAccountIds.add(accountId);
+export async function publishAccountDeactivated(id) {
+  if (!USE_POSTGRES) return;
+  await pool.query('SELECT pg_notify($1, $2)', [CHANNEL, String(id)]);
 }
 
-export function isAccountActive(id) {
-  return !inactiveAccountIds.has(Number(id));
+export async function listenForAccountDeactivations(onDeactivated) {
+  if (!USE_POSTGRES) return () => {};
+
+  let stopped = false;
+  let client;
+  let retryTimer;
+  let retryDelay = 1000;
+
+  const onNotification = (message) => {
+    if (message.channel !== CHANNEL) return;
+    const id = Number(message.payload);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      console.error('Notification PostgreSQL de désactivation invalide:', message.payload);
+      return;
+    }
+    onDeactivated(id);
+  };
+
+  const scheduleReconnect = (error) => {
+    if (stopped || retryTimer) return;
+    console.error('Connexion LISTEN PostgreSQL perdue; nouvelle tentative:', error);
+    retryTimer = setTimeout(async () => {
+      retryTimer = undefined;
+      try {
+        await connect();
+      } catch (reconnectError) {
+        scheduleReconnect(reconnectError);
+      }
+    }, retryDelay);
+    retryTimer.unref();
+    retryDelay = Math.min(retryDelay * 2, 30000);
+  };
+
+  const connect = async () => {
+    const nextClient = await pool.connect();
+    nextClient.on('notification', onNotification);
+    nextClient.on('error', (error) => {
+      if (client !== nextClient) return;
+      client = undefined;
+      nextClient.release(true);
+      scheduleReconnect(error);
+    });
+
+    try {
+      await nextClient.query(`LISTEN ${CHANNEL}`);
+      client = nextClient;
+      retryDelay = 1000;
+
+      const result = await pool.query('SELECT id FROM app_user WHERE is_active = FALSE');
+      for (const { id } of result.rows) onDeactivated(Number(id));
+    } catch (error) {
+      nextClient.removeListener('notification', onNotification);
+      nextClient.release(true);
+      throw error;
+    }
+  };
+
+  await connect();
+
+  return async () => {
+    stopped = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    if (!client) return;
+    const currentClient = client;
+    client = undefined;
+    currentClient.removeListener('notification', onNotification);
+    await currentClient.query(`UNLISTEN ${CHANNEL}`);
+    currentClient.release();
+  };
 }
