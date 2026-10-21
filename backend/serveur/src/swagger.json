@@ -592,7 +592,7 @@
       "post": {
         "tags": ["Users"],
         "summary": "Créer un compte policier",
-        "description": "Crée le compte d'un nouveau policier (récit #8). Le rôle est `policier` et le grade `sergent_autres_fonctions`.\n\n**Rôle requis :** `superviseur`",
+        "description": "Crée un compte (récit #8). Par défaut : rôle `policier`, grade `sergent_autres_fonctions`. Un superviseur ne crée que des policiers (403 sinon) ; la direction peut créer tous les rôles. Mot de passe de 8 caractères au moins, courriel valide.\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
           "content": {
@@ -614,7 +614,7 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "409": {
-            "description": "Matricule déjà utilisé",
+                    "description": "Matricule ou courriel déjà utilisé",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -954,7 +954,7 @@
         "required": ["badge_number", "password"],
         "properties": {
           "badge_number": { "type": "string", "example": "P-1001" },
-          "password": { "type": "string", "format": "password", "example": "motdepasse" },
+          "password": { "type": "string", "format": "password", "minLenght": 8, "example": "motdepasse" },
           "se_souvenir": { "type": "boolean", "example": false }
         }
       },
