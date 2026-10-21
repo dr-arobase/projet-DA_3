@@ -12,6 +12,7 @@ import path from 'node:path';
 process.env.JWT_SECRET = 'test-secret';
 
 const query = jest.fn();
+const loginRateLimit = jest.fn((req, res, next) => next());
 jest.unstable_mockModule('../../src/config/db.js', () => ({
   pool: { query },
   initializeDatabase: jest.fn(),
@@ -19,8 +20,15 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/middleware/login-rate-limit.middleware.js', () => ({
+  limitLoginAttempts: loginRateLimit,
+}));
+
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-003', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
@@ -37,6 +45,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   query.mockReset();
+  loginRateLimit.mockClear();
   consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 });
 
@@ -101,6 +110,7 @@ describe('POST /api/auth/login', () => {
     expect(res.body.user).toMatchObject({ id: 3, badge_number: 'PL-003', role: 'policier' });
     expect(res.body.user).not.toHaveProperty('password_hash');
     expect(jwt.verify(res.body.token, 'test-secret').id).toBe(3);
+    expect(loginRateLimit).toHaveBeenCalled();
   });
 
   test('accepte aussi un formulaire urlencoded', async () => {

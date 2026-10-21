@@ -6,7 +6,7 @@
  *
  * Les tests créent leurs propres données (matricule TEST-JEST) et les suppriment à la fin.
  */
-import { jest, describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import bcrypt from 'bcrypt';
 
@@ -85,7 +85,14 @@ describeDb('Intégration PostgreSQL', () => {
       const tables = rows.map((r) => r.table_name);
 
       expect(tables).toEqual(
-        expect.arrayContaining(['app_user', 'criminal', 'sighting', 'alert', 'audit_log'])
+        expect.arrayContaining([
+          'app_user',
+          'criminal',
+          'sighting',
+          'alert',
+          'audit_log',
+          'login_rate_limit',
+        ])
       );
     });
 
@@ -193,6 +200,7 @@ describeDb('Intégration PostgreSQL', () => {
     });
 
     test('PUT par un superviseur met à jour le dossier', async () => {
+      await pool.query("UPDATE app_user SET role = 'superviseur' WHERE id = $1", [userId]);
       const res = await request(app)
         .put(`/api/criminals/${criminalId}`)
         .set('Authorization', bearer('superviseur'))
@@ -213,6 +221,7 @@ describeDb('Intégration PostgreSQL', () => {
     });
 
     test('GET /api/sightings (superviseur) renvoie l\'historique', async () => {
+      await pool.query("UPDATE app_user SET role = 'superviseur' WHERE id = $1", [userId]);
       const res = await request(app)
         .get(`/api/sightings?criminal_id=${criminalId}`)
         .set('Authorization', bearer('superviseur'));
@@ -222,6 +231,7 @@ describeDb('Intégration PostgreSQL', () => {
     });
 
     test('POST /api/alerts (superviseur) diffuse une alerte et l\'inscrit au journal', async () => {
+      await pool.query("UPDATE app_user SET role = 'superviseur' WHERE id = $1", [userId]);
       const res = await request(app)
         .post('/api/alerts')
         .set('Authorization', bearer('superviseur'))
@@ -232,6 +242,7 @@ describeDb('Intégration PostgreSQL', () => {
     });
 
     test('DELETE par un superviseur retire le dossier', async () => {
+      await pool.query("UPDATE app_user SET role = 'superviseur' WHERE id = $1", [userId]);
       const res = await request(app)
         .delete(`/api/criminals/${criminalId}`)
         .set('Authorization', bearer('superviseur'));
@@ -241,6 +252,7 @@ describeDb('Intégration PostgreSQL', () => {
     });
 
     test('GET /api/audit-logs (direction) contient les actions sensibles', async () => {
+      await pool.query("UPDATE app_user SET role = 'direction' WHERE id = $1", [userId]);
       const res = await request(app)
         .get('/api/audit-logs?limit=100')
         .set('Authorization', bearer('direction'));

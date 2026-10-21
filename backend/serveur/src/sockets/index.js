@@ -1,9 +1,36 @@
 import { Server } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
-import { isAccountActive } from '../utils/account-status.js';
+import { getAccountAuthInfo } from '../utils/account-status.js';
 
 let io;
+
+const LOCAL_ORIGINS = ['http://localhost:8080', 'http://localhost:5173'];
+
+function getAllowedOrigins() {
+  const configured = process.env.SOCKET_ALLOWED_ORIGINS;
+  const origins = configured === undefined
+    ? LOCAL_ORIGINS
+    : configured.split(',').map((origin) => origin.trim()).filter(Boolean);
+
+  if (origins.length === 0) {
+    throw new Error('SOCKET_ALLOWED_ORIGINS doit contenir au moins une origine.');
+  }
+
+  for (const origin of origins) {
+    let parsed;
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error(`Origine Socket.IO invalide : ${origin}`);
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol) || parsed.origin !== origin) {
+      throw new Error(`Origine Socket.IO invalide : ${origin}`);
+    }
+  }
+
+  return [...new Set(origins)];
+}
 
 // Présence : un policier peut avoir plusieurs connexions (plusieurs onglets), on garde par socket.id
 const connectedUsers = new Map();
@@ -13,18 +40,28 @@ function getPresenceList() {
 }
 
 export default function registerSockets(server) {
+  const allowedOrigins = getAllowedOrigins();
   io = new Server(server, {
-    cors: { origin: '*' }
+    cors: { origin: allowedOrigins, credentials: true }
   });
 
   // Authentification au moment de la connexion, via le même jeton JWT que l'API
   io.use(async (socket, next) => {
     try {
       // Jeton passé explicitement (scripts) ou cookie de session (navigateur)
+      const origin = socket.handshake.headers.origin;
+      if (origin && !allowedOrigins.includes(origin)) throw new Error('Origine non autorisée');
       const token = socket.handshake.auth?.token || tokenFrom(socket.handshake.headers);
       if (!token) throw new Error('Jeton manquant');
-      socket.user = verifyToken(token);
-      if (!await isAccountActive(socket.user.id)) throw new Error('Compte désactivé');
+      const decoded = verifyToken(token);
+      const account = await getAccountAuthInfo(decoded.id);
+      if (!account?.is_active) throw new Error('Compte désactivé');
+      socket.user = {
+        id: account.id,
+        badge_number: account.badge_number,
+        role: account.role,
+        grade: account.grade,
+      };
       next();
     } catch {
       next(new Error('Authentification Socket.IO échouée'));

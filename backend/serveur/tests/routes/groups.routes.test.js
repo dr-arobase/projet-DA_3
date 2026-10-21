@@ -29,6 +29,10 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
 
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: `PL-${String(id).padStart(3, '0')}`, role: 'policier',
+    grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
