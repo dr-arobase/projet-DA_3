@@ -4,8 +4,12 @@ import {
 } from '../controllers/users.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/rbac.middleware.js';
+import { validateId } from '../middleware/validateId.middleware.js';
 
 const router = express.Router();
+
+// Tout identifiant de l'URL doit être un entier positif (sinon 400)
+router.param('id', validateId);
 
 // Toutes ces routes exigent un agent connecté
 router.use(verifyToken);
