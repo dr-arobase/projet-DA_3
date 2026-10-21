@@ -24,6 +24,12 @@ const github = {
 };
 jest.unstable_mockModule('../../src/services/github.service.js', () => github);
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const { default: app } = await import('../../src/app.js');
 const { COOKIE_NAME } = await import('../../src/utils/session.js');
 
