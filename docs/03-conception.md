@@ -208,7 +208,7 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 
 La recherche **par nom** du récit #9 a été ajoutée à la fin du sprint (`q`). Les caractères `%` et `_` tapés par l'agent sont cherchés tels quels, pas comme des jokers SQL.
 
-La route de promotion vérifie que le rôle et le grade existent, puis ajoute une entrée au journal d'audit. Elle ne vérifie pas encore que le grade correspond au rôle (par exemple un `policier` lieutenant) : c'est à ajouter avec le récit #19. Exemple de requête :
+La route de promotion vérifie que le rôle et le grade existent, puis ajoute une entrée au journal d'audit. Elle refuse aussi (400) un grade qui ne correspond pas au rôle, par exemple un `policier` lieutenant, selon les contraintes de rôle ci-dessus ; la même règle s'applique à la création d'un comptecd . Exemple de requête :
 
 ```json
 {
