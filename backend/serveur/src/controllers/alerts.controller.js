@@ -2,6 +2,7 @@ import * as alertModel from '../models/alert.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
 import * as criminalModel from '../models/criminal.model.js';
 import { emitEvent } from '../sockets/index.js';
+import { readPagination } from '../utils/pagination.js';
 
 const VALID_SEVERITIES = ['info', 'urgent'];
 const MESSAGE_MAX_LENGTH = 500; // alert.message est un VARCHAR(500)
@@ -62,9 +63,7 @@ export const createAlert = async (req, res) => {
 // GET /api/alerts
 export const getAlerts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
-    const offset = (page - 1) * limit;
+        const { page, limit, offset } = readPagination(req.query, 20);
 
     const alerts = await alertModel.findAll({ limit, offset });
     return res.json({ page, limit, data: alerts });
