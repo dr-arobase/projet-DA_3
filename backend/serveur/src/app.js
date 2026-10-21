@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,6 +30,14 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, 'swagger.json'), 'utf8'));
 
 const app = express();
+
+// L'API n'est accessible qu'à travers nginx, qui transmet l'adresse du client.
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  hsts: false,
+}));
 
 // Middlewares de parsing
 app.use(express.json());

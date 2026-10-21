@@ -65,6 +65,17 @@ export const setActive = async (id, is_active) => {
   return result.rows[0] || null;
 };
 
+// Un superviseur ne peut pas désactiver un compte de direction.
+export const deactivate = async (id, actorRole) => {
+  const result = await pool.query(
+    `UPDATE app_user SET is_active = FALSE
+     WHERE id = $1 AND ($2 <> 'superviseur' OR role <> 'direction')
+     RETURNING ${PUBLIC_FIELDS}`,
+    [id, actorRole]
+  );
+  return result.rows[0] || null;
+};
+
 // Promouvoir : changer le rôle et le grade
 export const promote = async (id, { role, grade }) => {
   const result = await pool.query(

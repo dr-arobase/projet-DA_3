@@ -31,7 +31,9 @@ async function run(authorization) {
 describe('verifyToken', () => {
   beforeEach(() => {
     query.mockReset();
-    query.mockResolvedValue({ rows: [{ is_active: true }] });
+    query.mockResolvedValue({
+      rows: [{ id: 3, badge_number: 'PL-003', role: 'policier', grade: 'sergent', is_active: true }],
+    });
   });
 
   test('401 si aucun en-tête Authorization', async () => {
@@ -78,16 +80,41 @@ describe('verifyToken', () => {
     expect(next).toHaveBeenCalledTimes(1);
     expect(res.status).not.toHaveBeenCalled();
     expect(req.user).toMatchObject({ id: 3, role: 'policier' });
-    expect(query).toHaveBeenCalledWith('SELECT is_active FROM app_user WHERE id = $1', [3]);
+    expect(query).toHaveBeenCalledWith(
+      'SELECT id, badge_number, role, grade, is_active FROM app_user WHERE id = $1',
+      [3]
+    );
+  });
+
+  test('utilise le rôle courant en base plutôt que celui du jeton', async () => {
+    query.mockResolvedValueOnce({
+      rows: [{ id: 3, badge_number: 'PL-003', role: 'policier', grade: 'sergent', is_active: true }],
+    });
+    const token = jwt.sign({ id: 3, role: 'direction', grade: 'general' }, 'test-secret');
+    const { req, next } = await run(`Bearer ${token}`);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(req.user).toEqual({ id: 3, badge_number: 'PL-003', role: 'policier', grade: 'sergent' });
   });
 
   test('401 si le compte a été désactivé après la création du jeton', async () => {
-    query.mockResolvedValueOnce({ rows: [{ is_active: false }] });
+    query.mockResolvedValueOnce({
+      rows: [{ id: 3, badge_number: 'PL-003', role: 'policier', grade: 'sergent', is_active: false }],
+    });
     const token = jwt.sign({ id: 3, role: 'policier' }, 'test-secret');
     const { res, next } = await run(`Bearer ${token}`);
 
     expect(res.status).toHaveBeenCalledWith(401);
     expect(res.json).toHaveBeenCalledWith({ message: 'Compte désactivé.' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  test('401 si le compte n’existe plus', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    const token = jwt.sign({ id: 3, role: 'direction' }, 'test-secret');
+    const { res, next } = await run(`Bearer ${token}`);
+
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
 

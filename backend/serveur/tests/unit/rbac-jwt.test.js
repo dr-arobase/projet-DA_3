@@ -3,13 +3,24 @@
  */
 import { jest, describe, test, expect, afterEach } from '@jest/globals';
 import jwt from 'jsonwebtoken';
-import { signToken, verifyToken } from '../../src/utils/jwt.js';
+import { assertJwtSecret, signToken, verifyToken } from '../../src/utils/jwt.js';
 import { requireRole } from '../../src/middleware/rbac.middleware.js';
 
 describe('utils/jwt', () => {
   const saved = process.env.JWT_SECRET;
   afterEach(() => {
-    process.env.JWT_SECRET = saved;
+    if (saved === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = saved;
+  });
+
+  test('refuse une clé absente ou vide', () => {
+    delete process.env.JWT_SECRET;
+    expect(() => assertJwtSecret()).toThrow('JWT_SECRET doit être définie');
+    expect(() => signToken({ id: 1 })).toThrow('JWT_SECRET doit être définie');
+    expect(() => verifyToken('jeton-invalide')).toThrow('JWT_SECRET doit être définie');
+
+    process.env.JWT_SECRET = '   ';
+    expect(() => assertJwtSecret()).toThrow('JWT_SECRET doit être définie');
   });
 
   test('signe avec JWT_SECRET et expire après 8 h', () => {

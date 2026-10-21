@@ -14,6 +14,9 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-003', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
@@ -26,6 +29,9 @@ describe('Application Express', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(res.headers['x-powered-by']).toBeUndefined();
     expect(res.body).toEqual({
       message: 'API CrimeTracker opérationnelle',
       documentation: '/api-docs',

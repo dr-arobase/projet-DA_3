@@ -191,7 +191,7 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `GET` | `/api/users` | Liste des comptes | `superviseur` |
 | `GET` | `/api/users/:id` | Détail d'un compte | `superviseur` |
 | `POST` | `/api/users` | Créer un compte policier | `superviseur` |
-| `PATCH` | `/api/users/:id/deactivate` | Désactiver un compte (journal d'audit) | `superviseur` |
+| `PATCH` | `/api/users/:id/deactivate` | Désactiver un compte (journal d'audit); impossible de se désactiver soi-même, et un superviseur ne peut pas désactiver la direction | `superviseur` |
 | `PATCH` | `/api/users/:id/reactivate` | Réactiver un compte (journal d'audit) | `superviseur` |
 | `PATCH` | `/api/users/:id/promote` | Changer le rôle et le grade (journal d'audit) | `direction` |
 | `GET` | `/api/audit-logs` | Journal des actions sensibles | `direction` |
@@ -346,7 +346,13 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Raison** : le JavaScript de la page ne peut pas lire un cookie `httpOnly` : une faille XSS ne permet pas de voler le jeton. `SameSite=Lax` empêche l'envoi du cookie par un formulaire venant d'un autre site. Le même jeton authentifie aussi la connexion Socket.IO.
 
-**Révocation d'un compte** : chaque route protégée et nouvelle connexion Socket.IO vérifie `is_active` dans PostgreSQL; un jeton JWT ne suffit donc pas à conserver l'accès après désactivation. Le serveur publie ensuite une notification `LISTEN/NOTIFY` afin que chaque instance API déconnecte les sockets existants de l'agent. Les notifications perdues lors d'une coupure sont compensées à la reconnexion du listener par un rechargement des comptes désactivés. SQLite, réservé au développement local, ne fournit pas cette propagation entre processus. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
+**Secret de signature** : `JWT_SECRET` est obligatoire et ne possède aucune valeur de repli. Le démarrage de l'API échoue si cette variable est absente ou vide; `.env.example` indique comment configurer une clé aléatoire.
+
+**Limitation des connexions** : `POST /api/auth/login` accepte au plus cinq tentatives échouées par adresse IP sur une fenêtre de 15 minutes, puis répond `429` avec `Retry-After`. Les connexions réussies ne consomment pas le quota. Le compteur est stocké dans PostgreSQL, partagé entre les instances API, et la clé est un HMAC de l'adresse IP plutôt que l'adresse en clair. L'API ne fait confiance qu'au proxy nginx attendu pour lire l'adresse transmise.
+
+**Protection CSRF** : pour les méthodes qui modifient des données, une requête authentifiée par cookie doit fournir dans `X-CSRF-Token` le jeton signé placé dans le cookie lisible `crimetracker_csrf`. Le frontend ajoute cet en-tête automatiquement; les clients authentifiés par `Authorization: Bearer` ne sont pas concernés. Le flux OAuth conserve en plus sa vérification `state`.
+
+**Révocation et autorisations courantes** : chaque route protégée et nouvelle connexion Socket.IO relit dans PostgreSQL l'état actif, le rôle, le grade et le matricule du compte. Les claims de profil du JWT ne font pas autorité : une désactivation ou une modification de rôle s'applique dès la requête ou connexion suivante. Le serveur publie ensuite une notification `LISTEN/NOTIFY` afin que chaque instance API déconnecte les sockets existants d'un compte désactivé. Les notifications perdues lors d'une coupure sont compensées à la reconnexion du listener par un rechargement des comptes désactivés. SQLite, réservé au développement local, ne fournit pas cette propagation entre processus. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
 
 ---
 
@@ -354,9 +360,11 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Question** : comment le frontend joint-il l'API et Socket.IO, en développement comme en production ?
 
-**Choix retenu** : en production, nginx sert le frontend et relaie `/api` et `/socket.io` vers l'API. En développement, le serveur Vite fait le même relais.
+**Choix retenu** : en production, nginx sert le frontend et relaie `/api` et `/socket.io` vers l'API. En développement, le serveur Vite fait le même relais. Socket.IO autorise uniquement les origines exactes définies par `SOCKET_ALLOWED_ORIGINS` (liste séparée par des virgules); les navigateurs qui présentent une origine différente sont refusés.
 
-**Raison** : le navigateur ne voit qu'une seule origine (`localhost:8080`). Le cookie de session est donc envoyé sans configuration CORS, et seul le port de nginx est publié : l'API et la base ne sont pas joignables directement depuis l'extérieur.
+**Raison** : le navigateur ne voit qu'une seule origine (`localhost:8080`) en production. L'API n'autorise pas les connexions Socket.IO venant de sites inconnus; seul le port de nginx est publié et la base n'est pas joignable directement depuis l'extérieur.
+
+**En-têtes HTTP** : Express applique les en-têtes Helmet (dont `nosniff`, `frameguard` et `Referrer-Policy`); nginx ajoute également `nosniff`, `X-Frame-Options`, `Referrer-Policy` et `Permissions-Policy` aux pages et ressources statiques. HSTS n'est pas activé tant que le serveur ne termine pas lui-même le HTTPS.
 
 **Prix de ce choix** : un conteneur de plus, et une configuration nginx à maintenir (notamment les en-têtes `Upgrade` pour les WebSockets).
 

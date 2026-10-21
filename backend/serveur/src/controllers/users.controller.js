@@ -73,8 +73,19 @@ export const createUser = async (req, res) => {
 // PATCH /api/users/:id/deactivate
 export const deactivateUser = async (req, res) => {
   try {
-    const user = await userModel.setActive(req.params.id, false);
-    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    if (Number(req.params.id) === Number(req.user.id)) {
+      return res.status(403).json({ message: 'Vous ne pouvez pas désactiver votre propre compte.' });
+    }
+
+    const user = await userModel.deactivate(req.params.id, req.user.role);
+    if (!user) {
+      const target = await userModel.findById(req.params.id);
+      if (!target) return res.status(404).json({ message: 'Utilisateur non trouvé' });
+      if (req.user.role === 'superviseur' && target.role === 'direction') {
+        return res.status(403).json({ message: 'Un superviseur ne peut pas désactiver un compte de direction.' });
+      }
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
 
     disconnectUser(user.id);
     await publishAccountDeactivated(user.id);

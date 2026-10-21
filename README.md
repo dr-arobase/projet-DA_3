@@ -19,7 +19,7 @@ Puis ouvrir **http://localhost:8080**.
 - Au premier démarrage, l'API crée les tables et insère les données de démonstration (`backend/serveur/database/schema.sql` et `seed.sql`).
 - Les données vivent dans un volume Docker : elles **survivent** à `docker compose down` et à un redémarrage. Pour repartir de zéro : `docker compose down -v`.
 - La documentation de l'API (Swagger) est sur http://localhost:8080/api-docs.
-- Les valeurs par défaut suffisent en local. Pour les changer, copier `.env.example` en `.env` à la racine.
+- Avant le premier démarrage, copier `.env.example` en `.env` à la racine et définir `JWT_SECRET` avec une valeur aléatoire (32 octets ou plus sont recommandés). Par exemple, générer une valeur avec `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` puis la copier dans `.env`. Sans ce secret, Docker et l'API refusent de démarrer. Pour `npm run dev`, définir aussi `JWT_SECRET` dans `backend/.env`.
 
 ### Connexion GitHub
 
@@ -69,7 +69,7 @@ npm run dev
 
 Pour lancer une seule partie : `npm run dev:backend` ou `npm run dev:frontend`.
 
-En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse.
+En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse. `SOCKET_ALLOWED_ORIGINS` accepte par défaut `http://localhost:5173` et `http://localhost:8080`; pour un autre hôte, configurer ses origines exactes dans l'environnement du backend.
 
 ## Tests
 
@@ -80,9 +80,9 @@ npm test
 
 Les tests du backend (Jest + Supertest) simulent la base de données : PostgreSQL n'est pas nécessaire. Les tests d'intégration `tests/integration/` s'exécutent seulement si une base est disponible.
 
-La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle lance les tests, démarre réellement le serveur, compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
+La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
 
-Pour lancer la même vérification en local : `npm run verifier` à la racine.
+Pour lancer la même vérification en local : `npm run verifier` à la racine. Les avis modérés de l'audit npm restent visibles dans la sortie; ils ne bloquent pas le push.
 
 ---
 
