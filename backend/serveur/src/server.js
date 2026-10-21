@@ -1,8 +1,8 @@
 import app from './app.js';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
-import registerSockets from './sockets/index.js';
-import { loadInactiveAccounts } from './utils/account-status.js';
+import registerSockets, { disconnectUser } from './sockets/index.js';
+import { listenForAccountDeactivations } from './utils/account-status.js';
 
 dotenv.config();
 
@@ -14,7 +14,7 @@ async function startServer() {
     if (typeof initializeDatabase === 'function') {
       await initializeDatabase();
     }
-    await loadInactiveAccounts();
+    await listenForAccountDeactivations((userId) => disconnectUser(userId));
 
     const server = app.listen(PORT, () => {
       console.log(`Serveur CrimeTracker démarré sur http://localhost:${PORT}`);

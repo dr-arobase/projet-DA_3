@@ -346,7 +346,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Raison** : le JavaScript de la page ne peut pas lire un cookie `httpOnly` : une faille XSS ne permet pas de voler le jeton. `SameSite=Lax` empêche l'envoi du cookie par un formulaire venant d'un autre site. Le même jeton authentifie aussi la connexion Socket.IO.
 
-**Révocation d'un compte** : au démarrage, l'API charge en mémoire les identifiants des comptes désactivés. Le middleware refuse ensuite leur JWT sur chaque route protégée, et Socket.IO refuse toute nouvelle connexion. Lorsqu'un superviseur désactive un compte, son identifiant est ajouté à cette liste et toutes ses connexions Socket.IO ouvertes sont coupées; la réactivation le retire de la liste. La base reste la source persistante et la liste est rechargée au prochain démarrage. Ce mécanisme suppose une seule instance de l'API; plusieurs instances nécessiteraient un stockage partagé pour propager les révocations. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
+**Révocation d'un compte** : chaque route protégée et nouvelle connexion Socket.IO vérifie `is_active` dans PostgreSQL; un jeton JWT ne suffit donc pas à conserver l'accès après désactivation. Le serveur publie ensuite une notification `LISTEN/NOTIFY` afin que chaque instance API déconnecte les sockets existants de l'agent. Les notifications perdues lors d'une coupure sont compensées à la reconnexion du listener par un rechargement des comptes désactivés. SQLite, réservé au développement local, ne fournit pas cette propagation entre processus. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
 
 ---
 

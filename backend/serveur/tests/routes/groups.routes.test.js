@@ -27,6 +27,12 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   disconnectUser,
 }));
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const { default: app } = await import('../../src/app.js');
 
 const session = (id) => `Bearer ${jwt.sign({ id, role: 'policier' }, 'test-secret')}`;

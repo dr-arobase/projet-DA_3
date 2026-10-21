@@ -19,6 +19,12 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const { default: app } = await import('../../src/app.js');
 const { AVATARS_DIR } = await import('../../src/middleware/upload.middleware.js');
 
