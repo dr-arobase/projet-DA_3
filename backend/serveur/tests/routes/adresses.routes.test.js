@@ -29,6 +29,12 @@ const geocode = jest.fn();
 const geocodeOrNull = jest.fn();
 jest.unstable_mockModule('../../src/services/geocoding.service.js', () => ({ geocode, geocodeOrNull }));
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const { default: app } = await import('../../src/app.js');
 
 const bearer = `Bearer ${jwt.sign({ id: 3, badge_number: 'PL-003', role: 'policier' }, 'test-secret')}`;
