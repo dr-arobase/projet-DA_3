@@ -10,12 +10,16 @@ export default function TempsReelProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [enLigne, setEnLigne] = useState(false);
   const [presence, setPresence] = useState([]);
+  const [reconnexions, setReconnexions] = useState(0);
 
   useEffect(() => {
     if (!estConnecte) return undefined;
 
     const s = io({ withCredentials: true });
-    s.on('connect', () => setEnLigne(true));
+    s.on('connect', () => {
+      setEnLigne(true);
+      if (s.active) setReconnexions((n) => n + 1);
+    });
     s.on('disconnect', () => setEnLigne(false));
     s.on('presence:update', setPresence);
     setSocket(s);
@@ -25,6 +29,7 @@ export default function TempsReelProvider({ children }) {
       setSocket(null);
       setEnLigne(false);
       setPresence([]);
+      setReconnexions(0);
     };
   }, [estConnecte]);
 
@@ -32,7 +37,7 @@ export default function TempsReelProvider({ children }) {
   const agentsConnectes = new Set(presence.map((p) => p.id)).size;
 
   return (
-    <TempsReelContext.Provider value={{ socket, enLigne, presence, agentsConnectes }}>
+    <TempsReelContext.Provider value={{ socket, enLigne, presence, agentsConnectes, reconnexions }}>
       {children}
     </TempsReelContext.Provider>
   );

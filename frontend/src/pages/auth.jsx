@@ -66,7 +66,7 @@ export default function Auth() {
       <section className="auth-vitrine">
         <div className="auth-marque">
           <span className="logo-carre"><IconeBouclier /></span>
-          <span>SentinelleRP</span>
+          <span>CrimeTracker</span>
         </div>
 
         <div className="auth-accroche">
@@ -86,7 +86,7 @@ export default function Auth() {
           </ul>
         </div>
 
-        <p className="auth-pied">Police Municipale de Hauteville</p>
+        <p className="auth-pied">CrimeTracker</p>
       </section>
 
       <section className="auth-panneau">
@@ -129,7 +129,7 @@ export default function Auth() {
               />
               Se souvenir de moi
             </label>
-            <span className="auth-a-venir" title="Fonction pas encore disponible">Mot de passe oublié ? <em>(à venir)</em></span>
+            <span className="auth-a-venir" title="Fonction reportée au sprint 3">Réinitialisation du mot de passe <em>(reportée au sprint 3)</em></span>
           </div>
 
           {erreur && <p className="auth-erreur" role="alert">{erreur}</p>}
@@ -148,7 +148,7 @@ export default function Auth() {
           </a>
 
           <p className="auth-info">
-            <IconeCadenas taille={14} /> Authentification à deux facteurs : à venir
+            <IconeCadenas taille={14} /> Authentification à deux facteurs : reportée au sprint 3
           </p>
 
           <p className="auth-mention">Accès réservé au personnel autorisé — usage tracé et audité.</p>

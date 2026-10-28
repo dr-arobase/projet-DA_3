@@ -37,7 +37,7 @@ export default function Menu() {
     <aside className="menu">
       <div className="menu-marque">
         <span className="logo-carre"><IconeBouclier /></span>
-        <span>SentinelleRP</span>
+        <span>CrimeTracker</span>
       </div>
 
       <nav className="menu-nav">

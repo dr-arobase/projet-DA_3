@@ -5,6 +5,7 @@ import { useEvenement } from '../composants/TempsReelContext.js';
 import { IconeMegaphone, IconeSirene } from '../composants/Icones.jsx';
 import { estAuMoins } from '../agents.js';
 import { formaterDate } from '../registre.js';
+import RechercheDossier from '../composants/RechercheDossier.jsx';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
@@ -35,21 +36,29 @@ export default function Diffusions({ severite }) {
   const peutDiffuser = estAuMoins(utilisateur, 'superviseur');
 
   const [diffusions, setDiffusions] = useState([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
+  const [dossier, setDossier] = useState(null);
   const [envoi, setEnvoi] = useState({ enCours: false, erreur: '', succes: '' });
 
   useEffect(() => {
     let actif = true;
     setChargement(true);
-    // L'API ne filtre pas par sévérité : on prend les 100 dernières et on trie ici
-    api.listerAlertes({ limit: 100 })
-      .then(({ data }) => actif && setDiffusions(data.filter((a) => a.severity === severite)))
+    api.listerAlertes({ severity: severite, page, limit: 20 })
+      .then((resultat) => {
+        if (!actif) return;
+        setDiffusions(resultat.data);
+        setTotalPages(resultat.totalPages ?? 1);
+      })
       .catch((err) => actif && setErreur(err.message))
       .finally(() => actif && setChargement(false));
     return () => { actif = false; };
-  }, [severite]);
+  }, [severite, page]);
+
+  useEffect(() => setPage(1), [severite]);
 
   // Une diffusion faite ailleurs (autre agent, autre onglet) apparaît sans recharger
   useEvenement('alert:broadcast', useCallback((a) => {
@@ -66,9 +75,10 @@ export default function Diffusions({ severite }) {
     }
     setEnvoi({ enCours: true, erreur: '', succes: '' });
     try {
-      const { alert } = await api.diffuserAlerte(texte, severite);
+      const { alert } = await api.diffuserAlerte(texte, severite, dossier?.id);
       setDiffusions((enCours) => [alert, ...enCours.filter((x) => x.id !== alert.id)]);
       setMessage('');
+      setDossier(null);
       setEnvoi({ enCours: false, erreur: '', succes: 'Diffusé à tous les agents connectés.' });
     } catch (err) {
       setEnvoi({ enCours: false, erreur: err.message, succes: '' });
@@ -100,6 +110,10 @@ export default function Diffusions({ severite }) {
               />
               <small className="registre-note">{message.length} / {MAX_MESSAGE}</small>
             </div>
+            <div className="champ-registre complet">
+              <label htmlFor="alerte-dossier">Dossier lié (facultatif)</label>
+              <RechercheDossier id="alerte-dossier" valeur={dossier} onChange={setDossier} />
+            </div>
             {envoi.erreur && <p className="registre-message erreur" role="alert">{envoi.erreur}</p>}
             {envoi.succes && <p className="registre-message succes" role="status">{envoi.succes}</p>}
             <div className="formulaire-actions">
@@ -120,12 +134,20 @@ export default function Diffusions({ severite }) {
           {diffusions.map((a) => (
             <li key={a.id} className={`carte pages-diffusion${severite === 'urgent' ? ' urgent' : ''}`}>
               <p>{a.message}</p>
+              {a.criminal_id && <small>Dossier : {a.criminal_name ?? `n° ${a.criminal_id}`}</small>}
               <small>{a.issued_by ?? '—'} · {formaterDate(a.created_at, true)}</small>
             </li>
           ))}
           {!chargement && diffusions.length === 0 && <li className="carte pages-vide">{type.vide}</li>}
           {chargement && diffusions.length === 0 && <li className="carte pages-vide">Chargement…</li>}
         </ul>
+        {totalPages > 1 && (
+          <nav className="pagination" aria-label="Pagination">
+            <button type="button" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>← Précédente</button>
+            <span>Page {page} sur {totalPages}</span>
+            <button type="button" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>Suivante →</button>
+          </nav>
+        )}
       </div>
     </>
   );
