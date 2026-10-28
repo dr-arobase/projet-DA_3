@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CrimeTracker</title>
+  <meta http-equiv="refresh" content="0; url=__SITE_URL__/">
+  <script>
+    // Garde la page demandée : /projet-DA_3/carte -> __SITE_URL__/carte
+    var base = '__BASE__';
+    var chemin = location.pathname.indexOf(base) === 0 ? location.pathname.slice(base.length) : '';
+    location.replace('__SITE_URL__/' + chemin + location.search + location.hash);
+  </script>
+</head>
+<body>
+  <p>Redirection vers <a href="__SITE_URL__/">CrimeTracker</a>…</p>
+</body>
+</html>

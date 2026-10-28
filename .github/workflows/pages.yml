@@ -6,6 +6,9 @@
 # variables > Actions > Variables), par exemple https://api.mon-domaine.ca. L'API doit alors accepter
 # ce site (CORS avec identifiants, cookie SameSite=None; Secure) : voir les tickets #78 et #79.
 #
+# Variable du dépôt SITE_URL (ex. https://crimetracker-da3.westus2.cloudapp.azure.com) : Pages ne
+# publie plus qu'une redirection vers l'application complète hébergée à cette adresse.
+#
 # Réglage à faire une fois : Settings > Pages > Source = « GitHub Actions ».
 
 name: GitHub Pages
@@ -13,7 +16,7 @@ name: GitHub Pages
 on:
   push:
     branches: [main]
-    paths: ['frontend/**', '.github/workflows/pages.yml']
+    paths: ['frontend/**', '.github/workflows/pages.yml', '.github/pages/**']
   workflow_dispatch:
 
 permissions:
@@ -56,6 +59,18 @@ jobs:
       # renvoie la même application, qui affiche ensuite la bonne page
       - name: Page 404 = l'application
         run: cp frontend/dist/index.html frontend/dist/404.html
+
+      # Application hébergée avec son API (variable du dépôt SITE_URL) : Pages renvoie vers elle,
+      # même adresse que l'API, donc le cookie de session marche dans tous les navigateurs
+      - name: Rediriger vers l'application en ligne
+        if: vars.SITE_URL != ''
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          BASE: /${{ github.event.repository.name }}/
+        run: |
+          rm -rf frontend/dist && mkdir frontend/dist
+          sed -e "s#__SITE_URL__#${SITE_URL%/}#g" -e "s#__BASE__#$BASE#g" .github/pages/redirection.html > frontend/dist/index.html
+          cp frontend/dist/index.html frontend/dist/404.html
 
       - name: Préparer la publication
         uses: actions/configure-pages@v5
