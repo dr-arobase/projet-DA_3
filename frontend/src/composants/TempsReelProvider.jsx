@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { TempsReelContext } from './TempsReelContext.js';
 import { useAuth } from './AuthContext.js';
+import { API_URL } from '../config.js';
 
 // Une seule connexion Socket.IO tant que l'agent est connecté.
 // Le serveur l'authentifie avec le cookie de session (même origine grâce au proxy Vite).
@@ -14,7 +15,8 @@ export default function TempsReelProvider({ children }) {
   useEffect(() => {
     if (!estConnecte) return undefined;
 
-    const s = io({ withCredentials: true });
+    // Sans API_URL : même origine que la page (nginx ou proxy Vite)
+    const s = API_URL ? io(API_URL, { withCredentials: true }) : io({ withCredentials: true });
     s.on('connect', () => setEnLigne(true));
     s.on('disconnect', () => setEnLigne(false));
     s.on('presence:update', setPresence);
