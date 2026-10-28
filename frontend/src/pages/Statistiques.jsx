@@ -5,8 +5,6 @@ import { STATUTS, LIBELLES_STATUT } from '../registre.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
-const estAujourdhui = (date) => new Date(date).toDateString() === new Date().toDateString();
-
 // Statistiques globales (#20), calculées à partir des routes existantes et tenues à jour en temps réel
 export default function Statistiques() {
   const { agentsConnectes } = useTempsReel();
@@ -18,9 +16,13 @@ export default function Statistiques() {
     try {
       // limit=1 : seul le total nous intéresse
       const totaux = await Promise.all(STATUTS.map((s) => api.listerCriminels({ status: s, limit: 1 })));
-      const { data } = await api.listerAlertes({ limit: 100 });
+      const aujourdHui = new Date();
+      aujourdHui.setHours(0, 0, 0, 0);
+      const { total: urgentesDuJour } = await api.listerAlertes({
+        severity: 'urgent', since: aujourdHui.toISOString(), limit: 1,
+      });
       setParStatut(Object.fromEntries(STATUTS.map((s, i) => [s, totaux[i].total])));
-      setAlertes(data);
+      setAlertes({ urgentesDuJour });
       setErreur('');
     } catch (err) {
       setErreur(err.message);
@@ -36,12 +38,12 @@ export default function Statistiques() {
 
   const total = parStatut ? STATUTS.reduce((somme, s) => somme + parStatut[s], 0) : 0;
   const tauxCapture = total ? Math.round((parStatut.capture / total) * 100) : 0;
-  const duJour = alertes.filter((a) => estAujourdhui(a.created_at));
+  const duJour = alertes.urgentesDuJour ?? 0;
 
   const tuiles = [
     { valeur: total, libelle: 'Dossiers au registre' },
     { valeur: `${tauxCapture} %`, libelle: 'Taux de capture' },
-    { valeur: duJour.filter((a) => a.severity === 'urgent').length, libelle: "Alertes urgentes aujourd'hui", ton: 'danger' },
+    { valeur: duJour, libelle: "Alertes urgentes aujourd'hui", ton: 'danger' },
     { valeur: agentsConnectes, libelle: 'Agents connectés', ton: 'succes' },
   ];
 
@@ -89,9 +91,7 @@ export default function Statistiques() {
         <section className="carte pages-carte">
           <h2 className="pages-titre">Diffusions</h2>
           <p className="registre-note">
-            {alertes.filter((a) => a.severity === 'urgent').length} alerte(s) urgente(s) et{' '}
-            {alertes.filter((a) => a.severity === 'info').length} communiqué(s) parmi les 100 dernières diffusions,
-            dont {duJour.length} aujourd'hui.
+            Les alertes urgentes du jour sont calculées côté serveur : {duJour}.
           </p>
         </section>
       </div>

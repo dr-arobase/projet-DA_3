@@ -153,7 +153,17 @@ export default function PersonnesRecherchees() {
             </thead>
             <tbody>
               {dossiers.map((c) => (
-                <tr key={c.id} onClick={() => navigate(`/personnes-recherchees/${c.id}`)}>
+                <tr
+                  key={c.id}
+                  tabIndex={0}
+                  onClick={() => navigate(`/personnes-recherchees/${c.id}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      navigate(`/personnes-recherchees/${c.id}`);
+                    }
+                  }}
+                >
                   <td>
                     <Link to={`/personnes-recherchees/${c.id}`} onClick={(e) => e.stopPropagation()}>
                       {nomComplet(c)}

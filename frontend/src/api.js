@@ -17,6 +17,11 @@ export async function requete(chemin, { method = 'GET', body } = {}) {
 
   const donnees = await reponse.json().catch(() => ({}));
   if (!reponse.ok) {
+    if ((reponse.status === 401 || reponse.status === 403)
+      && !chemin.startsWith('/api/auth/login')
+      && !chemin.startsWith('/api/auth/github')) {
+      window.location.assign('/connexion');
+    }
     // Réponse vide en 5xx : en développement, le proxy Vite renvoie 500 quand le backend est arrêté
     const parDefaut = reponse.status >= 500
       ? 'Erreur serveur. Vérifiez que le backend est démarré.'
@@ -70,8 +75,8 @@ export const localiser = (adresse) => requete(`/api/geocode?${qs({ q: adresse })
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
 
 // severity : 'urgent' (alerte) ou 'info' (communiqué) ; réservé aux superviseurs et à la direction
-export const diffuserAlerte = (message, severity) =>
-  requete('/api/alerts', { method: 'POST', body: { message, severity } });
+export const diffuserAlerte = (message, severity, criminal_id) =>
+  requete('/api/alerts', { method: 'POST', body: { message, severity, criminal_id } });
 
 // Comptes des agents : superviseur ou direction (promouvoir : direction seulement)
 export const listerUtilisateurs = () => requete('/api/users');
