@@ -8,7 +8,8 @@ import './styles/app.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
+    {/* basename : '/' en local et dans Docker, '/projet-DA_3/' sur GitHub Pages (option --base de Vite) */}
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <TempsReelProvider>
           <Router />

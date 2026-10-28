@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
 import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithub } from '../composants/Icones.jsx';
+import { SANS_SERVEUR, urlApi } from '../config.js';
 import '../styles/auth.css';
 
 // Chiffres de démonstration, pas encore lus dans l'API : signalés à l'écran (voir README)
@@ -94,6 +95,13 @@ export default function Auth() {
           <h2>Connexion</h2>
           <p className="auth-sous-titre">Identifiez-vous avec vos accès professionnels</p>
 
+          {SANS_SERVEUR && (
+            <p className="auth-erreur" role="status">
+              Version de démonstration publiée sur GitHub Pages : le serveur n'est pas en ligne, la connexion
+              ne fonctionne donc pas ici. Pour utiliser l'application, lancez-la avec Docker (voir le README).
+            </p>
+          )}
+
           <label htmlFor="matricule">Matricule</label>
           <div className="champ">
             <IconeUtilisateur taille={16} />
@@ -142,7 +150,7 @@ export default function Auth() {
           <p className="auth-separateur"><span>ou</span></p>
 
           {/* Navigation complète, pas un fetch : le serveur redirige vers GitHub puis revient ici */}
-          <a className="bouton-github" href="/api/auth/github">
+          <a className="bouton-github" href={urlApi('/api/auth/github')}>
             <IconeGithub />
             Se connecter avec GitHub
           </a>
