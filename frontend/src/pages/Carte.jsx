@@ -68,8 +68,19 @@ export default function Carte() {
     api.listerSignalementsRecents({ limit: 200 })
       .then(setSignalements)
       .catch((err) => setMessage({ type: 'erreur', texte: err.message }));
-    api.listerCriminels({ limit: 100 })
-      .then(({ data }) => setDossiers(data))
+    const chargerDossiers = async () => {
+      const tous = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const resultat = await api.listerCriminels({ page, limit: 100 });
+        tous.push(...resultat.data);
+        totalPages = resultat.totalPages;
+        page += 1;
+      } while (page <= totalPages);
+      setDossiers(tous);
+    };
+    chargerDossiers()
       .catch(() => {});
   }, []);
 

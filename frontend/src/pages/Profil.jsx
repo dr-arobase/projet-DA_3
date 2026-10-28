@@ -6,26 +6,10 @@ import {
   IconeUtilisateur, IconeCourriel, IconeCalendrier, IconeCadenas, IconeEnregistrer, IconeAppareilPhoto,
 } from '../composants/Icones.jsx';
 import '../styles/profil.css';
+import { LIBELLES_ROLE, LIBELLES_GRADE } from '../agents.js';
+import { formaterDate } from '../registre.js';
 
 // Valeurs de app_user.role et app_user.grade (voir database/schema.sql)
-const LIBELLES_ROLE = {
-  direction: 'Direction',
-  superviseur: 'Superviseur',
-  policier: 'Policier',
-};
-
-const LIBELLES_GRADE = {
-  sergent_autres_fonctions: 'Sergent (autres fonctions)',
-  sergent_gestionnaire: 'Sergent gestionnaire',
-  sergent_responsable_de_poste: 'Sergent responsable de poste',
-  lieutenant: 'Lieutenant',
-  capitaine: 'Capitaine',
-  inspecteur: 'Inspecteur',
-  inspecteur_chef: 'Inspecteur-chef',
-  directeur_general_adjoint: 'Directeur général adjoint',
-  directeur_general: 'Directeur général',
-};
-
 // Mêmes règles que le backend (POST /api/auth/change-password, PUT /api/auth/avatar)
 const LONGUEUR_MIN = 8;
 const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
@@ -33,10 +17,17 @@ const TAILLE_MAX_PHOTO = 2 * 1024 * 1024;
 
 const MOTS_DE_PASSE_VIDES = { actuel: '', nouveau: '', confirmation: '' };
 
-function formaterDate(iso) {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' });
-}
+const ABREVIATIONS_GRADE = {
+  sergent_autres_fonctions: 'Sgt.',
+  sergent_gestionnaire: 'Sgt. gest.',
+  sergent_responsable_de_poste: 'Sgt. resp.',
+  lieutenant: 'Lt.',
+  capitaine: 'Cap.',
+  inspecteur: 'Insp.',
+  inspecteur_chef: 'Insp.-chef',
+  directeur_general_adjoint: 'DGA',
+  directeur_general: 'Dir.',
+};
 
 export default function Profil() {
   const { utilisateur, mettreAJourUtilisateur } = useAuth();
@@ -154,7 +145,7 @@ export default function Profil() {
               <div className="profil-identite">
                 <Avatar utilisateur={utilisateur} className="profil-avatar" />
                 <div className="profil-identite-texte">
-                  <strong>{prenom} {nom}</strong>
+                  <strong>{[ABREVIATIONS_GRADE[utilisateur.grade], prenom, nom].filter(Boolean).join(' ')}</strong>
                   <span>{LIBELLES_GRADE[utilisateur.grade] ?? utilisateur.grade}</span>
                   <div className="profil-photo-actions">
                     <input
@@ -216,7 +207,7 @@ export default function Profil() {
             </div>
           </section>
 
-          <section className="carte profil-carte">
+          {!utilisateur.badge_number?.startsWith('GH-') && <section className="carte profil-carte">
             <h2 className="profil-carte-titre">Sécurité du compte</h2>
             <form className="profil-carte-corps profil-formulaire" onSubmit={changerMotDePasse}>
               <p className="profil-note">
@@ -270,7 +261,7 @@ export default function Profil() {
                 {enCours ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}
               </button>
             </form>
-          </section>
+          </section>}
         </div>
       </div>
     </>
