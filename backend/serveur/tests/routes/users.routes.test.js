@@ -116,6 +116,38 @@ describe('POST /api/users', () => {
     expect(params.slice(5)).toEqual(['policier', 'sergent_autres_fonctions']);
   });
 
+  test.each(['superviseur', 'direction'])(
+    '403 si un superviseur tente de créer un compte %s',
+    async (role) => {
+      const res = await request(app)
+        .post('/api/users')
+        .set('Authorization', bearer('superviseur'))
+        .send({ ...body, role, grade: role === 'direction' ? 'directeur_general' : 'lieutenant' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/Seule la direction/);
+      expect(query).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    ['policier', 'sergent_autres_fonctions'],
+    ['superviseur', 'lieutenant'],
+    ['direction', 'directeur_general'],
+  ])('la direction peut créer un compte %s', async (role, grade) => {
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...agent, role, grade }] });
+
+    const res = await request(app)
+      .post('/api/users')
+      .set('Authorization', bearer('direction'))
+      .send({ ...body, role, grade });
+
+    expect(res.status).toBe(201);
+    expect(query.mock.calls[1][1].slice(5)).toEqual([role, grade]);
+  });
+
   test('400 si un champ obligatoire manque', async () => {
     const res = await request(app)
       .post('/api/users')
