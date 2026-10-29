@@ -194,6 +194,18 @@
 .messagerie-bulle.supprime { background: transparent; border: 1px dashed var(--bordure); color: var(--texte-doux); }
 .messagerie-bulle.en-edition { outline: 2px solid var(--danger); outline-offset: 2px; }
 .messagerie-supprime { font-style: italic; }
+/* Pièces jointes : image ou GIF, lecteur audio, fichier à télécharger */
+.messagerie-image { display: block; }
+.messagerie-image img { display: block; max-width: min(280px, 100%); max-height: 240px; border-radius: 10px; object-fit: cover; }
+.messagerie-audio { width: min(260px, 100%); height: 36px; }
+.messagerie-fichier { display: flex; align-items: center; gap: 8px; color: inherit; font-weight: 600; text-decoration: underline; overflow-wrap: anywhere; }
+.messagerie-fichier small { font-weight: 400; opacity: 0.75; }
+/* Enregistrement d'un message vocal */
+.messagerie-vocal { display: flex; flex: 1; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.messagerie-vocal > button:not(.registre-bouton-principal) { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.messagerie-vocal-point { width: 10px; height: 10px; border-radius: 50%; background: var(--danger); animation: messagerie-clignote 1s ease-in-out infinite; }
+@keyframes messagerie-clignote { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .messagerie-vocal-point { animation: none; } }
 /* Modifier / Supprimer : sous mes messages, visibles au survol ou au clavier */
 .messagerie-actions { display: flex; justify-content: flex-end; gap: 10px; opacity: 0; transition: opacity 0.15s; }
 .messagerie-bulle:hover .messagerie-actions,
