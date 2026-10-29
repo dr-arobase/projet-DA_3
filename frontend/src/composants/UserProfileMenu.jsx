@@ -1,28 +1,41 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
+import { LIBELLES_ROLE } from '../agents.js';
 import { IconeChevron, IconeDeconnexion, IconeUtilisateur } from './Icones.jsx';
 import Avatar from './Avatar.jsx';
 
 // Valeurs de app_user.role et app_user.grade (voir database/seed.sql)
-const LIBELLES_ROLE = {
-  direction: 'Direction',
-  superviseur: 'Superviseur',
-  policier: 'Policier',
-};
-
 const ABREVIATIONS_GRADE = {
   directeur_general: 'Dir.',
+  directeur_general_adjoint: 'DGA',
   lieutenant: 'Lt.',
   capitaine: 'Cap.',
-  sergent: 'Sgt.',
+  sergent_gestionnaire: 'Sgt. gest.',
+  sergent_responsable_de_poste: 'Sgt. resp.',
   sergent_autres_fonctions: 'Sgt.',
+  inspecteur: 'Insp.',
+  inspecteur_chef: 'Insp.-chef',
 };
 
 export default function UserProfileMenu() {
   const { utilisateur, seDeconnecter } = useAuth();
   const [ouvert, setOuvert] = useState(false);
   const navigate = useNavigate();
+  const menu = useRef(null);
+
+  useEffect(() => {
+    const fermer = (event) => {
+      if (!menu.current?.contains(event.target)) setOuvert(false);
+    };
+    const echap = (event) => event.key === 'Escape' && setOuvert(false);
+    document.addEventListener('mousedown', fermer);
+    document.addEventListener('keydown', echap);
+    return () => {
+      document.removeEventListener('mousedown', fermer);
+      document.removeEventListener('keydown', echap);
+    };
+  }, []);
 
   const prenom = utilisateur?.first_name ?? '';
   const nom = utilisateur?.last_name ?? '';
@@ -35,7 +48,7 @@ export default function UserProfileMenu() {
   }
 
   return (
-    <div className="profil">
+    <div className="profil" ref={menu}>
       {ouvert && (
         <>
           <Link to="/profil" className="profil-action" onClick={() => setOuvert(false)}>

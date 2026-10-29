@@ -39,6 +39,15 @@ export default function Messagerie() {
   const [panneau, setPanneau] = useState(null); // 'nouveau-groupe' | 'membres' | null
   const [menuOuvert, setMenuOuvert] = useState(false);
   const fin = useRef(null);
+  const menu = useRef(null);
+
+  useEffect(() => {
+    const fermer = (event) => {
+      if (!menu.current?.contains(event.target)) setMenuOuvert(false);
+    };
+    document.addEventListener('mousedown', fermer);
+    return () => document.removeEventListener('mousedown', fermer);
+  }, []);
 
   const chargerContacts = useCallback(() => {
     api.listerContacts().then(setContacts).catch((err) => setErreur(err.message));
@@ -292,7 +301,7 @@ export default function Messagerie() {
                   </small>
                 </div>
                 {groupeId && (
-                  <div className="messagerie-menu">
+                  <div className="messagerie-menu" ref={menu}>
                     <button
                       type="button"
                       className="messagerie-bouton-icone"
