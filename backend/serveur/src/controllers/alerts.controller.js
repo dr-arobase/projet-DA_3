@@ -45,9 +45,13 @@ export const getAlerts = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const offset = (page - 1) * limit;
+    const severity = req.query.severity || undefined;
+    const since = req.query.since || undefined;
 
-    const alerts = await alertModel.findAll({ limit, offset });
-    return res.json({ page, limit, data: alerts });
+    const alerts = await alertModel.findAll({ limit, offset, severity, since });
+    if (!severity && !since) return res.json({ page, limit, data: alerts });
+    const total = await alertModel.countAll({ severity, since });
+    return res.json({ page, limit, total, totalPages: Math.ceil(total / limit), data: alerts });
   } catch (error) {
     console.error('Erreur lors de la récupération des alertes:', error);
     return res.status(500).json({ message: 'Erreur serveur' });

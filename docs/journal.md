@@ -65,6 +65,36 @@ Ce qui bloque : Aucun blocage majeur signalé.
 Décisions prises : Finalisation du Sprint 0 et remise du travail dans les délais prévus.
 
 
+**JOURNAL DE BORD — SPRINT 2**
+
+**Bloc 1 — mercredi 8 octobre 2026 (8 h - 11 h)**
+Présences : Massyle, Eric, Chrysler, Michael
+Ce qui a avancé :
+•   Cadrage du sprint 2 et vérification des tickets à traiter pour la bêta.
+•   Répartition des tâches documentaires et fonctionnelles entre les membres.
+•   Vérification du backlog et de la cohérence avec le journal et les tickets.
+Ce qui bloque :
+•   La documentation et les tickets ont été tenus à jour avec un léger retard après le sprint 1.
+Décisions prises :
+•   Le sprint 2 est organisé en travaux de validation fonctionnelle, documentation et préparation de revue.
+•   Les entrées du journal sont complétées à la fin de chaque bloc pour éviter les écritures après coup.
+•   Chaque membre est responsable d'au moins un récit ou d'un lot de validation, avec une attente de revue avant toute fusion.
+
+**Bloc 2 — jeudi 9 octobre 2026 (15 h - 18 h)**
+Présences : Massyle, Eric, Chrysler, Michael
+Ce qui a avancé :
+•   Vérification des tâches de documentation (README, équipe, risques, journal) et préparation du nettoyage des dossiers de support.
+•   Analyse des tickets de validation du sprint 2 et préparation des critères à couvrir lors des tests navigateur.
+•   Revue de la cohérence des tickets et de la documentation de la bêta.
+Ce qui bloque :
+•   Certaines tâches de validation demeurent à couvrir dans des scénarios de bout en bout et nécessitent plusieurs navigateurs.
+Décisions prises :
+•   Les entrées de ce bloc sont rédigées après coup, conformément au point de contrôle du sprint 2, pour documenter précisément le travail effectué et les décisions prises.
+•   La revue des PR et la préparation de la démonstration sont intégrées comme livrables du sprint 2, avec l'objectif de couvrir au moins deux rôles et une action refusée.
+•   Le dossier `docs/retrospectives/plan-equipe/` est retiré car il correspond au plan du sprint 1 et ne doit plus être conservé dans la documentation de la bêta.
+
+---
+
 **JOURNAL DE BORD — SPRINT 1**
 
 **Bloc 1 — mercredi 16 septembre 2026 (8 h - 11 h)**
