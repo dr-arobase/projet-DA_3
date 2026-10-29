@@ -145,12 +145,12 @@ On ne coupe jamais #50 (connexion GitHub), #11 (temps réel) ni #12 (alerte urge
 | Changement | Responsable | Où on en est au 15 octobre |
 |---|---|---|
 | Une PR par ticket | Chrysler | Appliqué : chaque ajout du sprint a sa branche, son ticket et sa PR |
-| Revue de chaque PR dans les 24 h, avec un commentaire concret | Chrysler | **Pas appliqué** : les 8 PR du sprint ont été fusionnées sans revue, et la protection de `main` n'exige aucune approbation. On demande la revue après coup et on passe la protection à 1 approbation |
+| Revue de chaque PR dans les 24 h, avec un commentaire concret | Chrysler | **Pas appliqué** : les 8 PR du sprint ont été fusionnées sans revue, et la protection de `main` n'exige aucune approbation. **À faire** : demander les revues après coup et configurer `main` pour exiger 1 approbation |
 | Journal commis à la fin de chaque bloc | Michael | **Pas appliqué** : le journal s'arrête au 6 octobre. Les blocs du 8 et du 9 octobre restent à documenter; aucune entrée rétrospective n'est ajoutée sans source vérifiable |
 | Tickets déplacés dans le Project à chaque mêlée | Massyle | En partie : les tickets des ajouts sont créés, assignés et fermés par leurs PR. Les récits engagés n'ont pas bougé |
 | Chaque membre responsable d'au moins un récit | Eric | Fait dans le tableau ci-dessus |
 
-**Contrôle documentaire du point 9** : la consultation des revues GitHub pour les PR #51, #52, #60, #61, #68, #69, #70 et #72 n'a renvoyé aucune revue enregistrée. Une recherche dans le dépôt n'a trouvé aucun relevé de burndown. Faute de données datées sur les points restants, aucun graphique rétrospectif n'est reconstitué. La protection de `main` et le Project ne sont pas modifiés par ce constat.
+**Contrôle documentaire du point 9** : la consultation des revues GitHub pour les PR #51, #52, #60, #61, #68, #69, #70 et #72 n'a renvoyé aucune revue enregistrée. Une recherche dans le dépôt n'a trouvé aucun relevé de burndown; le responsable confirme ne pas disposer de données fiables pour les blocs manquants. Aucun graphique ni journal rétrospectif n'est donc reconstitué. La protection de `main` et le Project ne sont pas modifiés par ce constat.
 
 ### Travail réalisé par Massyle (au 15 octobre)
 

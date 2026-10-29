@@ -6,7 +6,7 @@ import {
 import { createCsrfToken } from '../utils/csrf.js';
 
 export const login = async (req, res) => {
-  const { badge_number, password, se_souvenir } = req.body;
+  const { badge_number, password, se_souvenir } = req.body || {};
 
   // Validation basique des entrées
   if (!badge_number || !password) {

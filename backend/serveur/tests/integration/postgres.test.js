@@ -7,14 +7,19 @@
  * Les tests créent leurs propres données (matricule TEST-JEST) et les suppriment à la fin.
  */
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import http from 'node:http';
 import request from 'supertest';
 import bcrypt from 'bcrypt';
+import { io as ioClient } from 'socket.io-client';
 
 process.env.JWT_SECRET ??= 'test-secret';
 
 const { pool, initializeDatabase, closeDatabase } = await import('../../src/config/db.js');
 const { default: app } = await import('../../src/app.js');
 const { signToken } = await import('../../src/utils/jwt.js');
+const { default: registerSockets, disconnectUser } = await import('../../src/sockets/index.js');
+const { listenForAccountDeactivations, publishAccountDeactivated } =
+  await import('../../src/utils/account-status.js');
 
 const dbAvailable = await pool.query('SELECT 1').then(() => true, () => false);
 const describeDb = dbAvailable ? describe : describe.skip;
@@ -130,15 +135,62 @@ describeDb('Intégration PostgreSQL', () => {
       expect(res.status).toBe(200);
     });
 
-    test('login refusé si le compte est désactivé', async () => {
+    test('un ancien jeton est refusé immédiatement après la désactivation du compte', async () => {
+      const token = signToken({ id: userId, role: 'policier' });
       await pool.query('UPDATE app_user SET is_active = false WHERE id = $1', [userId]);
 
-      const res = await request(app)
-        .post('/api/auth/login')
-        .send({ badge_number: BADGE, password: PASSWORD });
+      try {
+        const res = await request(app)
+          .get('/api/auth/me')
+          .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(401);
-      await pool.query('UPDATE app_user SET is_active = true WHERE id = $1', [userId]);
+        expect(res.status).toBe(401);
+      } finally {
+        await pool.query('UPDATE app_user SET is_active = true WHERE id = $1', [userId]);
+      }
+    });
+
+    test('propage une désactivation via PostgreSQL LISTEN/NOTIFY', async () => {
+      const httpServer = http.createServer();
+      const socketServer = registerSockets(httpServer);
+      let stopListening;
+      let socket;
+
+      try {
+        await new Promise((resolve) => httpServer.listen(0, resolve));
+        stopListening = await listenForAccountDeactivations((id) => {
+          if (id === Number(userId)) disconnectUser(id);
+        });
+        socket = ioClient(`http://localhost:${httpServer.address().port}`, {
+          auth: { token: signToken({ id: userId, role: 'policier' }) },
+          reconnection: false,
+        });
+        await new Promise((resolve, reject) => {
+          socket.once('connect', resolve);
+          socket.once('connect_error', reject);
+        });
+
+        const disconnected = new Promise((resolve, reject) => {
+          const timeout = setTimeout(
+            () => reject(new Error('Le WebSocket est resté connecté après la désactivation.')),
+            5000
+          );
+          socket.once('disconnect', (reason) => {
+            clearTimeout(timeout);
+            resolve(reason);
+          });
+        });
+
+        await pool.query('UPDATE app_user SET is_active = false WHERE id = $1', [userId]);
+        await publishAccountDeactivated(userId);
+
+        await expect(disconnected).resolves.toBe('io server disconnect');
+      } finally {
+        socket?.disconnect();
+        if (stopListening) await stopListening();
+        await new Promise((resolve) => socketServer.close(resolve));
+        await pool.query('UPDATE app_user SET is_active = true WHERE id = $1', [userId]);
+      }
     });
   });
 

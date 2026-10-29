@@ -69,7 +69,7 @@ npm run dev
 
 Pour lancer une seule partie : `npm run dev:backend` ou `npm run dev:frontend`.
 
-En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse. `SOCKET_ALLOWED_ORIGINS` accepte par défaut `http://localhost:5173` et `http://localhost:8080`; pour un autre hôte, configurer ses origines exactes dans l'environnement du backend.
+En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse. `SOCKET_ALLOWED_ORIGINS` accepte par défaut `http://localhost:5173` et `http://localhost:8080`; cette liste exacte est aussi utilisée pour refuser les requêtes HTTP mutantes venant d'une autre origine. Pour un autre hôte, configurer ses origines exactes dans l'environnement du backend.
 
 ## Tests
 
