@@ -36,12 +36,12 @@ Un compte GitHub qui se connecte pour la première fois reçoit un compte **poli
 
 Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
 
-| Matricule | Nom | Rôle | Grade |
-|---|---|---|---|
-| `PO-001` | Massyle Riahi | Direction | Directeur général |
-| `SM-002` | Eric Tremblay | Superviseur | Lieutenant |
-| `PL-003` | Chrysler Jean | Policier | Sergent (autres fonctions) |
-| `PL-004` | Michael Fortin | Policier | Sergent (autres fonctions) |
+| Matricule  | Nom            | Rôle       | Grade                      |
+| ---------- | -------------- | ----------- | -------------------------- |
+| `PO-001` | Massyle Riahi  | Direction   | Directeur général        |
+| `SM-002` | Eric Tremblay  | Superviseur | Lieutenant                 |
+| `PL-003` | Chrysler Jean  | Policier    | Sergent (autres fonctions) |
+| `PL-004` | Michael Fortin | Policier    | Sergent (autres fonctions) |
 
 **Compte rapide de l'équipe** (tests en local) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve. Pour l'ajouter à une base déjà créée, sans rien effacer :
 
@@ -113,13 +113,13 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 
 ## Structure du dépôt
 
-| Dossier | Contenu |
-|---|---|
-| `backend/` | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
-| `frontend/` | Application React (Vite), servie par nginx en production |
-| `docs/` | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives |
-| `deploy/` | Déploiement sur un serveur avec les images publiées sur ghcr.io |
-| `scripts/` | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`) |
+| Dossier       | Contenu                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `backend/`  | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
+| `frontend/` | Application React (Vite), servie par nginx en production                                                                     |
+| `docs/`     | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives                                  |
+| `deploy/`   | Déploiement sur un serveur avec les images publiées sur ghcr.io                                                            |
+| `scripts/`  | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`)                                     |
 
 ## Liens
 
@@ -129,7 +129,7 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 - [Backlog produit](docs/02-backlog.md)
 - [Conception technique](docs/03-conception.md)
 - [Plan des sprints](docs/04-sprints.md)
-- [Organisation de l'équipe](docs/05-equipe.md)
+- [Organisation de l&#39;équipe](docs/05-equipe.md)
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
 - [Maquettes](docs/maquettes/README.md)
