@@ -135,6 +135,8 @@ describe('GET /api/messages/groups/:groupId', () => {
     expect(res.status).toBe(200);
     expect(res.body.messages).toHaveLength(1);
     expect(requetes('SET last_read_at')[0][1]).toEqual([7, MOI]);
+    // La pastille du menu baisse dans tous ses onglets
+    expect(emitToUsers).toHaveBeenCalledWith([MOI], 'messages:lus', {});
   });
 
   test('403 pour un agent qui n\'est pas membre, même en appelant l\'API à la main', async () => {

@@ -96,6 +96,8 @@ export const getGroupMessages = async (req, res) => {
     if (!groupe) return undefined;
     await groupModel.markRead(groupe.id, req.user.id);
     const messages = await groupModel.findMessages(groupe.id);
+    // La pastille du menu baisse dans tous les onglets du lecteur
+    emitToUsers([req.user.id], 'messages:lus', {});
     return res.json({ group: groupe, messages });
   } catch (error) {
     console.error('Erreur lors de la lecture du groupe:', error);
