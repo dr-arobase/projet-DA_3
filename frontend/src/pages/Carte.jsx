@@ -6,6 +6,7 @@ import * as api from '../api.js';
 import { useEvenement } from '../composants/TempsReelContext.js';
 import { IconeRepere } from '../composants/Icones.jsx';
 import RechercheDossier from '../composants/RechercheDossier.jsx';
+import { lienPage } from '../config.js';
 import { LIBELLES_STATUT, formaterDate } from '../registre.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
@@ -109,7 +110,7 @@ export default function Carte() {
           `<strong>${echapper(s.criminal_name)}</strong><br>${echapper(s.location)}`
           + (s.notes ? `<br><em>${echapper(s.notes)}</em>` : '')
           + `<br><small>${echapper(s.reported_by)} · ${echapper(formaterDate(s.reported_at, true))}</small>`
-          + `<br><a href="/personnes-recherchees/${Number(s.criminal_id)}">Voir le dossier</a>`,
+          + `<br><a href="${lienPage(`/personnes-recherchees/${Number(s.criminal_id)}`)}">Voir le dossier</a>`,
         )
         .addTo(calqueSignalements.current);
     }
@@ -127,7 +128,7 @@ export default function Carte() {
           `<strong>${echapper(d.first_name)} ${echapper(d.last_name)}</strong>`
           + `<br><small>Dernière adresse connue · ${echapper(LIBELLES_STATUT[d.status])}</small>`
           + `<br>${echapper(d.last_known_address)}`
-          + `<br><a href="/personnes-recherchees/${Number(d.id)}">Voir le dossier</a>`,
+          + `<br><a href="${lienPage(`/personnes-recherchees/${Number(d.id)}`)}">Voir le dossier</a>`,
         )
         .addTo(calqueDossiers.current);
       reperesDossiers.current.set(d.id, repere);

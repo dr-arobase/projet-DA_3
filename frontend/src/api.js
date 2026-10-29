@@ -1,13 +1,16 @@
 // Appel générique vers le backend. La session est un cookie httpOnly posé par le serveur :
 // le navigateur l'envoie tout seul (même origine grâce au proxy Vite), on ne manipule aucun jeton.
 // body : un objet (envoyé en JSON) ou un fichier (envoyé tel quel, avec son type MIME).
+import { API_URL, urlApi } from './config.js';
+
 export async function requete(chemin, { method = 'GET', body } = {}) {
   const fichier = body instanceof Blob;
   let reponse;
   try {
-    reponse = await fetch(chemin, {
+    reponse = await fetch(urlApi(chemin), {
       method,
-      credentials: 'same-origin',
+      // API sur un autre site (GitHub Pages) : le cookie de session doit l'accompagner
+      credentials: API_URL ? 'include' : 'same-origin',
       headers: body ? { 'Content-Type': fichier ? body.type : 'application/json' } : undefined,
       body: body ? (fichier ? body : JSON.stringify(body)) : undefined,
     });
