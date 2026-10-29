@@ -28,6 +28,8 @@ export default function useNonLus() {
   }, [utilisateur?.id, charger]));
   useEvenement('group:updated', charger);
   useEvenement('messages:lus', charger);
+  // Un message supprimé ne compte plus
+  useEvenement('message:deleted', charger);
 
   return nonLus;
 }
