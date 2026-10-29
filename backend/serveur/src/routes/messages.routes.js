@@ -1,7 +1,9 @@
 import express from 'express';
 import {
   getContacts, getUnreadCount, getConversation, sendMessage, updateMessage, deleteMessage,
+  sendAttachment, getAttachment,
 } from '../controllers/messages.controller.js';
+import { readAttachment } from '../middleware/attachment.middleware.js';
 import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
 } from '../controllers/groups.controller.js';
@@ -25,6 +27,10 @@ router.get('/groups/:groupId', getGroupMessages);
 router.post('/groups/:groupId/messages', sendGroupMessage);
 router.post('/groups/:groupId/members', addGroupMembers);
 router.delete('/groups/:groupId/members/:userId', removeGroupMember);
+
+// Fichiers, images, GIF et messages vocaux : envoi en corps brut, lecture réservée aux participants
+router.post('/attachments', readAttachment, sendAttachment);
+router.get('/:messageId/attachment', getAttachment);
 
 router.get('/:userId', getConversation);
 router.post('/', sendMessage);

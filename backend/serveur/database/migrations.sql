@@ -77,3 +77,11 @@ CREATE INDEX IF NOT EXISTS idx_message_group_member_user ON message_group_member
 -- Un message supprimé garde sa ligne (le fil reste dans l'ordre) mais perd son texte.
 ALTER TABLE message ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
 ALTER TABLE message ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+-- Pièces jointes (#57) et messages vocaux (#59) : le fichier est sur le disque de l'API
+-- (dossier uploads/messages, nom tiré au hasard) ; la base garde son nom affiché, son type et sa taille.
+ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_path VARCHAR(100);
+ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
+ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_type VARCHAR(50);
+ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
+ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_kind VARCHAR(10); -- 'image', 'audio' ou 'file'

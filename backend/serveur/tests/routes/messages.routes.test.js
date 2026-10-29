@@ -132,7 +132,7 @@ describe('POST /api/messages', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.data).toEqual(cree);
-    expect(query.mock.calls[1][1]).toEqual([3, 2, 'Bien reçu']); // expéditeur tiré de la session, texte nettoyé
+    expect(query.mock.calls[1][1]).toEqual([3, 2, 'Bien reçu', null, null, null, null, null]); // expéditeur tiré de la session, texte nettoyé
     expect(emitToUsers).toHaveBeenCalledWith([2, 3], 'message:new', cree);
   });
 
