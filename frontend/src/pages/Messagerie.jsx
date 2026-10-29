@@ -13,6 +13,20 @@ import '../styles/pages.css';
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
 const DELAI_MODIFICATION = 15 * 60 * 1000; // le serveur refuse aussi après 15 minutes (#143)
+const MAX_FICHIER = 10 * 1024 * 1024; // 10 Mo, comme le serveur (#57)
+const DUREE_MAX_VOCAL = 120; // secondes (#59)
+const TYPES_FICHIER = 'image/jpeg,image/png,image/webp,image/gif,application/pdf,audio/webm,audio/ogg,audio/mp4,audio/mpeg';
+
+// « 1,4 Mo », « 320 ko »
+const tailleLisible = (octets) => (octets >= 1024 * 1024
+  ? `${(octets / 1024 / 1024).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} Mo`
+  : `${Math.max(1, Math.round(octets / 1024))} ko`);
+const dureeLisible = (secondes) => `${Math.floor(secondes / 60)}:${String(secondes % 60).padStart(2, '0')}`;
+
+// Format d'enregistrement que le navigateur sait produire (Chrome et Firefox : WebM, Safari : MP4)
+const formatVocal = () => (typeof MediaRecorder === 'undefined' ? null
+  : ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+    .find((t) => MediaRecorder.isTypeSupported(t)) ?? '');
 
 // Séparateur de jour (« mar. 20 janv. ») et heure d'un message
 const jourDe = (iso) => new Date(iso).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -41,9 +55,12 @@ export default function Messagerie() {
   const [menuOuvert, setMenuOuvert] = useState(false);
   const [enEdition, setEnEdition] = useState(null); // mon message en cours de modification
   const [maintenant, setMaintenant] = useState(() => Date.now());
+  const [vocal, setVocal] = useState(null); // { secondes } pendant un enregistrement
   const fin = useRef(null);
   const menu = useRef(null);
   const saisie = useRef(null);
+  const choixFichier = useRef(null);
+  const enregistreur = useRef(null); // { recorder, flux, annule, minuterie }
 
   // Le bouton « Modifier » disparaît de lui-même quand les 15 minutes sont passées
   useEffect(() => {
@@ -177,6 +194,84 @@ export default function Messagerie() {
       setEnCours(false);
     }
   }
+
+  // Fichier, image, GIF ou message vocal : envoyé tout de suite dans la conversation ouverte
+  async function envoyerFichier(fichier, nom) {
+    if (fichier.size > MAX_FICHIER) return setErreur('Le fichier dépasse 10 Mo.');
+    setEnCours(true);
+    try {
+      const { data } = await api.envoyerFichier({ agentId: avecId, groupeId, fichier, nom });
+      ajouterMessage(data);
+      setErreur('');
+    } catch (err) {
+      setErreur(err.message);
+    } finally {
+      setEnCours(false);
+    }
+    return undefined;
+  }
+
+  function fichierChoisi(e) {
+    const fichier = e.target.files?.[0];
+    e.target.value = ''; // permet de renvoyer le même fichier
+    if (fichier) envoyerFichier(fichier, fichier.name);
+  }
+
+  async function demarrerVocal() {
+    const format = formatVocal();
+    if (format === null || !navigator.mediaDevices?.getUserMedia) {
+      setErreur('Ce navigateur ne peut pas enregistrer de message vocal.');
+      return;
+    }
+    let flux;
+    try {
+      flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setErreur('Micro refusé : autorisez le micro pour ce site dans le navigateur, puis réessayez.');
+      return;
+    }
+    const recorder = new MediaRecorder(flux, format ? { mimeType: format } : undefined);
+    const morceaux = [];
+    recorder.ondataavailable = (e) => { if (e.data.size) morceaux.push(e.data); };
+    recorder.onstop = () => {
+      const { annule, minuterie } = enregistreur.current ?? {};
+      window.clearTimeout(minuterie);
+      flux.getTracks().forEach((piste) => piste.stop());
+      enregistreur.current = null;
+      setVocal(null);
+      if (annule || morceaux.length === 0) return;
+      const type = recorder.mimeType || format || 'audio/webm';
+      const extension = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
+      envoyerFichier(new Blob(morceaux, { type }), `message-vocal.${extension}`);
+    };
+    recorder.start();
+    // Arrêt et envoi automatiques à 2 minutes
+    const minuterie = window.setTimeout(() => recorder.state !== 'inactive' && recorder.stop(), DUREE_MAX_VOCAL * 1000);
+    enregistreur.current = { recorder, annule: false, minuterie };
+    setErreur('');
+    setVocal({ secondes: 0 });
+  }
+
+  function arreterVocal(annuler) {
+    const courant = enregistreur.current;
+    if (!courant || courant.recorder.state === 'inactive') return;
+    courant.annule = annuler;
+    courant.recorder.stop();
+  }
+
+  // Durée affichée pendant l'enregistrement
+  const enregistrementEnCours = Boolean(vocal);
+  useEffect(() => {
+    if (!enregistrementEnCours) return undefined;
+    const debut = Date.now();
+    const minuterie = window.setInterval(
+      () => setVocal({ secondes: Math.min(DUREE_MAX_VOCAL, Math.floor((Date.now() - debut) / 1000)) }), 500,
+    );
+    return () => window.clearInterval(minuterie);
+  }, [enregistrementEnCours]);
+
+  // Changer de conversation ou quitter la page annule l'enregistrement en cours (et coupe le micro)
+  useEffect(() => () => arreterVocal(true), [avecId, groupeId]);
 
   function commencerEdition(m) {
     setEnEdition(m);
@@ -393,7 +488,9 @@ export default function Messagerie() {
                     ? { first_name: m.sender_first_name, last_name: m.sender_last_name }
                     : correspondant;
                   const supprime = Boolean(m.deleted_at);
-                  const modifiable = moi && !supprime && maintenant - new Date(m.created_at).getTime() < DELAI_MODIFICATION;
+                  // Une pièce jointe ne se modifie pas : on la supprime et on en renvoie une autre
+                  const modifiable = moi && !supprime && !m.attachment_kind
+                    && maintenant - new Date(m.created_at).getTime() < DELAI_MODIFICATION;
                   return (
                     <Fragment key={m.id}>
                       {nouveauJour && <li className="messagerie-jour">{jourDe(m.created_at)}</li>}
@@ -403,7 +500,9 @@ export default function Messagerie() {
                           : <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />)}
                         <div className={`messagerie-bulle${moi ? ' moi' : ''}${supprime ? ' supprime' : ''}${enEdition?.id === m.id ? ' en-edition' : ''}`}>
                           {groupeId && !moi && !suite && <strong className="messagerie-auteur">{nomAgent(auteur)}</strong>}
-                          {supprime ? <p className="messagerie-supprime">Message supprimé</p> : <p>{m.body}</p>}
+                          {supprime && <p className="messagerie-supprime">Message supprimé</p>}
+                          {!supprime && m.attachment_kind && <PieceJointe message={m} />}
+                          {!supprime && m.body && <p>{m.body}</p>}
                           <small>
                             {heureDe(m.created_at)}
                             {m.edited_at && !supprime && ' · modifié'}
@@ -435,7 +534,46 @@ export default function Messagerie() {
                 </p>
               )}
               <form className="messagerie-saisie" onSubmit={envoyer}>
+                {vocal ? (
+                  <div className="messagerie-vocal" role="status">
+                    <span className="messagerie-vocal-point" aria-hidden="true" />
+                    Enregistrement… {dureeLisible(vocal.secondes)} / {dureeLisible(DUREE_MAX_VOCAL)}
+                    <button type="button" onClick={() => arreterVocal(true)}>Annuler</button>
+                    <button type="button" className="registre-bouton-principal" onClick={() => arreterVocal(false)}>Envoyer</button>
+                  </div>
+                ) : (
+                  <>
+                    <input
+                      ref={choixFichier}
+                      type="file"
+                      accept={TYPES_FICHIER}
+                      hidden
+                      onChange={fichierChoisi}
+                    />
+                    <button
+                      type="button"
+                      className="messagerie-bouton-icone"
+                      aria-label="Joindre un fichier, une image ou un GIF"
+                      title="Joindre un fichier, une image ou un GIF (10 Mo)"
+                      disabled={enCours || Boolean(enEdition)}
+                      onClick={() => choixFichier.current?.click()}
+                    >
+                      <span aria-hidden="true">📎</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="messagerie-bouton-icone"
+                      aria-label="Enregistrer un message vocal"
+                      title="Message vocal (2 minutes)"
+                      disabled={enCours || Boolean(enEdition)}
+                      onClick={demarrerVocal}
+                    >
+                      <span aria-hidden="true">🎤</span>
+                    </button>
+                  </>
+                )}
                 <textarea
+                  hidden={Boolean(vocal)}
                   ref={saisie}
                   rows={2}
                   maxLength={MAX_MESSAGE}
@@ -449,15 +587,39 @@ export default function Messagerie() {
                     if (e.key === 'Escape' && enEdition) annulerEdition();
                   }}
                 />
-                <button type="submit" className="registre-bouton-principal" disabled={enCours || !texte.trim()}>
-                  {enEdition ? 'Enregistrer' : 'Envoyer'}
-                </button>
+                {!vocal && (
+                  <button type="submit" className="registre-bouton-principal" disabled={enCours || !texte.trim()}>
+                    {enEdition ? 'Enregistrer' : 'Envoyer'}
+                  </button>
+                )}
               </form>
             </>
           )}
         </section>
       </div>
     </>
+  );
+}
+
+// Pièce jointe dans le fil : image (GIF compris) cliquable, lecteur audio, ou lien de téléchargement
+function PieceJointe({ message: m }) {
+  const url = api.urlPieceJointe(m.id);
+  if (m.attachment_kind === 'image') {
+    return (
+      <a href={url} target="_blank" rel="noopener noreferrer" className="messagerie-image">
+        <img src={url} alt={m.attachment_name} loading="lazy" />
+      </a>
+    );
+  }
+  if (m.attachment_kind === 'audio') {
+    return <audio className="messagerie-audio" controls preload="metadata" src={url} aria-label="Message vocal" />;
+  }
+  return (
+    <a href={url} className="messagerie-fichier" download={m.attachment_name}>
+      <span aria-hidden="true">📄</span>
+      <span>{m.attachment_name}</span>
+      {m.attachment_size ? <small>{tailleLisible(m.attachment_size)}</small> : null}
+    </a>
   );
 }
 
