@@ -139,8 +139,10 @@ describe('Socket.IO', () => {
   test('met à jour la présence quand un agent se déconnecte', async () => {
     const a = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier' }));
     await once(a, 'connect');
+    const afterJoin = once(a, 'presence:update');
     const b = connect(signToken({ id: 2, badge_number: 'PL-002', role: 'policier' }));
     await once(b, 'connect');
+    expect((await afterJoin).map((u) => u.id)).toEqual([1, 2]);
 
     const afterLeave = once(a, 'presence:update');
     b.disconnect();
