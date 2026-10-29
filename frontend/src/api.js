@@ -122,6 +122,22 @@ export const listerContacts = () => requete('/api/messages/contacts');
 // Nombre de messages non lus (privés et de groupe) : { total }
 export const compterNonLus = () => requete('/api/messages/unread');
 
+// Son propre message (privé ou de groupe) : modifiable 15 minutes, supprimable
+export const modifierMessage = (messageId, body) =>
+  requete(`/api/messages/${messageId}`, { method: 'PATCH', body: { body } });
+
+export const supprimerMessage = (messageId) => requete(`/api/messages/${messageId}`, { method: 'DELETE' });
+
+// Fichier, image, GIF ou message vocal, envoyé brut à un agent ou à un groupe (10 Mo au plus)
+export const envoyerFichier = ({ agentId, groupeId, fichier, nom }) => {
+  const params = new URLSearchParams(agentId ? { recipient_id: agentId } : { group_id: groupeId });
+  if (nom) params.set('name', nom);
+  return requete(`/api/messages/attachments?${params}`, { method: 'POST', body: fichier });
+};
+
+// Adresse d'une pièce jointe (le serveur vérifie que l'agent est dans la conversation)
+export const urlPieceJointe = (messageId) => urlApi(`/api/messages/${messageId}/attachment`);
+
 export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`);
 
 export const envoyerMessage = (recipient_id, body) =>
