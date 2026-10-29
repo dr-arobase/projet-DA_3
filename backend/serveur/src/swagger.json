@@ -532,13 +532,13 @@
         }
       }
     },
-    "/api/messages/{userId}": {
+    "/api/messages/{id}": {
       "get": {
         "tags": ["Messages"],
         "summary": "Conversation avec un agent",
-        "description": "Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur, `messages:lus` au lecteur).\n\n**Rôle requis :** `policier`",
+        "description": "`id` est l'identifiant de l'**agent**. Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur, `messages:lus` au lecteur).\n\n**Rôle requis :** `policier`",
         "parameters": [
-          { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant de l'agent", "schema": { "type": "integer" } }
         ],
         "responses": {
           "200": {
@@ -547,6 +547,42 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "patch": {
+        "tags": ["Messages"],
+        "summary": "Modifier son message (15 minutes)",
+        "description": "`id` est l'identifiant du **message** (privé ou de groupe). Seul l'expéditeur peut le modifier, pendant 15 minutes après l'envoi; `edited_at` est rempli. Les participants reçoivent l'événement `message:updated`.\n\n**Rôle requis :** `policier` (expéditeur du message)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant du message", "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["body"], "properties": { "body": { "type": "string", "maxLength": 2000, "example": "Suspect vu au métro Berri-UQAM, sortie nord." } } } } }
+        },
+        "responses": {
+          "200": { "description": "Message modifié", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "$ref": "#/components/schemas/Message" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "Message d'un autre agent, ou plus de 15 minutes après l'envoi" },
+          "404": { "description": "Message introuvable ou supprimé" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "delete": {
+        "tags": ["Messages"],
+        "summary": "Supprimer son message",
+        "description": "`id` est l'identifiant du **message** (privé ou de groupe). Seul l'expéditeur peut le supprimer. Le message reste dans le fil, sans texte, avec `deleted_at`; il ne compte plus dans les non-lus. Les participants reçoivent l'événement `message:deleted`.\n\n**Rôle requis :** `policier` (expéditeur du message)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant du message", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Message supprimé", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "$ref": "#/components/schemas/Message" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "Message d'un autre agent" },
+          "404": { "description": "Message introuvable ou déjà supprimé" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -1161,7 +1197,9 @@
           "recipient_id": { "type": "integer", "example": 2 },
           "body": { "type": "string", "example": "Suspect vu au métro Berri-UQAM." },
           "created_at": { "type": "string", "format": "date-time" },
-          "read_at": { "type": "string", "format": "date-time", "nullable": true }
+          "read_at": { "type": "string", "format": "date-time", "nullable": true },
+          "edited_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Rempli si l'expéditeur a modifié le message" },
+          "deleted_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Rempli si le message est supprimé (le texte est alors vide)" }
         }
       },
       "Contact": {

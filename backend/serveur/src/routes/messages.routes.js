@@ -1,5 +1,9 @@
 import express from 'express';
-import { getContacts, getUnreadCount, getConversation, sendMessage } from '../controllers/messages.controller.js';
+import {
+  getContacts, getUnreadCount, getConversation, sendMessage, updateMessage, deleteMessage,
+  sendAttachment, getAttachment,
+} from '../controllers/messages.controller.js';
+import { readAttachment } from '../middleware/attachment.middleware.js';
 import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
 } from '../controllers/groups.controller.js';
@@ -24,10 +28,19 @@ router.post('/groups/:groupId/messages', sendGroupMessage);
 router.post('/groups/:groupId/members', addGroupMembers);
 router.delete('/groups/:groupId/members/:userId', removeGroupMember);
 
+// Fichiers, images, GIF et messages vocaux : envoi en corps brut, lecture réservée aux participants
+router.post('/attachments', readAttachment, sendAttachment);
+router.get('/:messageId/attachment', getAttachment);
+
 router.get('/:userId', getConversation);
 router.post('/', sendMessage);
+
+// Un message précis (privé ou de groupe) : seul son expéditeur le modifie (15 minutes) ou le supprime
+router.patch('/:messageId', updateMessage);
+router.delete('/:messageId', deleteMessage);
 
 // Tout identifiant de l'URL doit être un entier positif (sinon 400)
 router.param('groupId', validateId);
 router.param('userId', validateId);
+router.param('messageId', validateId);
 export default router;

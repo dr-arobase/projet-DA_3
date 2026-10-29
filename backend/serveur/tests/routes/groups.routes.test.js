@@ -180,7 +180,7 @@ describe('POST /api/messages/groups/:groupId/messages', () => {
     const res = await envoyer(MOI, { body: ' 10-4 ' });
 
     expect(res.status).toBe(201);
-    expect(requetes('INSERT INTO message (sender_id, group_id')[0][1]).toEqual([MOI, 7, '10-4']);
+    expect(requetes('INSERT INTO message (sender_id, group_id')[0][1]).toEqual([MOI, 7, '10-4', null, null, null, null, null]); // sans pièce jointe
     expect(emitToUsers).toHaveBeenCalledWith([2, 3, 4], 'group:message', expect.objectContaining({ id: 9 }));
   });
 
