@@ -20,6 +20,8 @@ Puis ouvrir **http://localhost:8080**.
 - Les données vivent dans un volume Docker : elles **survivent** à `docker compose down` et à un redémarrage. Pour repartir de zéro : `docker compose down -v`.
 - La documentation de l'API (Swagger) est sur http://localhost:8080/api-docs.
 - Avant le premier démarrage, copier `.env.example` en `.env` à la racine et définir `JWT_SECRET` avec une valeur aléatoire (32 octets ou plus sont recommandés). Par exemple, générer une valeur avec `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` puis la copier dans `.env`. Sans ce secret, Docker et l'API refusent de démarrer. Pour `npm run dev`, définir aussi `JWT_SECRET` dans `backend/.env`.
+- Les valeurs par défaut suffisent en local. Pour les changer, copier `.env.example` en `.env` à la racine.
+- `JWT_SECRET` doit être défini dans le fichier `.env` à la racine. Il signe les jetons de session ; utiliser une chaîne aléatoire longue et unique en environnement de développement et de production. La valeur par défaut de `compose.yml` n'est qu'un exemple local et ne doit pas être utilisée en production.
 
 ### Connexion GitHub
 
@@ -86,15 +88,15 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine. L
 
 ---
 
-## Ce qui est simulé dans l'alpha
+## Ce qui est simulé dans la bêta
 
-Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « à venir ».
+Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « reporté au sprint 3 ».
 
 | Élément | Où | Ce qui le remplacera | Sprint |
 |---|---|---|---|
 | Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
-| « Mot de passe oublié ? (à venir) » | Page de connexion | Réinitialisation par un superviseur | 2 |
-| « Authentification à deux facteurs : à venir » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 2 |
+| « Mot de passe oublié ? (reporté) » | Page de connexion | Réinitialisation par un superviseur | 3 |
+| « Authentification à deux facteurs : reporté » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 3 |
 
 Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 
