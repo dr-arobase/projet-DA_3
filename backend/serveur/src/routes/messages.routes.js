@@ -1,5 +1,5 @@
 import express from 'express';
-import { getContacts, getConversation, sendMessage } from '../controllers/messages.controller.js';
+import { getContacts, getUnreadCount, getConversation, sendMessage } from '../controllers/messages.controller.js';
 import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
 } from '../controllers/groups.controller.js';
@@ -12,6 +12,8 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.get('/contacts', getContacts);
+// Avant /:userId, sinon « unread » serait pris pour un identifiant d'agent
+router.get('/unread', getUnreadCount);
 
 // Groupes : avant /:userId, sinon « groups » serait pris pour un identifiant d'agent.
 // L'appartenance au groupe (et le rôle de créateur) est vérifiée dans le contrôleur.

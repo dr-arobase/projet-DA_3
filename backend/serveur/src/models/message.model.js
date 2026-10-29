@@ -24,6 +24,22 @@ export const findContacts = async (userId) => {
   return result.rows;
 };
 
+// Tous les messages non lus de l'agent : privés (d'agents actifs, comme dans la liste
+// des contacts) et de ses groupes (écrits par les autres après sa dernière lecture)
+export const countUnread = async (userId) => {
+  const query = `
+    SELECT
+      (SELECT COUNT(*) FROM message m JOIN app_user s ON s.id = m.sender_id AND s.is_active
+        WHERE m.recipient_id = $1 AND m.read_at IS NULL)
+      +
+      (SELECT COUNT(*) FROM message m
+        JOIN message_group_member gm ON gm.group_id = m.group_id AND gm.user_id = $1
+        WHERE m.sender_id <> $1 AND m.created_at > gm.last_read_at) AS total
+  `;
+  const result = await pool.query(query, [userId]);
+  return Number(result.rows[0]?.total) || 0;
+};
+
 // Les derniers messages échangés entre deux agents, du plus ancien au plus récent
 export const findConversation = async (userId, otherId, { limit = 200 } = {}) => {
   const query = `
