@@ -21,7 +21,7 @@ import geocodeRoutes from './routes/geocode.routes.js';
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
 import { verifyToken } from './middleware/auth.middleware.js';
-import { UPLOADS_DIR } from './middleware/upload.middleware.js';
+import { AVATARS_DIR, AVATARS_URL } from './middleware/upload.middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,7 +49,9 @@ app.use('/api/geocode', geocodeRoutes);
 
 // Fichiers envoyés (photos de profil) : réservés aux agents connectés.
 // Le navigateur envoie le cookie de session tout seul pour les <img> de même origine.
-app.use('/api/uploads', verifyToken, express.static(UPLOADS_DIR, { fallthrough: false }));
+// Seules les photos de profil sont servies telles quelles ; les pièces jointes de la messagerie
+// (uploads/messages) passent par GET /api/messages/:id/attachment, qui vérifie la conversation
+app.use(AVATARS_URL, verifyToken, express.static(AVATARS_DIR, { fallthrough: false }));
 
 // Route d'accueil / de test
 app.get('/', (req, res) => {
