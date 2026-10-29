@@ -592,7 +592,7 @@
       "post": {
         "tags": ["Users"],
         "summary": "Créer un compte policier",
-        "description": "Crée le compte d'un nouveau policier (récit #8). Le rôle est `policier` et le grade `sergent_autres_fonctions`.\n\n**Rôle requis :** `superviseur`",
+        "description": "Crée un compte (récit #8). Par défaut : rôle `policier`, grade `sergent_autres_fonctions`. Un superviseur ne crée que des policiers (403 sinon) ; la direction peut créer tous les rôles. Mot de passe de 8 caractères au moins, courriel valide.\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
           "content": {
@@ -614,7 +614,7 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "409": {
-            "description": "Matricule déjà utilisé",
+                    "description": "Matricule ou courriel déjà utilisé",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -840,6 +840,7 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -954,7 +955,7 @@
         "required": ["badge_number", "password"],
         "properties": {
           "badge_number": { "type": "string", "example": "P-1001" },
-          "password": { "type": "string", "format": "password", "example": "motdepasse" },
+          "password": { "type": "string", "format": "password", "minLenght": 8, "example": "motdepasse" },
           "se_souvenir": { "type": "boolean", "example": false }
         }
       },
@@ -1062,7 +1063,20 @@
           "updated_at": { "type": "string", "format": "date-time" }
         }
       },
-      "CriminalCreate": {
+            "CriminalCreate": {
+        "type": "object",
+        "required": ["first_name", "last_name"],
+        "description": "Un nouveau dossier commence toujours au statut recherche. photo_url est refusé tant que l'envoi de photo n'existe pas.",
+        "properties": {
+          "first_name": { "type": "string", "maxLength": 100, "example": "Jean" },
+          "last_name": { "type": "string", "maxLength": 100, "example": "Dupont" },
+          "date_of_birth": { "type": "string", "format": "date", "description": "AAAA-MM-JJ, pas dans le futur", "example": "1985-04-12" },
+          "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
+          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
+          "crimes": { "type": "string", "example": "Vol à main armée" }
+        }
+      },
+      "CriminalUpdate": {
         "type": "object",
         "required": ["first_name", "last_name"],
         "properties": {
@@ -1071,18 +1085,7 @@
           "date_of_birth": { "type": "string", "format": "date", "example": "1985-04-12" },
           "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
           "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "crimes": { "type": "string", "example": "Vol à main armée" },
-          "photo_url": { "type": "string", "maxLength": 500, "example": "/uploads/photos/1.jpg" }
-        }
-      },
-      "CriminalUpdate": {
-        "type": "object",
-        "properties": {
-          "first_name": { "type": "string", "example": "Jean" },
-          "last_name": { "type": "string", "example": "Dupont" },
-          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "photo_url": { "type": "string", "example": "/uploads/photos/1.jpg" }
+          "crimes": { "type": "string", "example": "Vol à main armée" }
         }
       },
       "CriminalStatusUpdate": {
@@ -1235,7 +1238,7 @@
         "type": "object",
         "required": ["message"],
         "properties": {
-          "message": { "type": "string", "example": "Individu dangereux aperçu au centre-ville" },
+                    "message": { "type": "string", "minLength": 1, "maxLength": 500, "example": "Individu dangereux aperçu au centre-ville" },
           "severity": { "$ref": "#/components/schemas/Severity" },
           "criminal_id": { "type": "integer", "nullable": true, "example": 1 }
         }
