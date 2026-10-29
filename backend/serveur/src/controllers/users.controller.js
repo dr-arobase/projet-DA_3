@@ -34,7 +34,7 @@ export const getUserById = async (req, res) => {
   }
 };
 
-// POST /api/users : créer un compte policier
+// POST /api/users : les superviseurs créent des comptes policiers, la direction peut créer tout rôle
 export const createUser = async (req, res) => {
   const { first_name, last_name, badge_number, email, password, role, grade } = req.body;
 
@@ -47,6 +47,9 @@ export const createUser = async (req, res) => {
 
   if (!VALID_ROLES.includes(finalRole)) {
     return res.status(400).json({ message: `Rôle invalide. Rôles autorisés : ${VALID_ROLES.join(', ')}` });
+  }
+  if (req.user.role === 'superviseur' && finalRole !== 'policier') {
+    return res.status(403).json({ message: 'Seule la direction peut créer des comptes de superviseur ou de direction.' });
   }
   if (!VALID_GRADES.includes(finalGrade)) {
     return res.status(400).json({ message: `Grade invalide. Grades autorisés : ${VALID_GRADES.join(', ')}` });

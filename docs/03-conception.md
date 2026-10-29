@@ -190,7 +190,7 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `GET` | `/api/alerts` | Liste des alertes | `policier` |
 | `GET` | `/api/users` | Liste des comptes | `superviseur` |
 | `GET` | `/api/users/:id` | Détail d'un compte | `superviseur` |
-| `POST` | `/api/users` | Créer un compte policier | `superviseur` |
+| `POST` | `/api/users` | Créer un compte policier (un superviseur) ou tout type de compte (direction) | `superviseur` (direction pour les rôles superviseur et direction) |
 | `PATCH` | `/api/users/:id/deactivate` | Désactiver un compte (journal d'audit); impossible de se désactiver soi-même, et un superviseur ne peut pas désactiver la direction | `superviseur` |
 | `PATCH` | `/api/users/:id/reactivate` | Réactiver un compte (journal d'audit) | `superviseur` |
 | `PATCH` | `/api/users/:id/promote` | Changer le rôle et le grade (journal d'audit) | `direction` |
