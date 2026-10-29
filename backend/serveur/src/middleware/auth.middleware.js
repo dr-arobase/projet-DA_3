@@ -1,7 +1,6 @@
 import { verifyToken as verifyJwt } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
 import { getAccountAuthInfo } from '../utils/account-status.js';
-import { verifyCsrf } from './csrf.middleware.js';
 
 export const verifyToken = async (req, res, next) => {
   // En-tête « Bearer TOKEN » ou cookie de session posé au login
@@ -26,7 +25,7 @@ export const verifyToken = async (req, res, next) => {
       role: account.role,
       grade: account.grade,
     };
-    return verifyCsrf(req, res, next);
+    return next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name === 'NotBeforeError') {
       return res.status(403).json({ message: 'Jeton invalide ou expiré.' });

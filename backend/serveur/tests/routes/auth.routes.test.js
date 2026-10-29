@@ -113,15 +113,23 @@ describe('POST /api/auth/login', () => {
     expect(loginRateLimit).toHaveBeenCalled();
   });
 
-  test('accepte aussi un formulaire urlencoded', async () => {
-    query.mockResolvedValue({ rows: [agent()] });
+  test('refuse une origine étrangère dès la route de connexion', async () => {
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', 'https://site-malveillant.example')
+      .send({ badge_number: 'PL-003', password: 'secret123' });
 
+    expect(res.status).toBe(403);
+    expect(loginRateLimit).not.toHaveBeenCalled();
+  });
+
+  test('refuse un formulaire urlencoded après retrait du parseur', async () => {
     const res = await request(app)
       .post('/api/auth/login')
       .type('form')
       .send({ badge_number: 'PL-003', password: 'secret123' });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
   test('500 si la base de données plante', async () => {

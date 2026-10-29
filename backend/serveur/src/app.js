@@ -22,6 +22,7 @@ import geocodeRoutes from './routes/geocode.routes.js';
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
 import { verifyToken } from './middleware/auth.middleware.js';
+import { verifyCsrf } from './middleware/csrf.middleware.js';
 import { UPLOADS_DIR } from './middleware/upload.middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,7 +42,7 @@ app.use(helmet({
 
 // Middlewares de parsing
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(verifyCsrf);
 
 // Serveur Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));

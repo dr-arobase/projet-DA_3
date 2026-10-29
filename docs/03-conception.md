@@ -350,7 +350,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Limitation des connexions** : `POST /api/auth/login` accepte au plus cinq tentatives échouées par adresse IP sur une fenêtre de 15 minutes, puis répond `429` avec `Retry-After`. Les connexions réussies ne consomment pas le quota. Le compteur est stocké dans PostgreSQL, partagé entre les instances API, et la clé est un HMAC de l'adresse IP plutôt que l'adresse en clair. L'API ne fait confiance qu'au proxy nginx attendu pour lire l'adresse transmise.
 
-**Protection CSRF** : pour les méthodes qui modifient des données, une requête authentifiée par cookie doit fournir dans `X-CSRF-Token` le jeton signé placé dans le cookie lisible `crimetracker_csrf`. Le frontend ajoute cet en-tête automatiquement; les clients authentifiés par `Authorization: Bearer` ne sont pas concernés. Le flux OAuth conserve en plus sa vérification `state`.
+**Protection CSRF** : un middleware global refuse, pour toute méthode qui modifie des données, les origines navigateur qui ne figurent pas dans la liste exacte `SOCKET_ALLOWED_ORIGINS`. Une requête authentifiée par cookie doit aussi fournir dans `X-CSRF-Token` le jeton signé placé dans le cookie lisible `crimetracker_csrf`. Le frontend ajoute cet en-tête automatiquement; les clients authentifiés par `Authorization: Bearer` ne sont pas concernés par le jeton CSRF. Les clients non navigateur sans en-tête `Origin` restent acceptés. Le flux OAuth conserve en plus sa vérification `state`.
 
 **Révocation et autorisations courantes** : chaque route protégée et nouvelle connexion Socket.IO relit dans PostgreSQL l'état actif, le rôle, le grade et le matricule du compte. Les claims de profil du JWT ne font pas autorité : une désactivation ou une modification de rôle s'applique dès la requête ou connexion suivante. Le serveur publie ensuite une notification `LISTEN/NOTIFY` afin que chaque instance API déconnecte les sockets existants d'un compte désactivé. Les notifications perdues lors d'une coupure sont compensées à la reconnexion du listener par un rechargement des comptes désactivés. SQLite, réservé au développement local, ne fournit pas cette propagation entre processus. « Se souvenir de moi » garde le cookie 8 h; sinon il disparaît à la fermeture du navigateur.
 
@@ -360,7 +360,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Question** : comment le frontend joint-il l'API et Socket.IO, en développement comme en production ?
 
-**Choix retenu** : en production, nginx sert le frontend et relaie `/api` et `/socket.io` vers l'API. En développement, le serveur Vite fait le même relais. Socket.IO autorise uniquement les origines exactes définies par `SOCKET_ALLOWED_ORIGINS` (liste séparée par des virgules); les navigateurs qui présentent une origine différente sont refusés.
+**Choix retenu** : en production, nginx sert le frontend et relaie `/api` et `/socket.io` vers l'API. En développement, le serveur Vite fait le même relais. Socket.IO et les méthodes HTTP mutantes autorisent uniquement les origines exactes définies par `SOCKET_ALLOWED_ORIGINS` (liste séparée par des virgules); les navigateurs qui présentent une origine différente sont refusés.
 
 **Raison** : le navigateur ne voit qu'une seule origine (`localhost:8080`) en production. L'API n'autorise pas les connexions Socket.IO venant de sites inconnus; seul le port de nginx est publié et la base n'est pas joignable directement depuis l'extérieur.
 
