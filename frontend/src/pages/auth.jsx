@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
 import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithub } from '../composants/Icones.jsx';
+import { SANS_SERVEUR, urlApi } from '../config.js';
 import '../styles/auth.css';
 
 // Chiffres de démonstration, pas encore lus dans l'API : signalés à l'écran (voir README)
@@ -66,7 +67,7 @@ export default function Auth() {
       <section className="auth-vitrine">
         <div className="auth-marque">
           <span className="logo-carre"><IconeBouclier /></span>
-          <span>SentinelleRP</span>
+          <span>CrimeTracker</span>
         </div>
 
         <div className="auth-accroche">
@@ -86,13 +87,20 @@ export default function Auth() {
           </ul>
         </div>
 
-        <p className="auth-pied">Police Municipale de Hauteville</p>
+        <p className="auth-pied">CrimeTracker</p>
       </section>
 
       <section className="auth-panneau">
         <form className="auth-formulaire" onSubmit={soumettre} noValidate>
           <h2>Connexion</h2>
           <p className="auth-sous-titre">Identifiez-vous avec vos accès professionnels</p>
+
+          {SANS_SERVEUR && (
+            <p className="auth-erreur" role="status">
+              Version de démonstration publiée sur GitHub Pages : le serveur n'est pas en ligne, la connexion
+              ne fonctionne donc pas ici. Pour utiliser l'application, lancez-la avec Docker (voir le README).
+            </p>
+          )}
 
           <label htmlFor="matricule">Matricule</label>
           <div className="champ">
@@ -129,7 +137,7 @@ export default function Auth() {
               />
               Se souvenir de moi
             </label>
-            <span className="auth-a-venir" title="Fonction pas encore disponible">Mot de passe oublié ? <em>(à venir)</em></span>
+            <span className="auth-a-venir" title="Fonction reportée au sprint 3">Réinitialisation du mot de passe <em>(reportée au sprint 3)</em></span>
           </div>
 
           {erreur && <p className="auth-erreur" role="alert">{erreur}</p>}
@@ -142,13 +150,13 @@ export default function Auth() {
           <p className="auth-separateur"><span>ou</span></p>
 
           {/* Navigation complète, pas un fetch : le serveur redirige vers GitHub puis revient ici */}
-          <a className="bouton-github" href="/api/auth/github">
+          <a className="bouton-github" href={urlApi('/api/auth/github')}>
             <IconeGithub />
             Se connecter avec GitHub
           </a>
 
           <p className="auth-info">
-            <IconeCadenas taille={14} /> Authentification à deux facteurs : à venir
+            <IconeCadenas taille={14} /> Authentification à deux facteurs : reportée au sprint 3
           </p>
 
           <p className="auth-mention">Accès réservé au personnel autorisé — usage tracé et audité.</p>

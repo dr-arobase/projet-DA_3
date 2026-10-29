@@ -1,0 +1,93 @@
+# Publie le frontend sur GitHub Pages : https://dr-arobase.github.io/projet-DA_3/
+#
+# GitHub Pages ne sert que des fichiers statiques : ni l'API Express, ni PostgreSQL, ni Socket.IO.
+# Sans API hébergée ailleurs, la page s'affiche mais la connexion annonce que le serveur n'est pas
+# en ligne. Pour brancher une vraie API : variable du dépôt VITE_API_URL (Settings > Secrets and
+# variables > Actions > Variables), par exemple https://api.mon-domaine.ca. L'API doit alors accepter
+# ce site (CORS avec identifiants, cookie SameSite=None; Secure) : voir les tickets #78 et #79.
+#
+# Variable du dépôt SITE_URL (ex. https://crimetracker-da3.westus2.cloudapp.azure.com) : Pages ne
+# publie plus qu'une redirection vers l'application complète hébergée à cette adresse.
+#
+# Réglage à faire une fois : Settings > Pages > Source = « GitHub Actions ».
+
+name: GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['frontend/**', '.github/workflows/pages.yml', '.github/pages/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Une seule publication à la fois; la plus récente gagne
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  construire:
+    name: Compiler le frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v5
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+        working-directory: frontend
+
+      - name: Compiler pour /projet-DA_3/
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
+        working-directory: frontend
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_SANS_SERVEUR: ${{ vars.VITE_API_URL == '' && 'true' || 'false' }}
+
+      # Pages ne connaît pas les adresses de React Router (/carte, /messagerie…) : sa page 404
+      # renvoie la même application, qui affiche ensuite la bonne page
+      - name: Page 404 = l'application
+        run: cp frontend/dist/index.html frontend/dist/404.html
+
+      # Application hébergée avec son API (variable du dépôt SITE_URL) : Pages renvoie vers elle,
+      # même adresse que l'API, donc le cookie de session marche dans tous les navigateurs
+      - name: Rediriger vers l'application en ligne
+        if: vars.SITE_URL != ''
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}
+          BASE: /${{ github.event.repository.name }}/
+        run: |
+          rm -rf frontend/dist && mkdir frontend/dist
+          sed -e "s#__SITE_URL__#${SITE_URL%/}#g" -e "s#__BASE__#$BASE#g" .github/pages/redirection.html > frontend/dist/index.html
+          cp frontend/dist/index.html frontend/dist/404.html
+
+      - name: Préparer la publication
+        uses: actions/configure-pages@v5
+
+      - name: Envoyer les fichiers
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  publier:
+    name: Publier sur GitHub Pages
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.publication.outputs.page_url }}
+    steps:
+      - name: Publier
+        id: publication
+        uses: actions/deploy-pages@v4

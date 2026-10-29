@@ -1,5 +1,25 @@
 # Risques — CrimeTracker
 
+## Bilan du sprint 2
+
+Le sprint 2 a confirmé la nécessité d'un discipline de revue et de documentation plus stricte. La livraison fonctionnelle n'a pas été remise en cause au niveau technique, mais la visibilité des contributions et la qualité des tâches de documentation ont été moins régulières que prévu, en particulier sur le journal, les tickets et les contrôles de cohérence du dépôt.
+
+### Risques qui ont été constatés au sprint 2
+
+| # | Risque | Observation | Conséquence |
+|---|---|---|---|
+| 10 | **Un seul membre a committé depuis le 7 octobre** | La production et la validation ne sont pas réparties de manière équilibrée. | L'équipe dépend trop d'un nombre restreint de contributions et la maintenance du sprint devient fragile. |
+| 11 | **Les PR sont fusionnées sans revue** | Certaines livraisons ont été fusionnées sans validation explicite de la part d'un coéquipier. | Le risque de régression technique et de divergence documentaire augmente. |
+
+### Risques renouvelés ou à surveiller
+
+| # | Risque | Probabilité | Impact | Signal d'alerte | Mesure d'atténuation |
+|---|---|---|---|---|---|
+| 10 | **Concentration des contributions** | Élevée | Élevé | Un seul membre a publié des commits pendant plusieurs jours. | Rappeler la règle d'équilibre jusqu'au sprint 3, relire les branches actives et attribuer des tâches de validation à chacun. |
+| 11 | **Fusion sans revue** | Élevée | Élevé | Une PR est mergée sans commentaire de relecture. | Mise en place d'une revue obligatoire avant fusion et de contrôles de cohérence sur les tickets, l'équipe et le journal. |
+
+---
+
 | # | Risque | Probabilité | Impact | Signal d'alerte | Mesure d'atténuation |
 |---|---|---|---|---|---|
 | 1 | **Socket.IO inconnu de l'équipe** | Élevée | Élevé | Aucun prototype fonctionnel de diffusion d'événement avant le milieu du sprint 2 | Faire une preuve de concept Socket.IO isolée (serveur Node + deux clients) dès la semaine 1 du sprint 1, hors application. Si au milieu du sprint 2 on n'arrive pas à diffuser un événement de bout en bout, on bascule sur un rafraîchissement automatique toutes les 5 secondes (polling) |

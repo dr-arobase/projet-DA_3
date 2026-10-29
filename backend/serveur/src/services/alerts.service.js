@@ -59,5 +59,8 @@ export const createAlert = async (data = {}, issuedBy) => {
   return alert;
 };
 
-// Les alertes les plus récentes en premier
-export const listAlerts = ({ limit, offset }) => alertModel.findAll({ limit, offset });
+// Les alertes les plus récentes en premier, filtrées au besoin par gravité ou date
+export const listAlerts = ({ limit, offset, severity, since }) =>
+  alertModel.findAll({ limit, offset, severity, since });
+
+export const countAlerts = ({ severity, since }) => alertModel.countAll({ severity, since });
