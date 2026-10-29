@@ -41,22 +41,28 @@ function fusionner(...listes) {
 }
 
 export default function useDashboardData() {
-  const { agentsConnectes } = useTempsReel();
+  const { agentsConnectes, reconnexions } = useTempsReel();
   const [compteurs, setCompteurs] = useState({ recherches: 0, captures: 0 });
   const [alertes, setAlertes] = useState([]);
+  const [nombreAlertesDuJour, setNombreAlertesDuJour] = useState(0);
   const [activites, setActivites] = useState([]);
   const [erreur, setErreur] = useState('');
+  const [, actualiserHorloge] = useState(0);
 
   const charger = useCallback(async () => {
     try {
-      const [recherches, captures, recents, listeAlertes] = await Promise.all([
+      const aujourdHui = new Date();
+      aujourdHui.setHours(0, 0, 0, 0);
+      const [recherches, captures, recents, listeAlertes, urgentesDuJour] = await Promise.all([
         api.listerCriminels({ status: 'recherche', limit: 1 }),
         api.listerCriminels({ status: 'capture', limit: 1 }),
         api.listerCriminels({ limit: NB_ACTIVITES }),
         api.listerAlertes({ limit: 50 }),
+        api.listerAlertes({ severity: 'urgent', since: aujourdHui.toISOString(), limit: 1 }),
       ]);
       setCompteurs({ recherches: recherches.total, captures: captures.total });
       setAlertes(listeAlertes.data);
+      setNombreAlertesDuJour(urgentesDuJour.total ?? 0);
       setActivites((enCours) => fusionner(
         enCours,
         recents.data.map(activiteAjout),
@@ -72,12 +78,26 @@ export default function useDashboardData() {
     charger();
   }, [charger]);
 
+  useEffect(() => {
+    if (reconnexions > 1) charger();
+  }, [reconnexions, charger]);
+
+  useEffect(() => {
+    const minuterie = window.setInterval(() => actualiserHorloge((n) => n + 1), 60000);
+    return () => window.clearInterval(minuterie);
+  }, []);
+
   const ajouter = (activite) => setActivites((enCours) => fusionner([activite], enCours));
+
+  const actualiserApresEvenement = useCallback(() => {
+    window.clearTimeout(actualiserApresEvenement.timer);
+    actualiserApresEvenement.timer = window.setTimeout(charger, 150);
+  }, [charger]);
 
   useEvenement('criminal:added', useCallback((c) => {
     ajouter(activiteAjout(c));
-    charger();
-  }, [charger]));
+    actualiserApresEvenement();
+  }, [actualiserApresEvenement]));
 
   useEvenement('criminal:updated', useCallback((c) => {
     ajouter({
@@ -86,30 +106,30 @@ export default function useDashboardData() {
       titre: `${LIBELLES_STATUT[c.status] ?? 'Fiche modifiée'} — ${nomComplet(c)}`,
       auteur: c.updated_by ?? '—',
     });
-    charger();
-  }, [charger]));
+    actualiserApresEvenement();
+  }, [actualiserApresEvenement]));
 
   useEvenement('criminal:removed', useCallback(({ id }) => {
     ajouter({
       id: `retrait-${id}`, type: 'classee', date: new Date().toISOString(),
       titre: `Fiche n° ${id} retirée du registre`, auteur: '—',
     });
-    charger();
-  }, [charger]));
+    actualiserApresEvenement();
+  }, [actualiserApresEvenement]));
 
   useEvenement('alert:broadcast', useCallback((a) => {
     setAlertes((enCours) => [a, ...enCours.filter((x) => x.id !== a.id)]);
+    if (a.severity === 'urgent' && estAujourdhui(a.created_at)) setNombreAlertesDuJour((n) => n + 1);
     ajouter(activiteAlerte(a));
   }, []));
 
-  const alertesDuJour = alertes.filter((a) => estAujourdhui(a.created_at));
-  const derniere = alertes[0];
+  const derniere = alertes.find((a) => a.severity === 'info');
 
   return {
     erreur,
     stats: [
       { valeur: compteurs.recherches, libelle: 'Fiches actives' },
-      { valeur: alertesDuJour.length, libelle: 'Alertes du jour', ton: 'danger' },
+      { valeur: nombreAlertesDuJour, libelle: 'Alertes du jour', ton: 'danger' },
       { valeur: compteurs.captures, libelle: 'Fiches capturées' },
       { valeur: agentsConnectes, libelle: 'Agents connectés', ton: 'succes' },
     ],
@@ -120,6 +140,6 @@ export default function useDashboardData() {
       auteur: derniere.issued_by ?? '—',
       heure: new Date(derniere.created_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
     },
-    notifications: alertesDuJour.filter((a) => a.severity === 'urgent').length,
+    notifications: nombreAlertesDuJour,
   };
 }
