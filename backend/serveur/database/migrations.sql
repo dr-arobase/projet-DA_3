@@ -72,3 +72,8 @@ ALTER TABLE message ADD CONSTRAINT message_destination CHECK ((recipient_id IS N
 
 CREATE INDEX IF NOT EXISTS idx_message_group ON message(group_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_message_group_member_user ON message_group_member(user_id);
+
+-- Modifier un message pendant 15 minutes (#143) et le supprimer (#144).
+-- Un message supprimé garde sa ligne (le fil reste dans l'ordre) mais perd son texte.
+ALTER TABLE message ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+ALTER TABLE message ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;

@@ -1,5 +1,7 @@
 import express from 'express';
-import { getContacts, getUnreadCount, getConversation, sendMessage } from '../controllers/messages.controller.js';
+import {
+  getContacts, getUnreadCount, getConversation, sendMessage, updateMessage, deleteMessage,
+} from '../controllers/messages.controller.js';
 import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
 } from '../controllers/groups.controller.js';
@@ -27,7 +29,12 @@ router.delete('/groups/:groupId/members/:userId', removeGroupMember);
 router.get('/:userId', getConversation);
 router.post('/', sendMessage);
 
+// Un message précis (privé ou de groupe) : seul son expéditeur le modifie (15 minutes) ou le supprime
+router.patch('/:messageId', updateMessage);
+router.delete('/:messageId', deleteMessage);
+
 // Tout identifiant de l'URL doit être un entier positif (sinon 400)
 router.param('groupId', validateId);
 router.param('userId', validateId);
+router.param('messageId', validateId);
 export default router;

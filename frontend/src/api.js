@@ -104,6 +104,12 @@ export const listerContacts = () => requete('/api/messages/contacts');
 // Nombre de messages non lus (privés et de groupe) : { total }
 export const compterNonLus = () => requete('/api/messages/unread');
 
+// Son propre message (privé ou de groupe) : modifiable 15 minutes, supprimable
+export const modifierMessage = (messageId, body) =>
+  requete(`/api/messages/${messageId}`, { method: 'PATCH', body: { body } });
+
+export const supprimerMessage = (messageId) => requete(`/api/messages/${messageId}`, { method: 'DELETE' });
+
 export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`);
 
 export const envoyerMessage = (recipient_id, body) =>
