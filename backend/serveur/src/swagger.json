@@ -1063,7 +1063,20 @@
           "updated_at": { "type": "string", "format": "date-time" }
         }
       },
-      "CriminalCreate": {
+            "CriminalCreate": {
+        "type": "object",
+        "required": ["first_name", "last_name"],
+        "description": "Un nouveau dossier commence toujours au statut recherche. photo_url est refusé tant que l'envoi de photo n'existe pas.",
+        "properties": {
+          "first_name": { "type": "string", "maxLength": 100, "example": "Jean" },
+          "last_name": { "type": "string", "maxLength": 100, "example": "Dupont" },
+          "date_of_birth": { "type": "string", "format": "date", "description": "AAAA-MM-JJ, pas dans le futur", "example": "1985-04-12" },
+          "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
+          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
+          "crimes": { "type": "string", "example": "Vol à main armée" }
+        }
+      },
+      "CriminalUpdate": {
         "type": "object",
         "required": ["first_name", "last_name"],
         "properties": {
@@ -1072,18 +1085,7 @@
           "date_of_birth": { "type": "string", "format": "date", "example": "1985-04-12" },
           "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
           "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "crimes": { "type": "string", "example": "Vol à main armée" },
-          "photo_url": { "type": "string", "maxLength": 500, "example": "/uploads/photos/1.jpg" }
-        }
-      },
-      "CriminalUpdate": {
-        "type": "object",
-        "properties": {
-          "first_name": { "type": "string", "example": "Jean" },
-          "last_name": { "type": "string", "example": "Dupont" },
-          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "photo_url": { "type": "string", "example": "/uploads/photos/1.jpg" }
+          "crimes": { "type": "string", "example": "Vol à main armée" }
         }
       },
       "CriminalStatusUpdate": {
