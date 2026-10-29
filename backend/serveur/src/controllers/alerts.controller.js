@@ -1,59 +1,39 @@
-import * as alertModel from '../models/alert.model.js';
-import * as auditLogModel from '../models/auditLog.model.js';
-import { emitEvent } from '../sockets/index.js';
+import * as alertService from '../services/alerts.service.js';
+import { readPagination } from '../utils/pagination.js';
 
-const VALID_SEVERITIES = ['info', 'urgent'];
+// Le contrôleur lit la requête et répond ; la logique est dans alerts.service.js.
+// Les erreurs prévues du service portent un statusCode (400, 404) ;
+// toute autre erreur est une panne serveur.
+const handleError = (res, error, context) => {
+  if (error.statusCode) {
+    return res.status(error.statusCode).json({ message: error.message });
+  }
+  console.error(`Erreur lors ${context}:`, error);
+  return res.status(500).json({ message: 'Erreur serveur' });
+};
 
 // POST /api/alerts : diffuser une alerte
 export const createAlert = async (req, res) => {
-  const { message, severity, criminal_id } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ message: 'Le champ message est obligatoire' });
-  }
-  const finalSeverity = severity || 'info';
-  if (!VALID_SEVERITIES.includes(finalSeverity)) {
-    return res.status(400).json({ message: `Sévérité invalide. Valeurs autorisées : ${VALID_SEVERITIES.join(', ')}` });
-  }
-
   try {
-    const issued_by = req.user.id;
-    const created = await alertModel.create({ issued_by, criminal_id, message, severity: finalSeverity });
-    const alert = await alertModel.findById(created.id);
-
-    await auditLogModel.record({
-      actor_id: issued_by,
-      action: 'ALERT_ISSUED',
-      target_type: 'alert',
-      target_id: alert.id,
-      details: { severity: finalSeverity, criminal_id: criminal_id || null }
-    });
-
-    // issued_by_id : l'émetteur ne reçoit pas sa propre notification (le nom seul ne suffit pas)
-    emitEvent('alert:broadcast', { ...alert, issued_by_id: issued_by });
-    
+    const alert = await alertService.createAlert(req.body, req.user.id);
     return res.status(201).json({ message: 'Alerte diffusée avec succès', alert });
   } catch (error) {
-    console.error('Erreur lors de la diffusion de l\'alerte:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la diffusion de l\'alerte');
   }
 };
 
 // GET /api/alerts
 export const getAlerts = async (req, res) => {
   try {
-    const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 20;
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = readPagination(req.query, 20);
     const severity = req.query.severity || undefined;
     const since = req.query.since || undefined;
 
-    const alerts = await alertModel.findAll({ limit, offset, severity, since });
+    const alerts = await alertService.listAlerts({ limit, offset, severity, since });
     if (!severity && !since) return res.json({ page, limit, data: alerts });
-    const total = await alertModel.countAll({ severity, since });
+    const total = await alertService.countAlerts({ severity, since });
     return res.json({ page, limit, total, totalPages: Math.ceil(total / limit), data: alerts });
   } catch (error) {
-    console.error('Erreur lors de la récupération des alertes:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la récupération des alertes');
   }
 };

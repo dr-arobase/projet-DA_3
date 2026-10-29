@@ -78,14 +78,14 @@ Pour limiter les écarts et les ambiguïtés, le code doit suivre une convention
 
 ---
 
-## Contributions individuelles — sprint 2 (préparation)
+## Contributions individuelles — sprint 2
 
-| Membre | Récits / travaux principaux | Contribution prévue | État |
+| Membre | Récits responsables | Autres réalisations | Demandes de tirage |
 |---|---|---|---|
-| **Massyle** | Produit, planification, revue finale | Priorisation des tickets, validation du backlog, revue des livrables et coherent du sprint | À compléter au fil du sprint |
-| **Eric** | Coordination sprint, revue et risques | Animation des mêlées, suivi des blocages, revue des PR, mise à jour des risques et du journal | À compléter au fil du sprint |
-| **Chrysler** | Validation fonctionnelle, tests navigateur | Vérification des critères d'acceptation, ajout de tests manquants, validation des parcours de bout en bout | À compléter au fil du sprint |
-| **Michael** | Documentation, conformité et finalisation | Journal, README, risques, nettoyage de la documentation, contrôle des tâches de release et de préparation de revue | À compléter au fil du sprint |
+| **Massyle** | #53 (annuaire), #54-#55 (messagerie et groupes), #62 (accents), #63 (notifications), #64-#66 (carte) | Messagerie privée et carte initiales; connexion GitHub; compte rapide d'équipe; correction des erreurs API; publication du frontend sur GitHub Pages; priorisation et intégration de la bêta | [#49](https://github.com/dr-arobase/projet-DA_3/pull/49), [#51](https://github.com/dr-arobase/projet-DA_3/pull/51), [#52](https://github.com/dr-arobase/projet-DA_3/pull/52), [#60](https://github.com/dr-arobase/projet-DA_3/pull/60), [#61](https://github.com/dr-arobase/projet-DA_3/pull/61), [#68](https://github.com/dr-arobase/projet-DA_3/pull/68), [#69](https://github.com/dr-arobase/projet-DA_3/pull/69), [#70](https://github.com/dr-arobase/projet-DA_3/pull/70), [#72](https://github.com/dr-arobase/projet-DA_3/pull/72), [#134](https://github.com/dr-arobase/projet-DA_3/pull/134), [#135](https://github.com/dr-arobase/projet-DA_3/pull/135) |
+| **Eric** | #16 (révocation des sessions d'un compte désactivé) | Coordination du sprint, corrections d'authentification, partage PostgreSQL des révocations et revue des correctifs de sécurité | [#137](https://github.com/dr-arobase/projet-DA_3/pull/137) |
+| **Chrysler** | #10 (création de compte), #12 (validation des alertes et dossiers liés) | Validation des identifiants, des champs du registre et de la pagination; refactorisation des services de comptes et d'alertes; vérification fonctionnelle des parcours de la bêta | Branches et commits intégrés dans les PR de correction; aucun lien de PR auteur retrouvé dans l'historique GitHub consulté |
+| **Michael** | #11 (tableau de bord temps réel) | Corrections du temps réel, de la carte, des notifications, des profils et des pages de gestion; documentation du sprint, risques, journal et préparation de la remise | [#136](https://github.com/dr-arobase/projet-DA_3/pull/136) |
 
 ---
 
