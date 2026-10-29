@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
+import { registerCallHandlers } from './appels.js';
 
 let io;
 
@@ -35,6 +36,12 @@ export default function registerSockets(server) {
     // Salle privée de l'agent (tous ses onglets) : messages destinés à lui seul
     socket.join(roomOf(id));
     io.emit('presence:update', getPresenceList());
+
+    // Appels audio et vidéo : signalisation relayée seulement entre agents connectés (#56)
+    registerCallHandlers(socket, {
+      estConnecte: (userId) => getPresenceList().some((p) => p.id === userId),
+      envoyerA: (userId, event, payload) => io.to(roomOf(userId)).emit(event, payload),
+    });
 
     socket.on('disconnect', () => {
       connectedUsers.delete(socket.id);
