@@ -266,20 +266,24 @@
 .selecteur-agents label:hover { background: var(--fond); }
 .selecteur-agents input { width: 15px; height: 15px; margin: 0; accent-color: var(--marine-700); }
 
-/* ---------- Messagerie : fil de conversation sombre ----------
-   Même bleu nuit que le menu latéral. Bulles arrondies, heure au centre du fil,
+/* ---------- Messagerie : fil de conversation ----------
+   Fond clair de l'application. Bulles arrondies, heure au centre du fil,
    images en grand sans bulle, barre de saisie arrondie avec ses icônes. */
 .messagerie-fil {
-  --fil-fond: var(--marine-900);
-  --fil-surface: var(--marine-800);
-  --fil-trait: rgba(255, 255, 255, 0.1);
-  --fil-texte: #e6ebf2;
-  --fil-doux: #9aa7b8;
-  --bulle-autre: #22324d;
-  --bulle-moi: var(--lien);
-  --fil-accent: #8fb0e6;
+  --fil-fond: var(--surface);
+  --fil-surface: #fff;
+  --fil-trait: var(--bordure);
+  --fil-texte: var(--texte);
+  --fil-doux: var(--texte-doux);
+  --bulle-autre: #e6e9f0;
+  --bulle-moi: var(--marine-700);
+  --fil-accent: var(--lien);
+  /* Lecteur vocal : foncé dans les bulles des autres, blanc dans les miennes */
+  --lecteur-plein: var(--marine-700);
+  --lecteur-vide: rgba(12, 26, 48, 0.18);
+  --lecteur-fond: #fff;
   overflow: hidden;
-  border-color: var(--fil-fond);
+  border-color: var(--bordure);
   background: var(--fil-fond);
   color: var(--fil-texte);
 }
@@ -300,7 +304,7 @@
   color: var(--fil-texte);
   cursor: pointer;
 }
-.messagerie-icone:hover { background: rgba(255, 255, 255, 0.08); }
+.messagerie-icone:hover { background: var(--fond); }
 .messagerie-icone:focus-visible { outline: 2px solid var(--fil-accent); outline-offset: 2px; }
 .messagerie-icone:disabled { opacity: 0.35; cursor: not-allowed; }
 .messagerie-appels { gap: 6px; }
@@ -338,23 +342,24 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #fff;
-  color: var(--fil-fond);
+  background: var(--lecteur-plein);
+  color: var(--lecteur-fond);
   cursor: pointer;
 }
-.lecteur-vocal-bouton:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.messagerie-bulle.moi .lecteur-vocal { --lecteur-plein: #fff; --lecteur-vide: rgba(255, 255, 255, 0.35); --lecteur-fond: var(--marine-700); }
+.lecteur-vocal-bouton:focus-visible { outline: 2px solid var(--lecteur-plein); outline-offset: 2px; }
 .lecteur-vocal-barre {
   flex: 1;
   min-width: 0;
   height: 4px;
   margin: 0;
   border-radius: 2px;
-  background: linear-gradient(to right, #fff var(--progression, 0%), rgba(255, 255, 255, 0.3) var(--progression, 0%));
+  background: linear-gradient(to right, var(--lecteur-plein) var(--progression, 0%), var(--lecteur-vide) var(--progression, 0%));
   cursor: pointer;
   appearance: none;
 }
-.lecteur-vocal-barre::-webkit-slider-thumb { width: 12px; height: 12px; border-radius: 50%; background: #fff; appearance: none; }
-.lecteur-vocal-barre::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: #fff; }
+.lecteur-vocal-barre::-webkit-slider-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--lecteur-plein); appearance: none; }
+.lecteur-vocal-barre::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--lecteur-plein); }
 .lecteur-vocal-temps { min-width: 34px; font-size: 12px; font-variant-numeric: tabular-nums; }
 
 /* Barre de saisie arrondie */
@@ -367,7 +372,7 @@
   border: 1px solid var(--fil-trait);
   border-radius: 999px;
 }
-.messagerie-barre:focus-within { border-color: rgba(255, 255, 255, 0.35); }
+.messagerie-barre:focus-within { border-color: var(--marine-600); }
 .messagerie-fil .messagerie-barre textarea {
   flex: 1;
   min-width: 0;
@@ -386,7 +391,7 @@
 .messagerie-envoyer:disabled { opacity: 0.5; cursor: default; }
 .messagerie-lien { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .messagerie-fil .messagerie-vocal { padding: 10px 16px; border: 1px solid var(--fil-trait); border-radius: 999px; }
-.messagerie-fil .messagerie-edition { margin: 0 22px 6px; background: rgba(255, 255, 255, 0.08); color: var(--fil-texte); }
+.messagerie-fil .messagerie-edition { margin: 0 22px 6px; background: var(--fond); color: var(--fil-texte); }
 .messagerie-fil .registre-message { margin: 0 22px 10px; }
 
 /* Sélecteur d'émojis */
@@ -403,14 +408,14 @@
   border: 1px solid var(--fil-trait);
   border-radius: 14px;
   background: var(--fil-surface);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 28px rgba(12, 26, 48, 0.18);
 }
 .emojis-onglets { display: flex; flex-wrap: wrap; gap: 4px; }
 .emojis-onglets button { padding: 4px 10px; border: 0; border-radius: 999px; background: none; color: var(--fil-doux); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
-.emojis-onglets button.actif { background: rgba(255, 255, 255, 0.12); color: var(--fil-texte); }
+.emojis-onglets button.actif { background: var(--fond); color: var(--fil-texte); }
 .emojis-grille { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
 .emojis-grille button { padding: 4px; border: 0; border-radius: 8px; background: none; font-size: 22px; line-height: 1.3; cursor: pointer; }
-.emojis-grille button:hover, .emojis-grille button:focus-visible { background: rgba(255, 255, 255, 0.1); }
+.emojis-grille button:hover, .emojis-grille button:focus-visible { background: var(--fond); }
 
 /* Les panneaux (nouveau groupe, membres) gardent le fond clair */
 .messagerie-fil .messagerie-panneau { height: 100%; background: var(--surface); color: var(--texte); }
