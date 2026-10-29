@@ -119,6 +119,9 @@ export const signaler = (signalement) => requete('/api/sightings', { method: 'PO
 // Messagerie privée
 export const listerContacts = () => requete('/api/messages/contacts');
 
+// Nombre de messages non lus (privés et de groupe) : { total }
+export const compterNonLus = () => requete('/api/messages/unread');
+
 export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`);
 
 export const envoyerMessage = (recipient_id, body) =>
