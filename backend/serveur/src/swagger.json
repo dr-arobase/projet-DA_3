@@ -517,11 +517,26 @@
         }
       }
     },
+    "/api/messages/unread": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Nombre de messages non lus",
+        "description": "Messages privés reçus et pas encore lus (d'agents actifs), plus les messages des groupes de l'agent écrits par les autres après sa dernière lecture. Sert à la pastille du lien « Messagerie ». Après une lecture, l'événement `messages:lus` est envoyé au lecteur.\n\n**Rôle requis :** `policier`",
+        "responses": {
+          "200": {
+            "description": "Total des non-lus",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "total": { "type": "integer", "example": 3 } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
     "/api/messages/{userId}": {
       "get": {
         "tags": ["Messages"],
         "summary": "Conversation avec un agent",
-        "description": "Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur).\n\n**Rôle requis :** `policier`",
+        "description": "Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur, `messages:lus` au lecteur).\n\n**Rôle requis :** `policier`",
         "parameters": [
           { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
         ],

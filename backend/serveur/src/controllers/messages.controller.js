@@ -21,6 +21,17 @@ export const getContacts = async (req, res) => {
   }
 };
 
+// GET /api/messages/unread : nombre de messages non lus (privés et de groupe), pour la pastille du menu
+export const getUnreadCount = async (req, res) => {
+  try {
+    const total = await messageModel.countUnread(req.user.id);
+    return res.json({ total });
+  } catch (error) {
+    console.error('Erreur lors du compte des messages non lus:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
 // GET /api/messages/:userId : la conversation avec un agent ; les messages reçus passent à « lus »
 export const getConversation = async (req, res) => {
   const otherId = lireId(req.params.userId);
@@ -29,8 +40,12 @@ export const getConversation = async (req, res) => {
   try {
     const marques = await messageModel.markRead(req.user.id, otherId);
     const messages = await messageModel.findConversation(req.user.id, otherId);
-    // L'expéditeur voit ses messages passer à « lu » sans recharger
-    if (marques > 0) emitToUsers([otherId], 'message:read', { by: req.user.id });
+    // L'expéditeur voit ses messages passer à « lu » sans recharger,
+    // et la pastille du menu baisse dans tous les onglets du lecteur
+    if (marques > 0) {
+      emitToUsers([otherId], 'message:read', { by: req.user.id });
+      emitToUsers([req.user.id], 'messages:lus', {});
+    }
     return res.json(messages);
   } catch (error) {
     console.error('Erreur lors de la récupération de la conversation:', error);
