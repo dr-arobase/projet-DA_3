@@ -191,6 +191,18 @@
 .messagerie-bulle.moi { border-radius: 14px 14px 4px 14px; background: var(--marine-700); color: #fff; }
 .messagerie-bulle p { white-space: pre-line; overflow-wrap: anywhere; }
 .messagerie-bulle small { font-size: 11px; opacity: 0.75; }
+.messagerie-bulle.supprime { background: transparent; border: 1px dashed var(--bordure); color: var(--texte-doux); }
+.messagerie-bulle.en-edition { outline: 2px solid var(--danger); outline-offset: 2px; }
+.messagerie-supprime { font-style: italic; }
+/* Modifier / Supprimer : sous mes messages, visibles au survol ou au clavier */
+.messagerie-actions { display: flex; justify-content: flex-end; gap: 10px; opacity: 0; transition: opacity 0.15s; }
+.messagerie-bulle:hover .messagerie-actions,
+.messagerie-bulle:focus-within .messagerie-actions { opacity: 1; }
+.messagerie-actions button { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 11px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+@media (hover: none) { .messagerie-actions { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .messagerie-actions { transition: none; } }
+.messagerie-edition { display: flex; align-items: center; gap: 10px; margin: 0 18px; padding: 6px 10px; border-radius: 8px; background: var(--danger-fond); font-size: 13px; }
+.messagerie-edition button { margin-left: auto; padding: 0; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
 .messagerie-vide { margin: auto; color: var(--texte-doux); text-align: center; }
 .messagerie-fil > .messagerie-vide { align-self: center; padding: 24px; }
 .messagerie-fil .registre-message { margin: 0 18px 10px; }

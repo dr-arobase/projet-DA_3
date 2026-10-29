@@ -12,6 +12,7 @@ import '../styles/pages.css';
 
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
+const DELAI_MODIFICATION = 15 * 60 * 1000; // le serveur refuse aussi après 15 minutes (#143)
 
 // Séparateur de jour (« mar. 20 janv. ») et heure d'un message
 const jourDe = (iso) => new Date(iso).toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' });
@@ -38,8 +39,17 @@ export default function Messagerie() {
   const [enCours, setEnCours] = useState(false);
   const [panneau, setPanneau] = useState(null); // 'nouveau-groupe' | 'membres' | null
   const [menuOuvert, setMenuOuvert] = useState(false);
+  const [enEdition, setEnEdition] = useState(null); // mon message en cours de modification
+  const [maintenant, setMaintenant] = useState(() => Date.now());
   const fin = useRef(null);
   const menu = useRef(null);
+  const saisie = useRef(null);
+
+  // Le bouton « Modifier » disparaît de lui-même quand les 15 minutes sont passées
+  useEffect(() => {
+    const minuterie = window.setInterval(() => setMaintenant(Date.now()), 30 * 1000);
+    return () => window.clearInterval(minuterie);
+  }, []);
 
   useEffect(() => {
     const fermer = (event) => {
@@ -82,6 +92,7 @@ export default function Messagerie() {
     setMessages([]);
     setGroupe(null);
     setMenuOuvert(false);
+    setEnEdition(null);
     setErreur('');
     if (!avecId && !groupeId) return undefined;
     let actif = true;
@@ -94,6 +105,11 @@ export default function Messagerie() {
   const ajouterMessage = (m) =>
     setMessages((enCours) => (enCours.some((x) => x.id === m.id) ? enCours : [...enCours, m]));
 
+  // Message modifié ou supprimé : on garde le nom de l'auteur déjà affiché, on remplace le reste
+  const remplacerMessage = useCallback((m) => {
+    setMessages((enCours) => enCours.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+  }, []);
+
   // Message à deux reçu, ou envoyé depuis un autre onglet
   useEvenement('message:new', useCallback((m) => {
     const autre = m.sender_id === utilisateur.id ? m.recipient_id : m.sender_id;
@@ -104,6 +120,14 @@ export default function Messagerie() {
     }
     chargerContacts();
   }, [utilisateur.id, avecId, chargerContacts]));
+
+  // Un participant a modifié ou supprimé son message (privé ou de groupe)
+  useEvenement('message:updated', remplacerMessage);
+  useEvenement('message:deleted', useCallback((m) => {
+    remplacerMessage(m);
+    setEnEdition((enCours) => (enCours?.id === m.id ? null : enCours));
+    if (m.group_id) chargerGroupes(); else chargerContacts();
+  }, [remplacerMessage, chargerContacts, chargerGroupes]));
 
   // L'autre agent a lu nos messages
   useEvenement('message:read', useCallback(({ by }) => {
@@ -137,14 +161,43 @@ export default function Messagerie() {
     if (!corps || (!avecId && !groupeId)) return;
     setEnCours(true);
     try {
-      const { data } = groupeId ? await api.envoyerAuGroupe(groupeId, corps) : await api.envoyerMessage(avecId, corps);
-      ajouterMessage(data);
+      if (enEdition) {
+        const { data } = await api.modifierMessage(enEdition.id, corps);
+        remplacerMessage(data);
+        setEnEdition(null);
+      } else {
+        const { data } = groupeId ? await api.envoyerAuGroupe(groupeId, corps) : await api.envoyerMessage(avecId, corps);
+        ajouterMessage(data);
+      }
       setTexte('');
       setErreur('');
     } catch (err) {
       setErreur(err.message);
     } finally {
       setEnCours(false);
+    }
+  }
+
+  function commencerEdition(m) {
+    setEnEdition(m);
+    setTexte(m.body);
+    setErreur('');
+    saisie.current?.focus();
+  }
+
+  function annulerEdition() {
+    setEnEdition(null);
+    setTexte('');
+  }
+
+  async function supprimer(m) {
+    if (!window.confirm('Supprimer ce message ? Il sera remplacé par « Message supprimé » pour tout le monde.')) return;
+    try {
+      const { data } = await api.supprimerMessage(m.id);
+      remplacerMessage(data);
+      if (enEdition?.id === m.id) annulerEdition();
+    } catch (err) {
+      setErreur(err.message);
     }
   }
 
@@ -339,6 +392,8 @@ export default function Messagerie() {
                   const auteur = groupeId
                     ? { first_name: m.sender_first_name, last_name: m.sender_last_name }
                     : correspondant;
+                  const supprime = Boolean(m.deleted_at);
+                  const modifiable = moi && !supprime && maintenant - new Date(m.created_at).getTime() < DELAI_MODIFICATION;
                   return (
                     <Fragment key={m.id}>
                       {nouveauJour && <li className="messagerie-jour">{jourDe(m.created_at)}</li>}
@@ -346,13 +401,22 @@ export default function Messagerie() {
                         {!moi && (suite
                           ? <span className="messagerie-avatar-vide" aria-hidden="true" />
                           : <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />)}
-                        <div className={`messagerie-bulle${moi ? ' moi' : ''}`}>
+                        <div className={`messagerie-bulle${moi ? ' moi' : ''}${supprime ? ' supprime' : ''}${enEdition?.id === m.id ? ' en-edition' : ''}`}>
                           {groupeId && !moi && !suite && <strong className="messagerie-auteur">{nomAgent(auteur)}</strong>}
-                          <p>{m.body}</p>
+                          {supprime ? <p className="messagerie-supprime">Message supprimé</p> : <p>{m.body}</p>}
                           <small>
                             {heureDe(m.created_at)}
-                            {moi && !groupeId && (m.read_at ? ' · Lu' : ' · Envoyé')}
+                            {m.edited_at && !supprime && ' · modifié'}
+                            {moi && !groupeId && !supprime && (m.read_at ? ' · Lu' : ' · Envoyé')}
                           </small>
+                          {moi && !supprime && (
+                            <span className="messagerie-actions">
+                              {modifiable && (
+                                <button type="button" onClick={() => commencerEdition(m)} aria-label="Modifier ce message">Modifier</button>
+                              )}
+                              <button type="button" onClick={() => supprimer(m)} aria-label="Supprimer ce message">Supprimer</button>
+                            </span>
+                          )}
                         </div>
                       </li>
                     </Fragment>
@@ -364,21 +428,29 @@ export default function Messagerie() {
 
               {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
 
+              {enEdition && (
+                <p className="messagerie-edition" role="status">
+                  Modification du message · <kbd>Échap</kbd> pour annuler
+                  <button type="button" onClick={annulerEdition}>Annuler</button>
+                </p>
+              )}
               <form className="messagerie-saisie" onSubmit={envoyer}>
                 <textarea
+                  ref={saisie}
                   rows={2}
                   maxLength={MAX_MESSAGE}
                   placeholder={groupeId ? `Écrire à ${groupe.name}…` : `Écrire à ${correspondant.first_name}…`}
-                  aria-label="Message"
+                  aria-label={enEdition ? 'Modifier le message' : 'Message'}
                   value={texte}
                   onChange={(e) => setTexte(e.target.value)}
                   onKeyDown={(e) => {
-                    // Entrée envoie, Maj+Entrée va à la ligne
+                    // Entrée envoie, Maj+Entrée va à la ligne, Échap annule une modification
                     if (e.key === 'Enter' && !e.shiftKey) envoyer(e);
+                    if (e.key === 'Escape' && enEdition) annulerEdition();
                   }}
                 />
                 <button type="submit" className="registre-bouton-principal" disabled={enCours || !texte.trim()}>
-                  Envoyer
+                  {enEdition ? 'Enregistrer' : 'Envoyer'}
                 </button>
               </form>
             </>
