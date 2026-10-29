@@ -49,7 +49,7 @@ export default function FicheDossier() {
   useEvenement('criminal:updated', useCallback((c) => {
     if (String(c.id) !== String(id)) return;
     setDossier((actuel) => {
-      if (actuel && c.version > actuel.version) {
+      if (actuel && c.version > actuel.version && c.status !== actuel.status) {
         setMessage({ type: 'info', texte: `Fiche mise à jour par ${c.updated_by ?? 'un autre agent'}.` });
       }
       return c;

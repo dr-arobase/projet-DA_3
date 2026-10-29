@@ -23,6 +23,7 @@ export default function Utilisateurs() {
   const [message, setMessage] = useState({ type: '', texte: '' });
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [promotion, setPromotion] = useState(null); // { id, role, grade }
+  const [confirmation, setConfirmation] = useState(null);
 
   useEffect(() => {
     if (!autorise) return;
@@ -44,11 +45,20 @@ export default function Utilisateurs() {
   const remplacer = (agent) => setAgents((enCours) => enCours.map((a) => (a.id === agent.id ? agent : a)));
 
   async function basculerActif(agent) {
+    if (agent.is_active) {
+      setConfirmation(agent);
+      return;
+    }
+    await changerEtat(agent);
+  }
+
+  async function changerEtat(agent) {
     try {
       const { user } = agent.is_active
         ? await api.desactiverUtilisateur(agent.id)
         : await api.reactiverUtilisateur(agent.id);
       remplacer(user);
+      setConfirmation(null);
       setMessage({ type: 'succes', texte: `Compte de ${nomAgent(user)} ${user.is_active ? 'réactivé' : 'désactivé'}.` });
     } catch (err) {
       setMessage({ type: 'erreur', texte: err.message });
@@ -167,6 +177,18 @@ export default function Utilisateurs() {
           </table>
         </div>
       </div>
+      {confirmation && (
+        <div className="fenetre-confirmation" role="dialog" aria-modal="true" aria-labelledby="confirmation-titre">
+          <div className="carte">
+            <h2 id="confirmation-titre">Désactiver ce compte ?</h2>
+            <p>L’accès de {nomAgent(confirmation)} sera immédiatement retiré.</p>
+            <div className="formulaire-actions">
+              <button type="button" className="registre-lien" onClick={() => setConfirmation(null)}>Annuler</button>
+              <button type="button" className="registre-bouton-danger" onClick={() => changerEtat(confirmation)}>Désactiver</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
