@@ -61,10 +61,31 @@ chore : pour les tâches de configuration ou de nettoyage
 Fermer un ticket automatiquement :
 Écris Closes #numéro dans ton message pour fermer la tâche GitHub correspondante (ex: Closes #4).
 
+### Conventions de nommage du code
+
+Pour limiter les écarts et les ambiguïtés, le code doit suivre une convention de nommage cohérente :
+
+- Utiliser le français pour les libellés visibles par l'utilisateur et les messages de l'interface ; utiliser l'anglais pour les identifiants techniques, variables internes, fichiers, routes et clés de base de données, lorsqu'ils ne sont pas affichés à l'utilisateur.
+- Éviter de mélanger les langues dans un même symbole ou composant : par exemple, `searchDossiers` est préférable à `recherche_dossiers` si le code est en anglais, et `dossierEnCours` est préférable à `currentDossier` si la logique est en français.
+- Les noms de fichiers et dossiers doivent rester en anglais, sauf les composants et pages déjà nommés selon le domaine métier et documentés au projet.
+- Les routes, colonnes SQL et contrôleurs suivent la convention anglaise ; les libellés affichés restent français.
+- Les commits, PR et tickets reflètent les mots-clés de l'issue/du ticket concerné dans le même langage que le contexte métier.
+
 ### Revue de code
 - Toute Pull Request doit avoir **1 approbation** avant fusion
 - Le relecteur vérifie : logique, sécurité (pas d'injection, pas de secrets exposés), conformité à la DoD
 - On ne fusionne pas sa propre PR sauf urgence documentée dans le journal
+
+---
+
+## Contributions individuelles — sprint 2 (préparation)
+
+| Membre | Récits / travaux principaux | Contribution prévue | État |
+|---|---|---|---|
+| **Massyle** | Produit, planification, revue finale | Priorisation des tickets, validation du backlog, revue des livrables et coherent du sprint | À compléter au fil du sprint |
+| **Eric** | Coordination sprint, revue et risques | Animation des mêlées, suivi des blocages, revue des PR, mise à jour des risques et du journal | À compléter au fil du sprint |
+| **Chrysler** | Validation fonctionnelle, tests navigateur | Vérification des critères d'acceptation, ajout de tests manquants, validation des parcours de bout en bout | À compléter au fil du sprint |
+| **Michael** | Documentation, conformité et finalisation | Journal, README, risques, nettoyage de la documentation, contrôle des tâches de release et de préparation de revue | À compléter au fil du sprint |
 
 ---
 

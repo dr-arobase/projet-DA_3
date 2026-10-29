@@ -26,8 +26,13 @@ export const createAlert = async (req, res) => {
 export const getAlerts = async (req, res) => {
   try {
     const { page, limit, offset } = readPagination(req.query, 20);
-    const alerts = await alertService.listAlerts({ limit, offset });
-    return res.json({ page, limit, data: alerts });
+    const severity = req.query.severity || undefined;
+    const since = req.query.since || undefined;
+
+    const alerts = await alertService.listAlerts({ limit, offset, severity, since });
+    if (!severity && !since) return res.json({ page, limit, data: alerts });
+    const total = await alertService.countAlerts({ severity, since });
+    return res.json({ page, limit, total, totalPages: Math.ceil(total / limit), data: alerts });
   } catch (error) {
     return handleError(res, error, 'de la récupération des alertes');
   }

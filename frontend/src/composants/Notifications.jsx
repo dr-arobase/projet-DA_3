@@ -49,7 +49,7 @@ export default function Notifications() {
   if (liste.length === 0) return null;
 
   return (
-    <div className="notifications" aria-live="assertive">
+    <div className="notifications" aria-live="polite">
       {liste.map((n) => {
         const urgent = n.severity === 'urgent';
         return (

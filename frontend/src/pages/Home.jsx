@@ -31,7 +31,7 @@ export default function Home() {
         <div>
           <h1>Tableau de bord</h1>
           <p className="entete-sous-titre">
-            Matricule {utilisateur?.badge_number ?? '—'} · Brigade Sécurité Publique
+          Matricule {utilisateur?.badge_number ?? '—'} · CrimeTracker
           </p>
         </div>
         <div className="entete-actions">
@@ -62,7 +62,7 @@ export default function Home() {
           <section>
             <div className="section-titre">
               <h2>Activité récente</h2>
-              <Link to="/alertes">Tout voir</Link>
+              <Link to="/personnes-recherchees">Tout voir</Link>
             </div>
             <ul className="carte activites">
               {activites.length === 0 && <li className="activite vide">Aucune activité pour l'instant.</li>}
