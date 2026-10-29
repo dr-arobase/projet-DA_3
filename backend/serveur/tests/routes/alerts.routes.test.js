@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 process.env.JWT_SECRET = 'test-secret';
 
 const query = jest.fn();
+let authenticatedRole = 'superviseur';
 jest.unstable_mockModule('../../src/config/db.js', () => ({
   pool: { query },
   initializeDatabase: jest.fn(),
@@ -16,11 +17,22 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'SV-007', role: authenticatedRole, grade: 'sergent_gestionnaire', is_active: true,
+  })),
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const emitEvent = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent,
   emitToUsers: jest.fn(),
+  disconnectUser,
 }));
 
 const { default: app } = await import('../../src/app.js');
@@ -44,8 +56,10 @@ const mockDb = ({ criminal = dossier } = {}) =>
     throw new Error(`Requête inattendue : ${sql}`);
   });
 
-const post = (body, role) =>
-  request(app).post('/api/alerts').set('Authorization', bearer(role)).send(body);
+const post = (body, role) => {
+  authenticatedRole = role || 'superviseur';
+  return request(app).post('/api/alerts').set('Authorization', bearer(role)).send(body);
+};
 
 const insertCall = () => query.mock.calls.find(([sql]) => sql.includes('INSERT INTO alert'));
 

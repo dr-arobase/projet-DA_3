@@ -150,6 +150,7 @@ describe('POST /api/users', () => {
   ])('la direction peut créer un compte %s', async (role, grade) => {
     query
       .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [{ ...agent, role, grade }] });
 
     const res = await request(app)
@@ -158,7 +159,7 @@ describe('POST /api/users', () => {
       .send({ ...body, role, grade });
 
     expect(res.status).toBe(201);
-    expect(query.mock.calls[1][1].slice(5)).toEqual([role, grade]);
+    expect(query.mock.calls[2][1].slice(5)).toEqual([role, grade]);
   });
 
   test('400 si un champ obligatoire manque', async () => {
@@ -166,6 +167,10 @@ describe('POST /api/users', () => {
       .post('/api/users')
       .set('Authorization', bearer('superviseur'))
       .send({ ...body, password: undefined });
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   test('retire les espaces et met le courriel en minuscules', async () => {
     mockDb();
     await post({ ...body, first_name: '  Marc ', email: '  Marc.Roy@CrimeTracker.local ' });

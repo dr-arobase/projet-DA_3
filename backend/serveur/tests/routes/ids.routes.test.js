@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 process.env.JWT_SECRET = 'test-secret';
 
 const query = jest.fn();
+const authenticatedRole = 'direction';
 jest.unstable_mockModule('../../src/config/db.js', () => ({
   pool: { query },
   initializeDatabase: jest.fn(),
@@ -16,10 +17,21 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'DIR-001', role: authenticatedRole, grade: 'directeur_general', is_active: true,
+  })),
+  isAccountActive: jest.fn(async () => true),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
+}));
+
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers: jest.fn(),
+  disconnectUser,
 }));
 
 const { default: app } = await import('../../src/app.js');

@@ -122,7 +122,8 @@ titre('4/7 Audit des dépendances frontend');
 if (!(await npm(['audit', '--audit-level=high'], frontend))) echec('L’audit des dépendances frontend a trouvé une vulnérabilité élevée ou critique.');
 
 titre('5/7 Tests du backend');
-if (!(await npm(['test', '--', '--silent'], backend))) echec('Des tests du backend échouent.');
+// Les tests d'intégration partagent PostgreSQL et ne peuvent pas lancer les migrations en parallèle.
+if (!(await npm(['test', '--', '--silent', '--runInBand'], backend))) echec('Des tests du backend échouent.');
 
 titre('6/7 Démarrage du serveur');
 await demarrerServeur();
