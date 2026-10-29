@@ -14,7 +14,7 @@ const MEMBERS = `
 
 // Message de groupe, avec le nom de l'expéditeur (plusieurs personnes écrivent dans le fil)
 const SELECT_GROUP_MESSAGE = `
-  SELECT m.id, m.sender_id, m.group_id, m.body, m.created_at,
+  SELECT m.id, m.sender_id, m.group_id, m.body, m.created_at, m.edited_at, m.deleted_at,
          u.first_name AS sender_first_name, u.last_name AS sender_last_name, u.badge_number AS sender_badge_number
   FROM message m JOIN app_user u ON u.id = m.sender_id
 `;
@@ -25,7 +25,8 @@ export const findForUser = async (userId) => {
     SELECT * FROM (
       SELECT g.id, g.name, g.created_by, g.created_at, ${MEMBERS},
         (SELECT COUNT(*) FROM message m
-          WHERE m.group_id = g.id AND m.sender_id <> $1 AND m.created_at > gm.last_read_at) AS unread,
+          WHERE m.group_id = g.id AND m.sender_id <> $1 AND m.created_at > gm.last_read_at
+            AND m.deleted_at IS NULL) AS unread,
         (SELECT MAX(m.created_at) FROM message m WHERE m.group_id = g.id) AS last_message_at
       FROM message_group g
       JOIN message_group_member gm ON gm.group_id = g.id AND gm.user_id = $1
@@ -122,7 +123,7 @@ export const createMessage = async ({ sender_id, group_id, body }) => {
   const result = await pool.query(
     `WITH cree AS (
        INSERT INTO message (sender_id, group_id, body) VALUES ($1, $2, $3)
-       RETURNING id, sender_id, group_id, body, created_at
+       RETURNING id, sender_id, group_id, body, created_at, edited_at, deleted_at
      )
      SELECT cree.*, u.first_name AS sender_first_name, u.last_name AS sender_last_name,
             u.badge_number AS sender_badge_number
