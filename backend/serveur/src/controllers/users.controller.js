@@ -3,6 +3,7 @@ import * as userModel from '../models/user.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
 import { publishAccountDeactivated } from '../utils/account-status.js';
 import { disconnectUser } from '../sockets/index.js';
+import * as userService from '../services/users.service.js';
 
 const VALID_ROLES = ['policier', 'superviseur', 'direction'];
 const VALID_GRADES = [
@@ -11,26 +12,33 @@ const VALID_GRADES = [
   'directeur_general_adjoint', 'directeur_general'
 ];
 
+
+// Le contrôleur lit la requête et répond ; la logique est dans users.service.js.
+// Les erreurs prévues du service portent un statusCode (400, 403, 404, 409) ;
+// toute autre erreur est une panne serveur.
+const handleError = (res, error, context) => {
+  if (error.statusCode) {
+    return res.status(error.statusCode).json({ message: error.message });
+  }
+  console.error(`Erreur lors ${context}:`, error);
+  return res.status(500).json({ message: 'Erreur serveur' });
+};
+
 // GET /api/users
 export const getUsers = async (req, res) => {
   try {
-    const users = await userModel.findAll();
-    return res.json(users);
+    return res.json(await userService.listUsers());
   } catch (error) {
-    console.error('Erreur lors de la récupération des utilisateurs:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la récupération des utilisateurs');
   }
 };
 
 // GET /api/users/:id
 export const getUserById = async (req, res) => {
   try {
-    const user = await userModel.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    return res.json(user);
+    return res.json(await userService.getUserById(req.params.id));
   } catch (error) {
-    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la récupération de l\'utilisateur');
   }
 };
 
@@ -56,20 +64,10 @@ export const createUser = async (req, res) => {
   }
 
   try {
-    const existing = await userModel.findByBadge(badge_number);
-    if (existing) {
-      return res.status(409).json({ message: 'Ce matricule existe déjà' });
-    }
-
-    const password_hash = await bcrypt.hash(password, 10);
-    const newUser = await userModel.create({
-      first_name, last_name, badge_number, email, password_hash, role: finalRole, grade: finalGrade
-    });
-
-    return res.status(201).json({ message: 'Compte créé avec succès', user: newUser });
+    const user = await userService.createUser(req.body, req.user);
+    return res.status(201).json({ message: 'Compte créé avec succès', user });
   } catch (error) {
-    console.error('Erreur lors de la création de l\'utilisateur:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la création de l\'utilisateur');
   }
 };
 
@@ -100,10 +98,10 @@ export const deactivateUser = async (req, res) => {
       target_id: user.id
     });
 
+    const user = await userService.setUserActive(req.params.id, false, req.user.id);
     return res.json({ message: 'Compte désactivé', user });
   } catch (error) {
-    console.error('Erreur lors de la désactivation:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la désactivation');
   }
 };
 
@@ -122,39 +120,16 @@ export const reactivateUser = async (req, res) => {
 
     return res.json({ message: 'Compte réactivé', user });
   } catch (error) {
-    console.error('Erreur lors de la réactivation:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la réactivation');
   }
 };
 
 // PATCH /api/users/:id/promote
 export const promoteUser = async (req, res) => {
-  const { role, grade } = req.body;
-
-  if (!role || !grade) {
-    return res.status(400).json({ message: 'role et grade sont obligatoires' });
-  }
-  if (!VALID_ROLES.includes(role)) {
-    return res.status(400).json({ message: `Rôle invalide. Rôles autorisés : ${VALID_ROLES.join(', ')}` });
-  }
-  if (!VALID_GRADES.includes(grade)) {
-    return res.status(400).json({ message: `Grade invalide. Grades autorisés : ${VALID_GRADES.join(', ')}` });
-  }
-
   try {
-    const user = await userModel.promote(req.params.id, { role, grade });
-    if (!user) return res.status(404).json({ message: 'Utilisateur non trouvé' });
-    
-    await auditLogModel.record({
-        actor_id: req.user.id,
-        action: 'USER_PROMOTED',
-        target_type:'user',
-        target_id: user.id
-    });
-    
+    const user = await userService.promoteUser(req.params.id, req.body, req.user.id);
     return res.json({ message: 'Utilisateur promu', user });
   } catch (error) {
-    console.error('Erreur lors de la promotion:', error);
-    return res.status(500).json({ message: 'Erreur serveur' });
+    return handleError(res, error, 'de la promotion');
   }
 };

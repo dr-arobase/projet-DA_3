@@ -67,7 +67,7 @@ Décisions prises : Finalisation du Sprint 0 et remise du travail dans les déla
 
 **JOURNAL DE BORD — SPRINT 2**
 
-**Bloc 1 — mercredi 8 octobre 2026 (8 h - 11 h)**
+**Bloc 1 — jeudi 8 octobre 2026 (8 h - 11 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
 •   Cadrage du sprint 2 et vérification des tickets à traiter pour la bêta.
@@ -92,6 +92,67 @@ Décisions prises :
 •   Les entrées de ce bloc sont rédigées après coup, conformément au point de contrôle du sprint 2, pour documenter précisément le travail effectué et les décisions prises.
 •   La revue des PR et la préparation de la démonstration sont intégrées comme livrables du sprint 2, avec l'objectif de couvrir au moins deux rôles et une action refusée.
 •   Le dossier `docs/retrospectives/plan-equipe/` est retiré car il correspond au plan du sprint 1 et ne doit plus être conservé dans la documentation de la bêta.
+
+
+**Bloc 3 — lundi 19 octobre 2026 (Point de contrôle 1)**
+Présences : Massyle, Eric, Chrysler, Michael
+Tickets suivis : #10, #12, #16, #53, #54, #55, #62, #63, #64, #65, #66
+Ce qui a avancé :
+•   Massyle a poursuivi les fonctionnalités de l'annuaire, de la messagerie, des notifications et de la carte (tickets #53 à #66).
+•   Eric a repris la révocation des sessions lors de la désactivation d'un compte (ticket #16).
+•   Chrysler a travaillé sur la validation des alertes et des dossiers liés (ticket #12) ainsi que sur la création de comptes (ticket #10).
+•   Michael a vérifié la cohérence des parcours du sprint et préparé les corrections de l'interface et du temps réel.
+Ce qui bloque :
+•   Les intégrations nécessitent une nouvelle vérification après les fusions et plusieurs scénarios navigateur restent à couvrir.
+Décisions prises :
+•   Les corrections de sécurité et de validation sont prioritaires avant la revue.
+•   Les fonctionnalités d'interface sont livrées par petites PR liées à leurs tickets, puis vérifiées sur les rôles agent et superviseur.
+
+
+**Bloc 4 — jeudi 22 octobre 2026**
+Présences : Massyle, Eric, Chrysler, Michael
+Tickets suivis : #10, #12, #16, #62, #64, #65, #66
+Ce qui a avancé :
+•   Les correctifs de pagination, de validation des identifiants, des champs du registre et des erreurs exposées ont été intégrés.
+•   Eric a terminé le partage PostgreSQL des révocations de compte du ticket #16.
+•   Chrysler a finalisé les validations des alertes et des dossiers liés du ticket #12 et les contrôles de création de compte du ticket #10.
+•   Massyle a poursuivi la refactorisation des services de comptes et d'alertes et la stabilisation de la carte.
+•   Michael a recensé les régressions restantes et préparé le lot de corrections de la PR #136.
+Ce qui bloque :
+•   Les corrections de sécurité, de validation et de pagination doivent encore être rejouées ensemble sur une installation propre.
+Décisions prises :
+•   Les contrôles d'entrée restent obligatoires côté API, avec des limites de pagination explicites et des messages d'erreur sans détail interne.
+•   La revue finale se fera sur `main` après intégration des correctifs, sans contourner la CI.
+
+
+**Bloc 5 — lundi 26 octobre 2026 (Point de contrôle 2)**
+Présences : Massyle, Eric, Chrysler, Michael
+Tickets suivis : #11, #12, #16, #53, #54, #55, #62, #63, #64, #65, #66
+Ce qui a avancé :
+•   Les fonctionnalités de la bêta ont été regroupées pour la démonstration : notifications, temps réel, carte, messagerie, annuaire et pages de gestion.
+•   Michael a corrigé les parcours temps réel et carte, le rafraîchissement du tableau de bord, les notifications, les profils et les accès de l'interface (PR #136).
+•   Les tickets #12 et #16 ont été vérifiés avec leurs corrections d'API et de révocation de session.
+•   La documentation de remise et les risques ont été révisés avant la dernière revue.
+Ce qui bloque :
+•   La PR #136 doit encore passer la revue et la CI; le récit #11 doit être relié explicitement à la PR qui le livre.
+Décisions prises :
+•   La PR #136 est le lot de correction final du sprint et doit être testée par démarrage Docker, tests automatisés et vérification navigateur.
+•   Le récit #11 est considéré livré seulement après fusion de cette PR et ajout d'une trace dans son ticket.
+
+
+**Bloc 6 — jeudi 29 octobre 2026 (Rétrospective et remise)**
+Présences : Massyle, Eric, Chrysler, Michael
+Tickets suivis : #11, #12, #16 et les tickets de la bêta #53 à #66
+Ce qui a avancé :
+•   La PR [#136](https://github.com/dr-arobase/projet-DA_3/pull/136) a été revue et fusionnée dans `main`.
+•   Les corrections du temps réel et de la carte, les parcours d'alertes, les profils, les pages de gestion et la documentation ont été remis.
+•   Le récit #11 a été fermé après vérification de la mise à jour temps réel du tableau de bord.
+•   L'équipe a préparé la remise et la rétrospective, avec un suivi des correctifs de sécurité de la PR #137.
+Ce qui bloque :
+•   La PR #137 de sécurité reste à finaliser et à faire passer dans la CI avant sa remise définitive.
+Décisions prises :
+•   La version remise est celle de `main` après fusion de la PR #136; toute correction supplémentaire passe par une PR dédiée.
+•   La rétrospective retient comme actions l'écriture du journal au fil des blocs, la traçabilité systématique des tickets et une vérification navigateur avant chaque fusion.
 
 ---
 

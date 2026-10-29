@@ -4,6 +4,7 @@ import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
 } from '../controllers/groups.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import { validateId } from '../middleware/validateId.middleware.js';
 
 const router = express.Router();
 
@@ -24,4 +25,7 @@ router.delete('/groups/:groupId/members/:userId', removeGroupMember);
 router.get('/:userId', getConversation);
 router.post('/', sendMessage);
 
+// Tout identifiant de l'URL doit être un entier positif (sinon 400)
+router.param('groupId', validateId);
+router.param('userId', validateId);
 export default router;
