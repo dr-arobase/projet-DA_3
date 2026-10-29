@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
+import { useAppel } from '../composants/AppelContext.js';
 import { IconeRecherche, IconeGroupe, IconePoints, IconePlus, IconeQuitter } from '../composants/Icones.jsx';
 import Avatar from '../composants/Avatar.jsx';
 import SelecteurAgents from '../composants/SelecteurAgents.jsx';
@@ -39,6 +40,7 @@ const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
 export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
+  const { appeler, enAppel } = useAppel();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
   const groupeId = Number(params.get('groupe')) || null;
@@ -448,6 +450,24 @@ export default function Messagerie() {
                       : `${correspondant.badge_number} · ${enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}`}
                   </small>
                 </div>
+                {!groupeId && (
+                  // Appels à deux seulement, vers un agent connecté (#56)
+                  <div className="messagerie-appels">
+                    {[[false, '📞', 'Appel audio'], [true, '🎥', 'Appel vidéo']].map(([video, icone, libelle]) => (
+                      <button
+                        key={libelle}
+                        type="button"
+                        className="messagerie-bouton-icone"
+                        aria-label={`${libelle} avec ${nomAgent(correspondant)}`}
+                        title={enLigne.has(correspondant.id) ? libelle : `${libelle} : ${correspondant.first_name} est hors ligne`}
+                        disabled={enAppel || !enLigne.has(correspondant.id)}
+                        onClick={() => appeler(correspondant, video)}
+                      >
+                        <span aria-hidden="true">{icone}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {groupeId && (
                   <div className="messagerie-menu" ref={menu}>
                     <button
