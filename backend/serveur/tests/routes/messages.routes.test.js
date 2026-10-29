@@ -54,6 +54,35 @@ describe('GET /api/messages/contacts', () => {
   });
 });
 
+describe('GET /api/messages/unread', () => {
+  test('401 sans session', async () => {
+    const res = await request(app).get('/api/messages/unread');
+    expect(res.status).toBe(401);
+  });
+
+  test('renvoie le total des non-lus de l\'agent connecté, privés et de groupe', async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: '4' }] }); // COUNT(*) arrive en texte
+
+    const res = await request(app).get('/api/messages/unread').set('Authorization', bearer);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ total: 4 });
+    expect(query.mock.calls[0][1]).toEqual([3]); // seulement les messages de l'agent connecté
+    expect(query.mock.calls[0][0]).toMatch(/m\.recipient_id = \$1 AND m\.read_at IS NULL/);
+    expect(query.mock.calls[0][0]).toMatch(/m\.sender_id <> \$1 AND m\.created_at > gm\.last_read_at/);
+  });
+
+  test('« unread » n\'est pas pris pour un identifiant d\'agent', async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: 0 }] });
+
+    const res = await request(app).get('/api/messages/unread').set('Authorization', bearer);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ total: 0 });
+    expect(query.mock.calls[0][0]).not.toMatch(/UPDATE message SET read_at/);
+  });
+});
+
 describe('GET /api/messages/:userId', () => {
   test('marque les messages reçus comme lus, renvoie la conversation et prévient l\'expéditeur', async () => {
     const messages = [{ id: 1, sender_id: 2, recipient_id: 3, body: 'Bonjour' }];
@@ -68,6 +97,8 @@ describe('GET /api/messages/:userId', () => {
     expect(query.mock.calls[0][0]).toMatch(/UPDATE message SET read_at/);
     expect(query.mock.calls[0][1]).toEqual([3, 2]); // destinataire = moi, expéditeur = l'autre
     expect(emitToUsers).toHaveBeenCalledWith([2], 'message:read', { by: 3 });
+    // La pastille du menu du lecteur baisse dans tous ses onglets
+    expect(emitToUsers).toHaveBeenCalledWith([3], 'messages:lus', {});
   });
 
   test('ne prévient personne s\'il n\'y avait rien à marquer', async () => {
