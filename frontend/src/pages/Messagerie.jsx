@@ -478,9 +478,17 @@ export default function Messagerie() {
                         type="button"
                         className="messagerie-icone"
                         aria-label={`${libelle} avec ${nomAgent(correspondant)}`}
-                        title={enLigne.has(correspondant.id) ? libelle : `${libelle} : ${correspondant.first_name} est hors ligne`}
-                        disabled={enAppel || !enLigne.has(correspondant.id)}
-                        onClick={() => appeler(correspondant, video)}
+                        title={libelle}
+                        disabled={enAppel}
+                        onClick={() => {
+                          // Toujours cliquable : hors ligne, on explique pourquoi l'appel est impossible
+                          if (!enLigne.has(correspondant.id)) {
+                            setErreur(`${nomAgent(correspondant)} est hors ligne : l'appel n'est possible que si l'agent est connecté.`);
+                            return;
+                          }
+                          setErreur('');
+                          appeler(correspondant, video);
+                        }}
                       >
                         <Icone taille={24} />
                       </button>
