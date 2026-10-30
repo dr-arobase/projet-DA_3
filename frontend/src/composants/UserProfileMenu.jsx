@@ -18,7 +18,7 @@ const ABREVIATIONS_GRADE = {
   inspecteur_chef: 'Insp.-chef',
 };
 
-export default function UserProfileMenu() {
+export default function UserProfileMenu({ reduit = false }) {
   const { utilisateur, seDeconnecter } = useAuth();
   const [ouvert, setOuvert] = useState(false);
   const navigate = useNavigate();
@@ -49,28 +49,36 @@ export default function UserProfileMenu() {
 
   return (
     <div className="profil" ref={menu}>
+      {/* Carte qui s'ouvre au-dessus du bouton, comme un menu d'application */}
       {ouvert && (
-        <>
-          <Link to="/profil" className="profil-action" onClick={() => setOuvert(false)}>
+        <div className="profil-menu" role="menu" id="profil-menu">
+          <Link to="/profil" className="profil-action" role="menuitem" onClick={() => setOuvert(false)}>
             <IconeUtilisateur taille={16} /> Mon profil
           </Link>
-          <button type="button" className="profil-action deconnexion" onClick={quitter}>
+          <button type="button" className="profil-action deconnexion" role="menuitem" onClick={quitter}>
             <IconeDeconnexion taille={16} /> Se déconnecter
           </button>
-        </>
+        </div>
       )}
       <button
         type="button"
         className="profil-bouton"
         onClick={() => setOuvert((o) => !o)}
         aria-expanded={ouvert}
+        aria-haspopup="menu"
+        aria-controls="profil-menu"
+        title={reduit ? `${nomAffiche} · ${role}` : undefined}
       >
         <Avatar utilisateur={utilisateur} />
-        <span className="profil-texte">
-          <strong>{nomAffiche}</strong>
-          <small>{role}</small>
-        </span>
-        <IconeChevron taille={16} className={ouvert ? 'chevron ouvert' : 'chevron'} />
+        {reduit ? <span className="visuellement-cache">{nomAffiche}, {role}</span> : (
+          <>
+            <span className="profil-texte menu-texte">
+              <strong>{nomAffiche}</strong>
+              <small>{utilisateur?.badge_number ? `${utilisateur.badge_number} · ${role}` : role}</small>
+            </span>
+            <IconeChevron taille={16} className={ouvert ? 'chevron ouvert' : 'chevron'} />
+          </>
+        )}
       </button>
     </div>
   );
