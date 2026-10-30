@@ -195,6 +195,8 @@
 .messagerie-bulle.en-edition { outline: 2px solid var(--danger); outline-offset: 2px; }
 .messagerie-supprime { font-style: italic; }
 .messagerie-appels { display: flex; gap: 4px; }
+/* Icônes d'appel en noir ; grisées seulement pendant un appel déjà en cours */
+.messagerie-appels .messagerie-icone { color: var(--texte); }
 .messagerie-appels button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Pièces jointes : image ou GIF, lecteur audio, fichier à télécharger */
 .messagerie-image { display: block; }
