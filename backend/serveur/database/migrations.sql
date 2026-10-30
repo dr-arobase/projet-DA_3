@@ -73,6 +73,14 @@ ALTER TABLE message ADD CONSTRAINT message_destination CHECK ((recipient_id IS N
 CREATE INDEX IF NOT EXISTS idx_message_group ON message(group_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_message_group_member_user ON message_group_member(user_id);
 
+-- Limitation partagée des tentatives de connexion par adresse IP (clé HMAC, fenêtre de 15 min)
+CREATE TABLE IF NOT EXISTS login_rate_limit (
+    client_key       CHAR(64) PRIMARY KEY,
+    window_start     BIGINT NOT NULL,
+    failed_attempts  INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_login_rate_limit_window ON login_rate_limit(window_start);
 -- Modifier un message pendant 15 minutes (#143) et le supprimer (#144).
 -- Un message supprimé garde sa ligne (le fil reste dans l'ordre) mais perd son texte.
 ALTER TABLE message ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;

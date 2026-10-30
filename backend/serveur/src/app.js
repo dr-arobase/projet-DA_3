@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -21,6 +22,7 @@ import geocodeRoutes from './routes/geocode.routes.js';
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
 import { verifyToken } from './middleware/auth.middleware.js';
+import { verifyCsrf } from './middleware/csrf.middleware.js';
 import { AVATARS_DIR, AVATARS_URL } from './middleware/upload.middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -30,9 +32,17 @@ const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, 'swagger
 
 const app = express();
 
+// L'API n'est accessible qu'à travers nginx, qui transmet l'adresse du client.
+app.set('trust proxy', 1);
+
+app.use(helmet({
+  contentSecurityPolicy: false,
+  hsts: false,
+}));
+
 // Middlewares de parsing
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(verifyCsrf);
 
 // Serveur Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
