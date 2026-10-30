@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
-import { IconeAjoutPersonne } from '../composants/Icones.jsx';
+import { IconeAjoutPersonne, IconeRecherche } from '../composants/Icones.jsx';
 import {
   ROLES, LIBELLES_ROLE, LIBELLES_GRADE, GRADES_PAR_ROLE, estAuMoins, nomAgent,
 } from '../agents.js';
@@ -11,6 +11,10 @@ import '../styles/pages.css';
 
 const VIDE = { first_name: '', last_name: '', badge_number: '', email: '', password: '', role: 'policier', grade: 'sergent_autres_fonctions' };
 const MIN_MOT_DE_PASSE = 8;
+const PAR_PAGE = 20;
+
+// Texte sans accents ni majuscules, pour chercher « gerard » et trouver « Gérard »
+const normaliser = (texte) => String(texte ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 // Gestion des comptes : créer (#10), désactiver / réactiver (#16), promouvoir (#19, direction seulement)
 export default function Utilisateurs() {
@@ -25,6 +29,23 @@ export default function Utilisateurs() {
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [promotion, setPromotion] = useState(null); // { id, role, grade }
   const [confirmation, setConfirmation] = useState(null);
+  const [recherche, setRecherche] = useState('');
+  const [filtreRole, setFiltreRole] = useState('');
+  const [filtreEtat, setFiltreEtat] = useState('');
+  const [page, setPage] = useState(1);
+
+  // Filtrage et pagination côté navigateur : l'API renvoie déjà tous les comptes
+  const filtres = useMemo(() => {
+    const q = normaliser(recherche.trim());
+    return agents.filter((a) => (!filtreRole || a.role === filtreRole)
+      && (!filtreEtat || (filtreEtat === 'actif') === a.is_active)
+      && (!q || normaliser(`${a.badge_number} ${a.first_name} ${a.last_name} ${a.email}`).includes(q)));
+  }, [agents, recherche, filtreRole, filtreEtat]);
+  const totalPages = Math.max(1, Math.ceil(filtres.length / PAR_PAGE));
+  const pageCourante = Math.min(page, totalPages);
+  const visibles = filtres.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
+  // Un nouveau filtre ramène à la première page
+  const filtrer = (changer) => (e) => { changer(e.target.value); setPage(1); };
 
   useEffect(() => {
     if (!autorise) return;
@@ -105,25 +126,52 @@ export default function Utilisateurs() {
           <p className={`registre-message ${message.type}`} role={message.type === 'erreur' ? 'alert' : 'status'}>{message.texte}</p>
         )}
 
+        <div className="registre-filtres" role="search">
+          <label className="registre-recherche">
+            <IconeRecherche taille={15} />
+            <input
+              type="search"
+              placeholder="Matricule, nom ou courriel…"
+              aria-label="Rechercher un compte par matricule, nom ou courriel"
+              value={recherche}
+              onChange={filtrer(setRecherche)}
+            />
+          </label>
+          <select className="registre-select" aria-label="Filtrer par rôle" value={filtreRole} onChange={filtrer(setFiltreRole)}>
+            <option value="">Tous les rôles</option>
+            {ROLES.map((r) => <option key={r} value={r}>{LIBELLES_ROLE[r]}</option>)}
+          </select>
+          <select className="registre-select" aria-label="Filtrer par état" value={filtreEtat} onChange={filtrer(setFiltreEtat)}>
+            <option value="">Actifs et désactivés</option>
+            <option value="actif">Actifs</option>
+            <option value="inactif">Désactivés</option>
+          </select>
+          <span className="utilisateurs-compte" aria-live="polite">
+            {filtres.length === agents.length ? `${agents.length} comptes` : `${filtres.length} sur ${agents.length}`}
+          </span>
+        </div>
+
         <div className="carte registre-tableau-cadre">
-          <table className="registre-tableau pages-tableau-fixe">
+          <table className="registre-tableau pages-tableau-fixe utilisateurs-tableau">
             <thead>
               <tr>
+                <th scope="col">Matricule</th>
                 <th scope="col">Agent</th>
                 <th scope="col">Rôle et grade</th>
                 <th scope="col">État</th>
-                <th scope="col">Créé</th>
-                <th scope="col">Actions</th>
+                <th scope="col">Créé le</th>
+                <th scope="col" className="utilisateurs-col-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {agents.map((a) => (
+              {visibles.map((a) => (
                 <tr key={a.id}>
-                  <td>
-                    {nomAgent(a)}
-                    <small>{a.badge_number} · {a.email}</small>
+                  <td className="utilisateurs-matricule">{a.badge_number}</td>
+                  <td className="utilisateurs-agent">
+                    <strong>{nomAgent(a)}</strong>
+                    <small>{a.email}</small>
                   </td>
-                  <td>
+                  <td data-label="Rôle">
                     {promotion?.id === a.id ? (
                       <form className="pages-promotion" onSubmit={promouvoir}>
                         <select
@@ -152,13 +200,13 @@ export default function Utilisateurs() {
                       </>
                     )}
                   </td>
-                  <td>
-                    <span className={`statut ${a.is_active ? 'statut-capture' : 'statut-recherche'}`}>
-                      {a.is_active ? 'Actif' : 'Désactivé'}
+                  <td data-label="État">
+                    <span className={`utilisateurs-etat${a.is_active ? '' : ' inactif'}`}>
+                      <span aria-hidden="true" />{a.is_active ? 'Actif' : 'Désactivé'}
                     </span>
                   </td>
-                  <td>{formaterDate(a.created_at)}</td>
-                  <td>
+                  <td data-label="Créé le">{formaterDate(a.created_at)}</td>
+                  <td className="utilisateurs-col-actions">
                     {/* Le flex va sur une div : un <td> en display:flex sort de la ligne et décale les traits */}
                     <div className="pages-actions">
                       {peutPromouvoir && promotion?.id !== a.id && a.id !== utilisateur.id && (
@@ -176,10 +224,25 @@ export default function Utilisateurs() {
                   </td>
                 </tr>
               ))}
-              {chargement && <tr className="registre-vide"><td colSpan={5}>Chargement…</td></tr>}
+              {chargement && <tr className="registre-vide"><td colSpan={6}>Chargement…</td></tr>}
+              {!chargement && filtres.length === 0 && (
+                <tr className="registre-vide"><td colSpan={6}>Aucun compte ne correspond à cette recherche.</td></tr>
+              )}
             </tbody>
           </table>
         </div>
+
+        {totalPages > 1 && (
+          <nav className="pagination" aria-label="Pagination des comptes">
+            <button type="button" disabled={pageCourante <= 1} onClick={() => setPage(pageCourante - 1)}>
+              ← Précédente
+            </button>
+            <span>Page {pageCourante} sur {totalPages}</span>
+            <button type="button" disabled={pageCourante >= totalPages} onClick={() => setPage(pageCourante + 1)}>
+              Suivante →
+            </button>
+          </nav>
+        )}
       </div>
       {confirmation && (
         <div className="fenetre-confirmation" role="dialog" aria-modal="true" aria-labelledby="confirmation-titre">

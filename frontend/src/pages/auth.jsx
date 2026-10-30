@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../composants/AuthContext.js';
-import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithub } from '../composants/Icones.jsx';
+import {
+  IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithub, IconeRecherche, IconeSirene, IconeMessage,
+} from '../composants/Icones.jsx';
 import { SANS_SERVEUR, urlApi } from '../config.js';
 import '../styles/auth.css';
 
+// Ce que l'application apporte à un agent, en une ligne chacun (direction E)
+const ATOUTS = [
+  { Icone: IconeRecherche, texte: 'Savoir en quelques secondes si une personne est recherchée' },
+  { Icone: IconeSirene, texte: 'Recevoir les alertes urgentes sur toutes les pages' },
+  { Icone: IconeMessage, texte: 'Signaler et échanger depuis le terrain' },
+];
 
 // Retour du serveur après la connexion GitHub : /connexion?erreur=…
 const ERREURS_GITHUB = {
@@ -58,21 +66,24 @@ export default function Auth() {
 
   return (
     <div className="auth">
-      <section className="auth-vitrine">
+      <section className="auth-vitrine" aria-labelledby="auth-titre">
         <div className="auth-marque">
           <span className="logo-carre"><IconeBouclier /></span>
-          <span>CrimeTracker</span>
+          <strong>CrimeTracker</strong>
         </div>
 
         <div className="auth-accroche">
-          <h1>Le réseau sécurisé des forces de l'ordre</h1>
-          <p>
-            Échangez sur les personnes recherchées, suivez les alertes en temps réel et
-            communiquez avec vos équipes, depuis un seul espace de travail.
-          </p>
+          <h1 id="auth-titre">Le registre des personnes recherchées, à jour pour tous les agents en même temps.</h1>
+          <ul className="auth-atouts">
+            {ATOUTS.map(({ Icone, texte }) => (
+              <li key={texte}><span className="auth-atout-icone"><Icone taille={18} /></span>{texte}</li>
+            ))}
+          </ul>
         </div>
 
-        <p className="auth-pied">CrimeTracker</p>
+        <p className="auth-pied">
+          <IconeCadenas taille={14} /> Accès réservé au personnel autorisé. Chaque action est inscrite au journal d'audit.
+        </p>
       </section>
 
       <section className="auth-panneau">
@@ -122,13 +133,12 @@ export default function Auth() {
               />
               Se souvenir de moi
             </label>
-            <span className="auth-a-venir" title="Fonction reportée au sprint 3">Réinitialisation du mot de passe <em>(reportée au sprint 3)</em></span>
           </div>
 
           {erreur && <p className="auth-erreur" role="alert">{erreur}</p>}
 
           <button type="submit" className="bouton-principal" disabled={enCours}>
-            {enCours ? 'Connexion…' : 'Connexion sécurisée'}
+            {enCours ? 'Connexion…' : 'Se connecter'}
             {!enCours && <IconeChevron taille={16} />}
           </button>
 
@@ -140,11 +150,7 @@ export default function Auth() {
             Se connecter avec GitHub
           </a>
 
-          <p className="auth-info">
-            <IconeCadenas taille={14} /> Authentification à deux facteurs : reportée au sprint 3
-          </p>
-
-          <p className="auth-mention">Accès réservé au personnel autorisé — usage tracé et audité.</p>
+          <p className="auth-mention">Mot de passe oublié ? Adressez-vous à votre superviseur.</p>
         </form>
       </section>
     </div>

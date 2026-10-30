@@ -1,8 +1,10 @@
-/* Page de connexion : vitrine sombre à gauche, formulaire clair à droite */
+/* Page de connexion (direction E) : vitrine marine à gauche, formulaire en carte à droite.
+   Sur téléphone, la vitrine se réduit à un bandeau pour que le formulaire soit visible tout de suite. */
 .auth {
   display: grid;
-  grid-template-columns: 56% 44%;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   min-height: 100vh;
+  background: var(--fond);
 }
 
 .auth-vitrine {
@@ -11,124 +13,99 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  padding: 54px;
-  background: linear-gradient(160deg, #0b172b 0%, #13233d 55%, #1a2d4c 100%);
+  justify-content: space-between;
+  gap: 40px;
+  padding: 44px 56px;
+  background: var(--marine-900);
   color: #fff;
 }
 
-/* Badge de police en filigrane, fondu dans le bleu */
+/* Écusson en filigrane, très discret, calé en bas à droite */
 .auth-vitrine::before {
   content: '';
   position: absolute;
   z-index: -1;
-  top: 50%;
-  right: 12%;
-  width: min(70%, 560px);
+  right: -8%;
+  bottom: -10%;
+  width: min(62%, 520px);
   aspect-ratio: 613 / 638;
-  transform: translateY(-50%);
   background: url('../assets/badge-police.png') center / contain no-repeat;
-  filter: grayscale(1) sepia(1) hue-rotate(180deg) saturate(2.5) brightness(0.9);
-  opacity: 0.16;
+  filter: grayscale(1) brightness(1.6);
+  opacity: 0.06;
   pointer-events: none;
 }
 
-.auth-marque {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 18px;
-  font-weight: 700;
-}
+.auth-marque { display: flex; align-items: center; gap: 10px; }
+.auth-marque .logo-carre { width: 36px; height: 36px; border-radius: 9px; background: none; border-color: rgba(255, 255, 255, 0.2); }
+.auth-marque strong { font-family: var(--titre); font-size: 24px; font-weight: 700; letter-spacing: 0.01em; }
 
-.auth-accroche {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  max-width: 520px;
-}
-
+.auth-accroche { display: grid; gap: 28px; max-width: 540px; }
 .auth-accroche h1 {
-  max-width: 440px;
-  font-size: clamp(28px, 3vw, 38px);
-  line-height: 1.2;
-  font-weight: 700;
+  font-family: var(--titre);
+  font-size: clamp(38px, 4.2vw, 56px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: 0.005em;
+  text-wrap: balance;
 }
 
-.auth-accroche p {
-  margin-top: 16px;
-  color: #a9b3c2;
-  font-size: 16px;
-  line-height: 1.6;
+.auth-atouts { display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; color: #c3ccd8; font-size: 16px; }
+.auth-atouts li { display: flex; align-items: center; gap: 14px; }
+.auth-atout-icone {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #8fb0e6;
 }
 
-.auth-demo {
-  display: inline-block;
-  margin: 32px 0 0;
-  padding: 2px 9px;
-  border: 1px dashed #7c8799;
-  border-radius: 999px;
-  color: #a8b2c1;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-.auth-demo + .auth-stats { margin-top: 12px; }
-.auth-a-venir { color: #8a93a0; font-weight: 600; cursor: not-allowed; }
-.auth-a-venir em { font-style: normal; font-weight: 500; }
-
-.auth-stats {
-  display: flex;
-  gap: 28px;
-  margin: 36px 0 0;
-  padding: 0;
-  list-style: none;
-}
-.auth-stats li { display: flex; flex-direction: column; }
-.auth-stats strong { font-size: 24px; font-weight: 700; }
-.auth-stats span { color: #8e99aa; font-size: 13px; }
-
-.auth-pied { color: #7c8799; font-size: 12px; }
+.auth-pied { display: flex; align-items: center; gap: 8px; color: #c3ccd8; font-size: 13px; }
 
 /* ---------- Formulaire ---------- */
 .auth-panneau {
   display: grid;
   place-items: center;
-  padding: 40px 24px;
-  background: var(--fond);
+  padding: 44px 24px;
 }
 
 .auth-formulaire {
-  width: 100%;
-  max-width: 386px;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  border: 1px solid var(--bordure);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(12, 26, 48, 0.04), 0 12px 32px rgba(12, 26, 48, 0.06);
 }
 
-.auth-formulaire h2 { font-size: 22px; font-weight: 700; }
-.auth-sous-titre { margin: 6px 0 24px; color: var(--texte-doux); font-size: 14px; }
+.auth-formulaire h2 { font-family: var(--titre); font-size: 34px; font-weight: 600; line-height: 1.05; }
+.auth-sous-titre { margin: 4px 0 24px; color: var(--texte-doux); font-size: 14px; }
 
 .auth-formulaire > label {
-  margin: 0 0 7px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #3f4855;
+  margin: 0 0 6px;
+  color: var(--texte);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .champ {
   display: flex;
   align-items: center;
   gap: 10px;
+  height: 48px;
   margin-bottom: 18px;
-  padding: 0 16px;
-  height: 46px;
-  background: var(--surface);
+  padding: 0 14px;
   border: 1px solid var(--bordure);
   border-radius: 8px;
+  background: #fff;
   color: #6b7482;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .champ:focus-within { border-color: var(--marine-600); box-shadow: 0 0 0 3px rgba(42, 74, 125, 0.15); }
 .champ input {
@@ -138,29 +115,16 @@
   outline: 0;
   background: none;
   color: var(--texte);
-  font-family: var(--mono);
-  font-size: 15px;
+  font-size: 16px;
 }
+/* Le matricule s'écrit en police à chasse fixe, comme sur la carte d'agent */
+#matricule { font-family: var(--mono); font-size: 15px; letter-spacing: 0.02em; }
 .champ input::placeholder { color: #8a93a0; }
 
-.auth-options {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: -4px 0 22px;
-  font-size: 13px;
-}
-.auth-options a { font-weight: 700; text-decoration: none; }
-.auth-options a:hover { text-decoration: underline; }
+.auth-options { display: flex; align-items: center; margin: -4px 0 22px; font-size: 14px; }
 
-.case {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #3f4855;
-  cursor: pointer;
-}
-.case input { width: 15px; height: 15px; margin: 0; accent-color: var(--marine-700); }
+.case { display: flex; align-items: center; gap: 8px; color: var(--texte); cursor: pointer; }
+.case input { width: 18px; height: 18px; margin: 0; accent-color: var(--marine-700); }
 
 .bouton-principal {
   display: flex;
@@ -175,72 +139,70 @@
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 .bouton-principal:hover { background: var(--marine-600); }
 .bouton-principal:disabled { opacity: 0.7; cursor: progress; }
+.bouton-principal svg { transition: transform 0.15s ease; }
+.bouton-principal:hover:not(:disabled) svg { transform: translateX(3px); }
 
 .auth-separateur {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 16px 0;
-  color: var(--texte-pale);
-  font-size: 12px;
+  color: var(--texte-doux);
+  font-size: 13px;
 }
 .auth-separateur::before,
-.auth-separateur::after {
-  content: '';
-  flex: 1;
-  border-top: 1px solid #d5dae1;
-}
+.auth-separateur::after { content: ''; flex: 1; border-top: 1px solid var(--bordure); }
 
+/* GitHub : bouton secondaire, contour sombre (le bouton principal reste la connexion par matricule) */
 .bouton-github {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
   height: 48px;
+  border: 1px solid var(--texte);
   border-radius: 8px;
-  background: #24292f;
-  color: #fff;
+  background: #fff;
+  color: var(--texte);
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   text-decoration: none;
+  transition: background-color 0.15s ease;
 }
-.bouton-github:hover { background: #32383f; }
+.bouton-github:hover { background: var(--fond); }
 
 .auth-erreur {
-  margin: -8px 0 14px;
+  margin: -6px 0 16px;
   padding: 10px 12px;
-  border-radius: 7px;
+  border-radius: 8px;
   background: var(--danger-fond);
   color: var(--danger);
-  font-size: 13px;
+  font-size: 14px;
 }
 
-.auth-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 20px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #e6e9ee;
-  color: #4a5361;
-  font-size: 13px;
-}
+.auth-mention { margin-top: 20px; color: var(--texte-doux); font-size: 13px; text-align: center; }
 
-.auth-mention {
-  margin-top: 26px;
-  text-align: center;
-  color: var(--texte-pale);
-  font-size: 12px;
+.auth-formulaire button:focus-visible, .auth-formulaire a:focus-visible, .case input:focus-visible {
+  outline: 2px solid var(--marine-600);
+  outline-offset: 2px;
 }
 
 @media (max-width: 860px) {
-  .auth { grid-template-columns: 1fr; }
-  .auth-vitrine { padding: 28px 16px; }
-  .auth-accroche { margin: 36px 0 24px; }
-  .auth-stats { gap: 20px; margin-top: 24px; }
-  .auth-panneau { padding: 36px 16px; }
+  .auth { grid-template-columns: 1fr; align-content: start; }
+  .auth-vitrine { gap: 16px; padding: 24px 20px 26px; }
+  .auth-vitrine::before { display: none; }
+  .auth-accroche { gap: 0; }
+  .auth-accroche h1 { font-size: 28px; line-height: 1.08; }
+  /* Téléphone : seulement le titre au-dessus du formulaire ; on garde l'écran pour se connecter */
+  .auth-atouts, .auth-pied { display: none; }
+  .auth-panneau { place-items: start center; padding: 20px 16px 32px; }
+  .auth-formulaire { padding: 24px 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .champ, .bouton-principal, .bouton-principal svg, .bouton-github { transition: none; }
 }
