@@ -468,3 +468,16 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 - L'API doit pouvoir joindre Internet.
 - Si Nominatim ne répond pas, le dossier est enregistré **sans** position. Le formulaire de signalement propose alors de cliquer sur la carte.
 - Une requête par seconde suffit pour une équipe, mais pas pour un import massif de dossiers.
+
+---
+
+## Traçabilité des décisions mises en œuvre par Michael — sprint 2
+
+Les choix techniques liés au temps réel et à la carte ont été corrigés et validés dans les commits suivants :
+
+| Commit | Date | Mise en œuvre documentée |
+|---|---|---|
+| [`74f6955`](https://github.com/dr-arobase/projet-DA_3/commit/74f6955) | 28 octobre 2026 | Correction de la propagation des événements temps réel, du rafraîchissement, des notifications et du parcours de carte |
+| [`3126b96`](https://github.com/dr-arobase/projet-DA_3/commit/3126b96) | 28 octobre 2026 | Intégration des corrections du sprint 2 et rattachement au récit #11 |
+
+Ces changements appliquent les décisions 3, 4, 6 et 11 : Socket.IO pour les événements, React + Vite côté client, une origine nginx en production et géocodage côté serveur. La fonctionnalité est livrée par la [PR #136](https://github.com/dr-arobase/projet-DA_3/pull/136), ensuite revue et fusionnée.

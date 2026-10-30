@@ -170,6 +170,19 @@ On ne coupe jamais #50 (connexion GitHub), #11 (temps réel) ni #12 (alerte urge
 
 Toutes ces PR ont été fusionnées **sans revue d'un coéquipier**, ce qui ne respecte pas notre définition de « terminé ». Une revue après coup est demandée pour chacune, voir le tableau des changements ci-dessus.
 
+### Travail réalisé par Michael — sprint 2
+
+Le parcours #11 a été finalisé dans une branche dédiée, puis vérifié avant son intégration :
+
+| Commit | Date | Contribution |
+|---|---|---|
+| [`74f6955`](https://github.com/dr-arobase/projet-DA_3/commit/74f6955) | 28 octobre 2026 | Correction des parcours temps réel et de la carte; propagation des mises à jour, rafraîchissement, notifications et accès aux pages concernés |
+| [`3126b96`](https://github.com/dr-arobase/projet-DA_3/commit/3126b96) | 28 octobre 2026 | Intégration des corrections du sprint 2; fermeture du récit #11 |
+| [`9ea8e72`](https://github.com/dr-arobase/projet-DA_3/commit/9ea8e72) | 29 octobre 2026 | Mise à jour du journal et des contributions du sprint 2 |
+| [`18c25f9`](https://github.com/dr-arobase/projet-DA_3/commit/18c25f9) | 30 octobre 2026 | Mise à jour finale du journal et des contributions du sprint 2 |
+
+La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr-arobase/projet-DA_3/pull/136), qui a été revue et fusionnée. L'historique Git constitue la trace vérifiable des poussées et des intégrations; Git ne conserve pas un registre séparé de chaque commande `git push`.
+
 ---
 
 ## Sprint 3 — Version finale (~5 semaines)
