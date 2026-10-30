@@ -3,7 +3,9 @@ import { verifyToken } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
 import { getAccountAuthInfo } from '../utils/account-status.js';
 import { getAllowedOrigins } from '../utils/allowed-origins.js';
-import { registerCallHandlers } from './appels.js';
+import { registerCallHandlers, livrerAppelsEnAttente } from './appels.js';
+import * as messageModel from '../models/message.model.js';
+import * as userModel from '../models/user.model.js';
 
 let io;
 
@@ -51,10 +53,25 @@ export default function registerSockets(server) {
     io.emit('presence:update', getPresenceList());
 
     // Appels audio et vidéo : signalisation relayée seulement entre agents connectés (#56)
+    const envoyerA = (userId, event, payload) => io.to(roomOf(userId)).emit(event, payload);
     registerCallHandlers(socket, {
       estConnecte: (userId) => getPresenceList().some((p) => p.id === userId),
-      envoyerA: (userId, event, payload) => io.to(roomOf(userId)).emit(event, payload),
+      envoyerA,
+      // Appel resté sans réponse : un message dans la conversation, vu à la prochaine connexion
+      laisserAppelManque: async ({ fromId, toId, video }) => {
+        const destinataire = await userModel.findById(toId);
+        if (!destinataire?.is_active) return;
+        const message = await messageModel.createEvent({
+          sender_id: fromId,
+          recipient_id: toId,
+          kind: video ? 'appel-manque-video' : 'appel-manque-audio',
+          body: `Appel ${video ? 'vidéo' : 'audio'} manqué`,
+        });
+        emitToUsers([toId, fromId], 'message:new', message);
+      },
     });
+    // Un appel qui lui est destiné sonne encore (il était hors ligne) : il le reçoit maintenant
+    livrerAppelsEnAttente(id, envoyerA);
 
     socket.on('disconnect', () => {
       connectedUsers.delete(socket.id);

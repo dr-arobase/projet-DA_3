@@ -128,6 +128,10 @@ export const modifierMessage = (messageId, body) =>
 
 export const supprimerMessage = (messageId) => requete(`/api/messages/${messageId}`, { method: 'DELETE' });
 
+// Réagir à un message avec une emoji (la même une 2e fois la retire) : { data: { id, reactions } }
+export const reagirMessage = (messageId, emoji) =>
+  requete(`/api/messages/${messageId}/reactions`, { method: 'POST', body: { emoji } });
+
 // Fichier, image, GIF ou message vocal, envoyé brut à un agent ou à un groupe (10 Mo au plus)
 export const envoyerFichier = ({ agentId, groupeId, fichier, nom }) => {
   const params = new URLSearchParams(agentId ? { recipient_id: agentId } : { group_id: groupeId });
