@@ -17,6 +17,7 @@ export default function Utilisateurs() {
   const { utilisateur } = useAuth();
   const autorise = estAuMoins(utilisateur, 'superviseur');
   const peutPromouvoir = estAuMoins(utilisateur, 'direction');
+  const rolesCreation = peutPromouvoir ? ROLES : ['policier'];
 
   const [agents, setAgents] = useState([]);
   const [chargement, setChargement] = useState(true);
@@ -98,7 +99,7 @@ export default function Utilisateurs() {
       </header>
 
       <div className="page pages-colonne">
-        {formulaireOuvert && <NouveauCompte onCree={ajoute} onAnnuler={() => setFormulaireOuvert(false)} />}
+        {formulaireOuvert && <NouveauCompte rolesDisponibles={rolesCreation} onCree={ajoute} onAnnuler={() => setFormulaireOuvert(false)} />}
 
         {message.texte && (
           <p className={`registre-message ${message.type}`} role={message.type === 'erreur' ? 'alert' : 'status'}>{message.texte}</p>
@@ -193,7 +194,7 @@ export default function Utilisateurs() {
   );
 }
 
-function NouveauCompte({ onCree, onAnnuler }) {
+function NouveauCompte({ rolesDisponibles, onCree, onAnnuler }) {
   const [champs, setChamps] = useState(VIDE);
   const [erreurs, setErreurs] = useState({});
   const [erreur, setErreur] = useState('');
@@ -265,7 +266,7 @@ function NouveauCompte({ onCree, onAnnuler }) {
         <div className="champ-registre">
           <label htmlFor="u-role">Rôle</label>
           <select id="u-role" className="registre-select" value={champs.role} onChange={modifier('role')}>
-            {ROLES.map((r) => <option key={r} value={r}>{LIBELLES_ROLE[r]}</option>)}
+            {rolesDisponibles.map((r) => <option key={r} value={r}>{LIBELLES_ROLE[r]}</option>)}
           </select>
         </div>
         <div className="champ-registre">

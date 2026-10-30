@@ -19,10 +19,22 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const emitToUsers = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers,
+  disconnectUser,
+}));
+
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: `PL-${String(id).padStart(3, '0')}`, role: 'policier',
+    grade: 'sergent_autres_fonctions', is_active: true,
+  })),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
@@ -135,6 +147,8 @@ describe('GET /api/messages/groups/:groupId', () => {
     expect(res.status).toBe(200);
     expect(res.body.messages).toHaveLength(1);
     expect(requetes('SET last_read_at')[0][1]).toEqual([7, MOI]);
+    // La pastille du menu baisse dans tous ses onglets
+    expect(emitToUsers).toHaveBeenCalledWith([MOI], 'messages:lus', {});
   });
 
   test('403 pour un agent qui n\'est pas membre, même en appelant l\'API à la main', async () => {
@@ -166,7 +180,7 @@ describe('POST /api/messages/groups/:groupId/messages', () => {
     const res = await envoyer(MOI, { body: ' 10-4 ' });
 
     expect(res.status).toBe(201);
-    expect(requetes('INSERT INTO message (sender_id, group_id')[0][1]).toEqual([MOI, 7, '10-4']);
+    expect(requetes('INSERT INTO message (sender_id, group_id')[0][1]).toEqual([MOI, 7, '10-4', null, null, null, null, null]); // sans pièce jointe
     expect(emitToUsers).toHaveBeenCalledWith([2, 3, 4], 'group:message', expect.objectContaining({ id: 9 }));
   });
 

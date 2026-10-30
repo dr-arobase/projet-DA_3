@@ -1,4 +1,5 @@
 import { pool } from '../config/db.js';
+import { attachmentValues } from './message.model.js';
 
 // Groupes de discussion de la messagerie (#55). Les fonctions qui écrivent reçoivent
 // le client d'une transaction (withTransaction), ou utilisent le pool par défaut.
@@ -14,7 +15,8 @@ const MEMBERS = `
 
 // Message de groupe, avec le nom de l'expéditeur (plusieurs personnes écrivent dans le fil)
 const SELECT_GROUP_MESSAGE = `
-  SELECT m.id, m.sender_id, m.group_id, m.body, m.created_at,
+  SELECT m.id, m.sender_id, m.group_id, m.body, m.created_at, m.edited_at, m.deleted_at,
+         m.attachment_name, m.attachment_type, m.attachment_size, m.attachment_kind,
          u.first_name AS sender_first_name, u.last_name AS sender_last_name, u.badge_number AS sender_badge_number
   FROM message m JOIN app_user u ON u.id = m.sender_id
 `;
@@ -25,7 +27,8 @@ export const findForUser = async (userId) => {
     SELECT * FROM (
       SELECT g.id, g.name, g.created_by, g.created_at, ${MEMBERS},
         (SELECT COUNT(*) FROM message m
-          WHERE m.group_id = g.id AND m.sender_id <> $1 AND m.created_at > gm.last_read_at) AS unread,
+          WHERE m.group_id = g.id AND m.sender_id <> $1 AND m.created_at > gm.last_read_at
+            AND m.deleted_at IS NULL) AS unread,
         (SELECT MAX(m.created_at) FROM message m WHERE m.group_id = g.id) AS last_message_at
       FROM message_group g
       JOIN message_group_member gm ON gm.group_id = g.id AND gm.user_id = $1
@@ -118,16 +121,20 @@ export const markRead = async (groupId, userId) => {
   );
 };
 
-export const createMessage = async ({ sender_id, group_id, body }) => {
+// attachment (facultatif) : { path, name, type, size, kind }, comme pour un message privé
+export const createMessage = async ({ sender_id, group_id, body, attachment = null }) => {
   const result = await pool.query(
     `WITH cree AS (
-       INSERT INTO message (sender_id, group_id, body) VALUES ($1, $2, $3)
-       RETURNING id, sender_id, group_id, body, created_at
+       INSERT INTO message (sender_id, group_id, body,
+                            attachment_path, attachment_name, attachment_type, attachment_size, attachment_kind)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       RETURNING id, sender_id, group_id, body, created_at, edited_at, deleted_at,
+                 attachment_name, attachment_type, attachment_size, attachment_kind
      )
      SELECT cree.*, u.first_name AS sender_first_name, u.last_name AS sender_last_name,
             u.badge_number AS sender_badge_number
      FROM cree JOIN app_user u ON u.id = cree.sender_id`,
-    [sender_id, group_id, body]
+    [sender_id, group_id, body, ...attachmentValues(attachment)]
   );
   return result.rows[0];
 };
