@@ -136,6 +136,18 @@ erDiagram
 - `AUDIT_LOG` : les actions `CRIMINAL_REMOVED`, `ALERT_ISSUED`, `USER_DEACTIVATED`, `USER_REACTIVATED` et `USER_PROMOTED` y sont déjà enregistrées, avec leur auteur, leur cible et la date. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
 
+### Contributions techniques de Michael — sprint 1
+
+Les éléments de conception suivants ont été préparés ou complétés par Michael dans l'historique Git :
+
+- conteneurisation de l'API avec `Dockerfile` et `docker-compose.yml`;
+- premières routes et contrôleurs d'authentification et de dossiers;
+- intégration des routes du registre avec les modèles `criminal` et `dossier`;
+- préparation de Swagger et organisation initiale de la documentation;
+- finalisation du flux d'authentification et des parcours de dossiers.
+
+Cette trace correspond notamment aux commits [`4b05e05`](https://github.com/dr-arobase/projet-DA_3/commit/4b05e05), [`095a28b`](https://github.com/dr-arobase/projet-DA_3/commit/095a28b), [`046b159`](https://github.com/dr-arobase/projet-DA_3/commit/046b159), [`52f0e3b`](https://github.com/dr-arobase/projet-DA_3/commit/52f0e3b), [`47f743e`](https://github.com/dr-arobase/projet-DA_3/commit/47f743e) et [`d392929`](https://github.com/dr-arobase/projet-DA_3/commit/d392929).
+
 ---
 
 ## Principales routes

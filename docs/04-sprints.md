@@ -66,6 +66,18 @@ Bilan en cinq lignes :
 
 **Note sur le journal** : les entrées des blocs du sprint 1 dans `journal.md` n'ont pas été commises le jour de chaque bloc; elles ont été ajoutées après coup, le 6 octobre ([PR #37](https://github.com/dr-arobase/projet-DA_3/pull/37)). L'historique Git fait foi pour les dates réelles du travail.
 
+### Travail réalisé par Michael — sprint 1
+
+En plus de son rôle de testeur, Michael a contribué directement à la fondation technique du sprint 1 :
+
+| Période | Contributions vérifiables |
+|---|---|
+| 22–25 septembre | Mise en place et déplacement de la documentation, premiers fichiers Docker et Compose, préparation de Swagger et des routes `auth`, `criminal` et `dossier` |
+| 28–30 septembre | Finalisation de l'authentification, du backend des dossiers et des modifications liées aux criminels |
+| 2–6 octobre | Rédaction et amélioration du journal, intégration de la branche Michael et publication de la documentation du sprint 1 par la [PR #37](https://github.com/dr-arobase/projet-DA_3/pull/37) |
+
+Commits principaux : [`d48dcc0`](https://github.com/dr-arobase/projet-DA_3/commit/d48dcc0), [`4b05e05`](https://github.com/dr-arobase/projet-DA_3/commit/4b05e05), [`095a28b`](https://github.com/dr-arobase/projet-DA_3/commit/095a28b), [`046b159`](https://github.com/dr-arobase/projet-DA_3/commit/046b159), [`47f743e`](https://github.com/dr-arobase/projet-DA_3/commit/47f743e), [`d392929`](https://github.com/dr-arobase/projet-DA_3/commit/d392929), [`1134170`](https://github.com/dr-arobase/projet-DA_3/commit/1134170), [`b8b223d`](https://github.com/dr-arobase/projet-DA_3/commit/b8b223d) et [`9c021bd`](https://github.com/dr-arobase/projet-DA_3/commit/9c021bd).
+
 ---
 
 ## Sprint 2 — Beta (~3 semaines)
