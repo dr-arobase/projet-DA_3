@@ -16,15 +16,41 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
   withTransaction: jest.fn(),
 }));
 
+const disconnectUser = jest.fn();
+jest.unstable_mockModule('../../src/sockets/index.js', () => ({
+  default: jest.fn(),
+  emitEvent: jest.fn(),
+  emitToUsers: jest.fn(),
+  disconnectUser,
+}));
+
+const isAccountActive = jest.fn(async () => true);
+let authenticatedRole = 'policier';
+const getAccountAuthInfo = jest.fn(async (id) => ({
+  id, badge_number: 'SUP-001', role: authenticatedRole, grade: 'lieutenant', is_active: true,
+}));
+const publishAccountDeactivated = jest.fn();
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive,
+  getAccountAuthInfo,
+  publishAccountDeactivated,
+  listenForAccountDeactivations: jest.fn(),
+}));
+
 const { default: app } = await import('../../src/app.js');
 
-const bearer = (role) =>
+const bearer = (role) => (authenticatedRole = role) &&
   `Bearer ${jwt.sign({ id: 1, badge_number: 'SUP-001', role, grade: 'lieutenant' }, 'test-secret')}`;
 
 const agent = { id: 5, first_name: 'Marc', last_name: 'Roy', badge_number: 'PL-005', role: 'policier' };
 
 beforeEach(() => {
   query.mockReset();
+  disconnectUser.mockReset();
+  isAccountActive.mockResolvedValue(true);
+  authenticatedRole = 'policier';
+  getAccountAuthInfo.mockClear();
+  publishAccountDeactivated.mockReset();
 });
 
 describe('contrôle des rôles', () => {
@@ -101,6 +127,48 @@ describe('POST /api/users', () => {
     const params = insertParams();
     expect(params[4]).toMatch(/^\$2[aby]\$/); // hash bcrypt, jamais le mot de passe en clair
     expect(params.slice(5)).toEqual(['policier', 'sergent_autres_fonctions']);
+  });
+
+  test.each(['superviseur', 'direction'])(
+    '403 si un superviseur tente de créer un compte %s',
+    async (role) => {
+      const res = await request(app)
+        .post('/api/users')
+        .set('Authorization', bearer('superviseur'))
+        .send({ ...body, role, grade: role === 'direction' ? 'directeur_general' : 'lieutenant' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/Seule la direction/);
+      expect(query).not.toHaveBeenCalled();
+    }
+  );
+
+  test.each([
+    ['policier', 'sergent_autres_fonctions'],
+    ['superviseur', 'lieutenant'],
+    ['direction', 'directeur_general'],
+  ])('la direction peut créer un compte %s', async (role, grade) => {
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...agent, role, grade }] });
+
+    const res = await request(app)
+      .post('/api/users')
+      .set('Authorization', bearer('direction'))
+      .send({ ...body, role, grade });
+
+    expect(res.status).toBe(201);
+    expect(query.mock.calls[2][1].slice(5)).toEqual([role, grade]);
+  });
+
+  test('400 si un champ obligatoire manque', async () => {
+    const res = await request(app)
+      .post('/api/users')
+      .set('Authorization', bearer('superviseur'))
+      .send({ ...body, password: undefined });
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
   });
 
   test('retire les espaces et met le courriel en minuscules', async () => {
@@ -212,6 +280,37 @@ describe('POST /api/users', () => {
 });
 
 describe('activation, désactivation et promotion', () => {
+  test('403 si un superviseur tente de désactiver son propre compte', async () => {
+    const res = await request(app)
+      .patch('/api/users/1/deactivate')
+      .set('Authorization', bearer('superviseur'));
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({ message: 'Vous ne pouvez pas désactiver votre propre compte.' });
+    expect(query).not.toHaveBeenCalled();
+    expect(disconnectUser).not.toHaveBeenCalled();
+    expect(publishAccountDeactivated).not.toHaveBeenCalled();
+  });
+
+  test('403 si un superviseur tente de désactiver un compte de direction', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ ...agent, id: 8, role: 'direction' }] });
+
+    const res = await request(app)
+      .patch('/api/users/8/deactivate')
+      .set('Authorization', bearer('superviseur'));
+
+    expect(res.status).toBe(403);
+    expect(res.body).toEqual({
+      message: 'Un superviseur ne peut pas désactiver un compte de direction.',
+    });
+    expect(query).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls[0][0]).toMatch(/role <> 'direction'/);
+    expect(disconnectUser).not.toHaveBeenCalled();
+    expect(publishAccountDeactivated).not.toHaveBeenCalled();
+  });
+
   test.each([
     ['deactivate', 'USER_DEACTIVATED', false],
     ['reactivate', 'USER_REACTIVATED', true],
@@ -223,8 +322,18 @@ describe('activation, désactivation et promotion', () => {
     const res = await request(app).patch(`/api/users/5/${route}`).set('Authorization', bearer('superviseur'));
 
     expect(res.status).toBe(200);
-    expect(query.mock.calls[0][1]).toEqual([isActive, '5']);
+    if (isActive) {
+      expect(query.mock.calls[0][1]).toEqual([isActive, '5']);
+    } else {
+      expect(query.mock.calls[0][1]).toEqual(['5', 'superviseur']);
+      expect(query.mock.calls[0][0]).toMatch(/role <> 'direction'/);
+    }
     expect(query.mock.calls[1][1].slice(0, 4)).toEqual([1, action, 'user', 5]);
+    if (!isActive) {
+      expect(disconnectUser).toHaveBeenCalledWith(5);
+      expect(publishAccountDeactivated).toHaveBeenCalledWith(5);
+    }
+    else expect(disconnectUser).not.toHaveBeenCalled();
   });
 
   test('PATCH /:id/promote change rôle et grade (direction)', async () => {

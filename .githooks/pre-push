@@ -6,6 +6,7 @@
 #   - main n'est pas à jour avec le dépôt distant (il faut d'abord faire git pull) ;
 #   - le push réécrirait l'historique distant (push --force / --force-with-lease) ;
 #   - il reste des modifications non commitées dans backend/ ou frontend/ ;
+#   - le lint ou l'audit de dépendances échoue ;
 #   - les tests du backend échouent, le serveur ne démarre pas ou le frontend ne compile pas.
 
 remote="$1"
