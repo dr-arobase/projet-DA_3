@@ -2,16 +2,34 @@
 // le navigateur l'envoie tout seul (même origine grâce au proxy Vite), on ne manipule aucun jeton.
 // body : un objet (envoyé en JSON) ou un fichier (envoyé tel quel, avec son type MIME).
 import { API_URL, urlApi } from './config.js';
+const CSRF_COOKIE_NAME = 'crimetracker_csrf';
+const METHODES_SANS_EFFET = new Set(['GET', 'HEAD', 'OPTIONS']);
+
+function jetonCsrf() {
+  if (typeof document === 'undefined') return null;
+  const cookie = document.cookie
+    .split(';')
+    .map((partie) => partie.trim())
+    .find((partie) => partie.startsWith(`${CSRF_COOKIE_NAME}=`));
+  return cookie ? decodeURIComponent(cookie.slice(CSRF_COOKIE_NAME.length + 1)) : null;
+}
 
 export async function requete(chemin, { method = 'GET', body } = {}) {
   const fichier = body instanceof Blob;
+  const headers = {};
+  if (body) headers['Content-Type'] = fichier ? body.type : 'application/json';
+  if (!METHODES_SANS_EFFET.has(method.toUpperCase())) {
+    const token = jetonCsrf();
+    if (token) headers['X-CSRF-Token'] = token;
+  }
+
   let reponse;
   try {
     reponse = await fetch(urlApi(chemin), {
       method,
       // API sur un autre site (GitHub Pages) : le cookie de session doit l'accompagner
       credentials: API_URL ? 'include' : 'same-origin',
-      headers: body ? { 'Content-Type': fichier ? body.type : 'application/json' } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
       body: body ? (fichier ? body : JSON.stringify(body)) : undefined,
     });
   } catch {
@@ -100,6 +118,25 @@ export const signaler = (signalement) => requete('/api/sightings', { method: 'PO
 
 // Messagerie privée
 export const listerContacts = () => requete('/api/messages/contacts');
+
+// Nombre de messages non lus (privés et de groupe) : { total }
+export const compterNonLus = () => requete('/api/messages/unread');
+
+// Son propre message (privé ou de groupe) : modifiable 15 minutes, supprimable
+export const modifierMessage = (messageId, body) =>
+  requete(`/api/messages/${messageId}`, { method: 'PATCH', body: { body } });
+
+export const supprimerMessage = (messageId) => requete(`/api/messages/${messageId}`, { method: 'DELETE' });
+
+// Fichier, image, GIF ou message vocal, envoyé brut à un agent ou à un groupe (10 Mo au plus)
+export const envoyerFichier = ({ agentId, groupeId, fichier, nom }) => {
+  const params = new URLSearchParams(agentId ? { recipient_id: agentId } : { group_id: groupeId });
+  if (nom) params.set('name', nom);
+  return requete(`/api/messages/attachments?${params}`, { method: 'POST', body: fichier });
+};
+
+// Adresse d'une pièce jointe (le serveur vérifie que l'agent est dans la conversation)
+export const urlPieceJointe = (messageId) => urlApi(`/api/messages/${messageId}/attachment`);
 
 export const lireConversation = (agentId) => requete(`/api/messages/${agentId}`);
 

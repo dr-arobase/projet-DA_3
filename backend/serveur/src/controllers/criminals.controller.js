@@ -1,4 +1,5 @@
 import * as criminalService from '../services/criminals.service.js';
+import { readPagination } from '../utils/pagination.js';
 
 // Les erreurs métier du service portent un statusCode (400, 404, 409) ;
 // toute autre erreur est une panne serveur.
@@ -16,8 +17,9 @@ const handleError = (res, error, context) => {
 
 export const getAll = async (req, res) => {
   try {
-    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
+    const { page, limit } = readPagination(req.query, 10);
+    // const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    // const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
     const search = typeof req.query.q === 'string' ? req.query.q : undefined;
     const result = await criminalService.getAllCriminals({ page, limit, status: req.query.status, search });
     return res.json(result);

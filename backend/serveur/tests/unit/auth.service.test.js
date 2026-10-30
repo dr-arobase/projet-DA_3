@@ -102,7 +102,7 @@ describe('loginUser', () => {
 
 describe('logoutUser', () => {
   test('retourne un message de déconnexion', async () => {
-    const result = await logoutUser(7);
+    const result = await logoutUser();
 
     expect(result.message).toMatch(/Déconnexion réussie/);
   });

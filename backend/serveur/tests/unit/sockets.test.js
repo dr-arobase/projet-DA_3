@@ -2,13 +2,28 @@
  * Tests de Socket.IO : authentification par JWT, présence et diffusion d'événements.
  * Un vrai serveur HTTP est lancé sur un port libre, avec de vrais clients socket.io-client.
  */
-import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { jest, describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import http from 'node:http';
 import { io as ioClient } from 'socket.io-client';
 
 process.env.JWT_SECRET = 'test-secret';
+process.env.SOCKET_ALLOWED_ORIGINS = 'http://localhost:5173,http://localhost:8080';
 
-const { default: registerSockets, emitEvent } = await import('../../src/sockets/index.js');
+const inactiveUsers = new Set();
+const query = jest.fn(async (_sql, [id]) => ({
+  rows: [{
+    id: Number(id),
+    badge_number: `PL-${String(id).padStart(3, '0')}`,
+    role: 'policier',
+    grade: 'sergent',
+    is_active: !inactiveUsers.has(Number(id)),
+  }],
+}));
+jest.unstable_mockModule('../../src/config/db.js', () => ({
+  pool: { query },
+}));
+
+const { default: registerSockets, emitEvent, disconnectUser } = await import('../../src/sockets/index.js');
 const { signToken } = await import('../../src/utils/jwt.js');
 
 let server;
@@ -16,8 +31,13 @@ let io;
 let url;
 const clients = [];
 
-const connect = (token) => {
-  const socket = ioClient(url, { auth: token ? { token } : {}, reconnection: false, forceNew: true });
+const connect = (token, origin) => {
+  const socket = ioClient(url, {
+    auth: token ? { token } : {},
+    reconnection: false,
+    forceNew: true,
+    ...(origin ? { extraHeaders: { Origin: origin } } : {}),
+  });
   clients.push(socket);
   return socket;
 };
@@ -38,6 +58,7 @@ afterEach(async () => {
   while (io.of('/').sockets.size > 0) {
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
+  inactiveUsers.clear();
 });
 
 afterAll(async () => {
@@ -57,11 +78,39 @@ describe('Socket.IO', () => {
     expect(err.message).toBe('Authentification Socket.IO échouée');
   });
 
+  test('refuse un jeton encore valide si le compte a été désactivé', async () => {
+    inactiveUsers.add(7);
+    const err = await once(connect(signToken({ id: 7, role: 'policier' })), 'connect_error');
+
+    expect(err.message).toBe('Authentification Socket.IO échouée');
+  });
+
   test('accepte un jeton valide et diffuse la présence', async () => {
-    const socket = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }));
+    const socket = connect(
+      signToken({ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }),
+      'http://localhost:5173'
+    );
     const presence = await once(socket, 'presence:update');
 
-    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'lieutenant' }]);
+    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'sergent' }]);
+  });
+
+  test('refuse une origine navigateur qui ne figure pas dans la liste autorisée', async () => {
+    const err = await once(
+      connect(signToken({ id: 1, role: 'policier' }), 'https://site-malveillant.example'),
+      'connect_error'
+    );
+
+    expect(err.message).toBe('Authentification Socket.IO échouée');
+  });
+
+  test('utilise les informations courantes de la base, pas le rôle du jeton', async () => {
+    const socket = connect(signToken({
+      id: 1, badge_number: 'ANCIEN-001', role: 'direction', grade: 'general',
+    }));
+    const presence = await once(socket, 'presence:update');
+
+    expect(presence).toEqual([{ id: 1, badge_number: 'PL-001', role: 'policier', grade: 'sergent' }]);
   });
 
   test('accepte le cookie de session du navigateur', async () => {
@@ -90,12 +139,24 @@ describe('Socket.IO', () => {
   test('met à jour la présence quand un agent se déconnecte', async () => {
     const a = connect(signToken({ id: 1, badge_number: 'PL-001', role: 'policier' }));
     await once(a, 'connect');
+    const afterJoin = once(a, 'presence:update');
     const b = connect(signToken({ id: 2, badge_number: 'PL-002', role: 'policier' }));
     await once(b, 'connect');
+    expect((await afterJoin).map((u) => u.id)).toEqual([1, 2]);
 
     const afterLeave = once(a, 'presence:update');
     b.disconnect();
 
     expect((await afterLeave).map((u) => u.id)).toEqual([1]);
+  });
+
+  test('déconnecte tous les onglets d’un agent désactivé', async () => {
+    const socket = connect(signToken({ id: 12, badge_number: 'PL-012', role: 'policier' }));
+    await once(socket, 'connect');
+    const disconnected = once(socket, 'disconnect');
+
+    disconnectUser(12);
+
+    expect(await disconnected).toBe('io server disconnect');
   });
 });

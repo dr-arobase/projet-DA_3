@@ -71,7 +71,7 @@ export default function Carte() {
     const chargerDossiers = async () => {
       const tous = [];
       let page = 1;
-      let totalPages = 1;
+      let totalPages;
       do {
         const resultat = await api.listerCriminels({ page, limit: 100 });
         tous.push(...resultat.data);

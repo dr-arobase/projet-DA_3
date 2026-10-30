@@ -1,12 +1,13 @@
 import express from 'express';
 import * as authController from '../controllers/auth.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import { limitLoginAttempts } from '../middleware/login-rate-limit.middleware.js';
 import { readAvatar } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
 // Route publique : Connexion
-router.post('/login', authController.login);
+router.post('/login', limitLoginAttempts, authController.login);
 
 // Routes publiques : connexion GitHub (OAuth 2). Le navigateur y est envoyé, il ne les appelle pas en fetch
 router.get('/github', authController.githubStart);
