@@ -48,6 +48,15 @@ export const pool = {
 /** Crée les tables (schema.sql), puis les remplit (seed.sql) si la base est vide. */
 export async function initializeDatabase() {
   db.exec(readSql('schema.sql'));
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS login_rate_limit (
+      client_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      failed_attempts INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_login_rate_limit_window
+      ON login_rate_limit(window_start);
+  `);
 
   const { rows } = await query('SELECT COUNT(*) AS n FROM app_user');
   if (rows[0].n === 0) {

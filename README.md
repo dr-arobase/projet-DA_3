@@ -19,6 +19,7 @@ Puis ouvrir **http://localhost:8080**.
 - Au premier démarrage, l'API crée les tables et insère les données de démonstration (`backend/serveur/database/schema.sql` et `seed.sql`).
 - Les données vivent dans un volume Docker : elles **survivent** à `docker compose down` et à un redémarrage. Pour repartir de zéro : `docker compose down -v`.
 - La documentation de l'API (Swagger) est sur http://localhost:8080/api-docs.
+- Avant le premier démarrage, copier `.env.example` en `.env` à la racine et définir `JWT_SECRET` avec une valeur aléatoire (32 octets ou plus sont recommandés). Par exemple, générer une valeur avec `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"` puis la copier dans `.env`. Sans ce secret, Docker et l'API refusent de démarrer. Pour `npm run dev`, définir aussi `JWT_SECRET` dans `backend/.env`.
 - Les valeurs par défaut suffisent en local. Pour les changer, copier `.env.example` en `.env` à la racine.
 - `JWT_SECRET` doit être défini dans le fichier `.env` à la racine. Il signe les jetons de session ; utiliser une chaîne aléatoire longue et unique en environnement de développement et de production. La valeur par défaut de `compose.yml` n'est qu'un exemple local et ne doit pas être utilisée en production.
 
@@ -35,12 +36,12 @@ Un compte GitHub qui se connecte pour la première fois reçoit un compte **poli
 
 Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
 
-| Matricule | Nom | Rôle | Grade |
-|---|---|---|---|
-| `PO-001` | Massyle Riahi | Direction | Directeur général |
-| `SM-002` | Eric Tremblay | Superviseur | Lieutenant |
-| `PL-003` | Chrysler Jean | Policier | Sergent (autres fonctions) |
-| `PL-004` | Michael Fortin | Policier | Sergent (autres fonctions) |
+| Matricule  | Nom            | Rôle       | Grade                      |
+| ---------- | -------------- | ----------- | -------------------------- |
+| `PO-001` | Massyle Riahi  | Direction   | Directeur général        |
+| `SM-002` | Eric Tremblay  | Superviseur | Lieutenant                 |
+| `PL-003` | Chrysler Jean  | Policier    | Sergent (autres fonctions) |
+| `PL-004` | Michael Fortin | Policier    | Sergent (autres fonctions) |
 
 **Compte rapide de l'équipe** (tests en local) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve. Pour l'ajouter à une base déjà créée, sans rien effacer :
 
@@ -70,7 +71,7 @@ npm run dev
 
 Pour lancer une seule partie : `npm run dev:backend` ou `npm run dev:frontend`.
 
-En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse.
+En développement, la connexion GitHub lit `backend/.env`. L'application est alors sur le port 5173 : ajouter `http://localhost:5173/api/auth/github/callback` aux adresses de retour de l'OAuth App, et mettre `GITHUB_CALLBACK_URL` à cette adresse. `SOCKET_ALLOWED_ORIGINS` accepte par défaut `http://localhost:5173` et `http://localhost:8080`; cette liste exacte est aussi utilisée pour refuser les requêtes HTTP mutantes venant d'une autre origine. Pour un autre hôte, configurer ses origines exactes dans l'environnement du backend.
 
 ## Tests
 
@@ -81,9 +82,9 @@ npm test
 
 Les tests du backend (Jest + Supertest) simulent la base de données : PostgreSQL n'est pas nécessaire. Les tests d'intégration `tests/integration/` s'exécutent seulement si une base est disponible.
 
-La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle lance les tests, démarre réellement le serveur, compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
+La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
 
-Pour lancer la même vérification en local : `npm run verifier` à la racine.
+Pour lancer la même vérification en local : `npm run verifier` à la racine. Les avis modérés de l'audit npm restent visibles dans la sortie; ils ne bloquent pas le push.
 
 ---
 
@@ -112,13 +113,13 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 
 ## Structure du dépôt
 
-| Dossier | Contenu |
-|---|---|
-| `backend/` | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
-| `frontend/` | Application React (Vite), servie par nginx en production |
-| `docs/` | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives |
-| `deploy/` | Déploiement sur un serveur avec les images publiées sur ghcr.io |
-| `scripts/` | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`) |
+| Dossier       | Contenu                                                                                                                      |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `backend/`  | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
+| `frontend/` | Application React (Vite), servie par nginx en production                                                                     |
+| `docs/`     | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives                                  |
+| `deploy/`   | Déploiement sur un serveur avec les images publiées sur ghcr.io                                                            |
+| `scripts/`  | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`)                                     |
 
 ## Liens
 
@@ -128,7 +129,7 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 - [Backlog produit](docs/02-backlog.md)
 - [Conception technique](docs/03-conception.md)
 - [Plan des sprints](docs/04-sprints.md)
-- [Organisation de l'équipe](docs/05-equipe.md)
+- [Organisation de l&#39;équipe](docs/05-equipe.md)
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
 - [Maquettes](docs/maquettes/README.md)

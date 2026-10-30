@@ -1,7 +1,8 @@
 import { verifyToken as verifyJwt } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
+import { getAccountAuthInfo } from '../utils/account-status.js';
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
   // En-tête « Bearer TOKEN » ou cookie de session posé au login
   const token = tokenFrom(req.headers);
 
@@ -11,11 +12,24 @@ export const verifyToken = (req, res, next) => {
 
   try {
     const decoded = verifyJwt(token);
-    
+
+    const account = await getAccountAuthInfo(decoded.id);
+    if (!account?.is_active) {
+      return res.status(401).json({ message: 'Compte désactivé.' });
+    }
+
     // Attache les informations de l'agent connecté à la requête
-    req.user = decoded; 
-    next();
+    req.user = {
+      id: account.id,
+      badge_number: account.badge_number,
+      role: account.role,
+      grade: account.grade,
+    };
+    return next();
   } catch (error) {
-    return res.status(403).json({ message: 'Jeton invalide ou expiré.' });
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError' || error.name === 'NotBeforeError') {
+      return res.status(403).json({ message: 'Jeton invalide ou expiré.' });
+    }
+    return next(error);
   }
 };

@@ -10,16 +10,16 @@
 
 ### Récits prévus
 
-| # | Récit | Points |
-|---|---|---|
-| 1 | S'authentifier avec badge et mot de passe | 5 |
-| 2 | Consulter la liste des personnes recherchées | 2 |
-| 3 | Voir le profil complet d'un dossier | 3 |
-| 4 | Ajouter un nouveau dossier (policier) | 5 |
-| 5 | Retirer un dossier (superviseur) | 3 |
-| 6 | Mettre à jour le statut d'un dossier | 3 |
-| 7 | Filtrer et rechercher les dossiers | 3 |
-| **Total** | | **24 pts** |
+| #               | Récit                                        | Points           |
+| --------------- | --------------------------------------------- | ---------------- |
+| 1               | S'authentifier avec badge et mot de passe     | 5                |
+| 2               | Consulter la liste des personnes recherchées | 2                |
+| 3               | Voir le profil complet d'un dossier           | 3                |
+| 4               | Ajouter un nouveau dossier (policier)         | 5                |
+| 5               | Retirer un dossier (superviseur)              | 3                |
+| 6               | Mettre à jour le statut d'un dossier         | 3                |
+| 7               | Filtrer et rechercher les dossiers            | 3                |
+| **Total** |                                               | **24 pts** |
 
 ### Capacité
 
@@ -28,6 +28,7 @@
 - On vise 24 points — plan tendu mais réaliste si on ne dévie pas.
 
 ### Notions disponibles
+
 Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 
 ### Engagement réel du sprint 1
@@ -35,7 +36,7 @@ Docker, PostgreSQL, React Router v7 (SSR), tests et CI/GitHub Actions.
 - **Objectif en une phrase** : un agent se connecte et gère le registre des personnes recherchées de bout en bout (liste, fiche, ajout, statut, retrait), dans une application qui démarre avec `docker compose up` et dont la CI est verte.
 - **Récits engagés** : #1, #2, #3, #4, #5, #6, #7 du tableau ci-dessus, soit **24 points** (tickets GitHub #3 à #9).
 - **Capacité** : 4 membres × 4 h/semaine × 3 semaines = 48 h, soit environ **24 points** (1 point ≈ 2 h).
-- **Ordre d'abandon** : celui de la section [Ordre d'abandon](#ordre-dabandon); pour le sprint 1, le filtre avancé (#7 du tableau, ticket #9) part en premier, la recherche par nom reste.
+- **Ordre d'abandon** : celui de la section [Ordre d&#39;abandon](#ordre-dabandon); pour le sprint 1, le filtre avancé (#7 du tableau, ticket #9) part en premier, la recherche par nom reste.
 - **Responsable de la mêlée** : Eric (Scrum Master).
 - **Ajouts en cours de sprint** (non engagés, donc hors vélocité) : le temps réel a été préparé dès le sprint 1 (Socket.IO, tableau de bord en direct), ainsi que la gestion des rôles et la page « Mon profil » (photo, changement de mot de passe).
 
@@ -75,16 +76,17 @@ Bilan en cinq lignes :
 
 ### Récits prévus
 
-| # | Récit | Points |
-|---|---|---|
-| 8 | Créer le compte d'un nouvel agent | 3 |
-| 14 | Désactiver un compte agent | 2 |
-| 9 | Tableau de bord temps réel (alertes et mises à jour) | 8 |
-| 10 | Diffuser une alerte urgente | 5 |
-| 11 | Signaler une observation terrain | 5 |
-| **Total** | | **23 pts** |
+| #               | Récit                                                 | Points           |
+| --------------- | ------------------------------------------------------ | ---------------- |
+| 8               | Créer le compte d'un nouvel agent                     | 3                |
+| 14              | Désactiver un compte agent                            | 2                |
+| 9               | Tableau de bord temps réel (alertes et mises à jour) | 8                |
+| 10              | Diffuser une alerte urgente                            | 5                |
+| 11              | Signaler une observation terrain                       | 5                |
+| **Total** |                                                        | **23 pts** |
 
 ### Notions disponibles
+
 Authentification externe (OAuth 2 / OIDC), rôles et autorisations, programmation sécurisée, protocole WebSocket / Socket.IO (début).
 
 ### Ce que l'énoncé exige pour la bêta
@@ -145,10 +147,12 @@ On ne coupe jamais #50 (connexion GitHub), #11 (temps réel) ni #12 (alerte urge
 | Changement | Responsable | Où on en est au 15 octobre |
 |---|---|---|
 | Une PR par ticket | Chrysler | Appliqué : chaque ajout du sprint a sa branche, son ticket et sa PR |
-| Revue de chaque PR dans les 24 h, avec un commentaire concret | Chrysler | **Pas appliqué** : les 8 PR du sprint ont été fusionnées sans revue, et la protection de `main` n'exige aucune approbation. On demande la revue après coup et on passe la protection à 1 approbation |
-| Journal commis à la fin de chaque bloc | Michael | **Pas appliqué** : aucune entrée depuis le 6 octobre. On rattrape les blocs du 8 et du 9 octobre |
+| Revue de chaque PR dans les 24 h, avec un commentaire concret | Chrysler | **Pas appliqué** : les 8 PR du sprint ont été fusionnées sans revue, et la protection de `main` n'exige aucune approbation. **À faire** : demander les revues après coup et configurer `main` pour exiger 1 approbation |
+| Journal commis à la fin de chaque bloc | Michael | **Pas appliqué** : le journal s'arrête au 6 octobre. Les blocs du 8 et du 9 octobre restent à documenter; aucune entrée rétrospective n'est ajoutée sans source vérifiable |
 | Tickets déplacés dans le Project à chaque mêlée | Massyle | En partie : les tickets des ajouts sont créés, assignés et fermés par leurs PR. Les récits engagés n'ont pas bougé |
 | Chaque membre responsable d'au moins un récit | Eric | Fait dans le tableau ci-dessus |
+
+**Contrôle documentaire du point 9** : la consultation des revues GitHub pour les PR #51, #52, #60, #61, #68, #69, #70 et #72 n'a renvoyé aucune revue enregistrée. Une recherche dans le dépôt n'a trouvé aucun relevé de burndown; le responsable confirme ne pas disposer de données fiables pour les blocs manquants. Aucun graphique ni journal rétrospectif n'est donc reconstitué. La protection de `main` et le Project ne sont pas modifiés par ce constat.
 
 ### Travail réalisé par Massyle (au 15 octobre)
 
@@ -176,17 +180,18 @@ Toutes ces PR ont été fusionnées **sans revue d'un coéquipier**, ce qui ne r
 
 ### Récits prévus
 
-| # | Récit | Points |
-|---|---|---|
-| 12 | Voir les agents connectés en temps réel | 3 |
-| 13 | Gestion de la concurrence (verrouillage optimiste) | 8 |
-| 15 | Historique des signalements sur un dossier | 3 |
-| 16 | Journal d'audit des actions sensibles | 5 |
-| 17 | Statistiques globales (Could) | 5 |
-| + | Déploiement, peaufinage, tests e2e | — |
-| **Total** | | **~24 pts** |
+| #               | Récit                                             | Points            |
+| --------------- | -------------------------------------------------- | ----------------- |
+| 12              | Voir les agents connectés en temps réel          | 3                 |
+| 13              | Gestion de la concurrence (verrouillage optimiste) | 8                 |
+| 15              | Historique des signalements sur un dossier         | 3                 |
+| 16              | Journal d'audit des actions sensibles              | 5                 |
+| 17              | Statistiques globales (Could)                      | 5                 |
+| +               | Déploiement, peaufinage, tests e2e                | —                |
+| **Total** |                                                    | **~24 pts** |
 
 ### Notions disponibles
+
 Socket.IO (présence, état partagé), gestion de la concurrence, déploiement.
 
 ---
