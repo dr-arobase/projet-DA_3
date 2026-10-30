@@ -113,7 +113,7 @@ export default function Utilisateurs() {
                 <th scope="col">Rôle et grade</th>
                 <th scope="col">État</th>
                 <th scope="col">Créé</th>
-                <th scope="col"><span className="visuellement-cache">Actions</span></th>
+                <th scope="col">Actions</th>
               </tr>
             </thead>
             <tbody>
