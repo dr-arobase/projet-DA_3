@@ -158,18 +158,21 @@ export default function Utilisateurs() {
                     </span>
                   </td>
                   <td>{formaterDate(a.created_at)}</td>
-                  <td className="pages-actions">
-                    {peutPromouvoir && promotion?.id !== a.id && a.id !== utilisateur.id && (
-                      <button type="button" className="registre-lien" onClick={() => setPromotion({ id: a.id, role: a.role, grade: a.grade })}>
-                        Promouvoir
-                      </button>
-                    )}
-                    {/* On ne se désactive pas soi-même : on perdrait l'accès */}
-                    {a.id !== utilisateur.id && (
-                      <button type="button" className="registre-lien" onClick={() => basculerActif(a)}>
-                        {a.is_active ? 'Désactiver' : 'Réactiver'}
-                      </button>
-                    )}
+                  <td>
+                    {/* Le flex va sur une div : un <td> en display:flex sort de la ligne et décale les traits */}
+                    <div className="pages-actions">
+                      {peutPromouvoir && promotion?.id !== a.id && a.id !== utilisateur.id && (
+                        <button type="button" className="registre-lien" onClick={() => setPromotion({ id: a.id, role: a.role, grade: a.grade })}>
+                          Promouvoir
+                        </button>
+                      )}
+                      {/* On ne se désactive pas soi-même : on perdrait l'accès */}
+                      {a.id !== utilisateur.id && (
+                        <button type="button" className="registre-lien" onClick={() => basculerActif(a)}>
+                          {a.is_active ? 'Désactiver' : 'Réactiver'}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
