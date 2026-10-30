@@ -23,6 +23,18 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers,
+  disconnectUser: jest.fn(),
+}));
+
+// Le middleware d'authentification relit le compte de l'agent connecté : il est toujours actif ici.
+// (Le destinataire, lui, est lu via pool.query et peut être désactivé dans le test.)
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: `PL-00${id}`, role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
 }));
 
 // Le disque : on note ce qui serait écrit ou effacé, sans rien écrire
