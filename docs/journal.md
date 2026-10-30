@@ -67,7 +67,7 @@ Décisions prises : Finalisation du Sprint 0 et remise du travail dans les déla
 
 **JOURNAL DE BORD — SPRINT 2**
 
-**Bloc 1 — jeudi 8 octobre 2026 (8 h - 11 h)**
+**Bloc 1 — mercredi 7 octobre 2026 (8 h - 11 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
 •   Cadrage du sprint 2 et vérification des tickets à traiter pour la bêta.
@@ -80,7 +80,7 @@ Décisions prises :
 •   Les entrées du journal sont complétées à la fin de chaque bloc pour éviter les écritures après coup.
 •   Chaque membre est responsable d'au moins un récit ou d'un lot de validation, avec une attente de revue avant toute fusion.
 
-**Bloc 2 — jeudi 9 octobre 2026 (15 h - 18 h)**
+**Bloc 2 — vendredi 9 octobre 2026 (15 h - 18 h)**
 Présences : Massyle, Eric, Chrysler, Michael
 Ce qui a avancé :
 •   Vérification des tâches de documentation (README, équipe, risques, journal) et préparation du nettoyage des dossiers de support.
@@ -94,7 +94,7 @@ Décisions prises :
 •   Le dossier `docs/retrospectives/plan-equipe/` est retiré car il correspond au plan du sprint 1 et ne doit plus être conservé dans la documentation de la bêta.
 
 
-**Bloc 3 — lundi 19 octobre 2026 (Point de contrôle 1)**
+**Bloc 3 — mercredi 21 octobre 2026 (Point de contrôle 1)**
 Présences : Massyle, Eric, Chrysler, Michael
 Tickets suivis : #10, #12, #16, #53, #54, #55, #62, #63, #64, #65, #66
 Ce qui a avancé :
@@ -109,7 +109,7 @@ Décisions prises :
 •   Les fonctionnalités d'interface sont livrées par petites PR liées à leurs tickets, puis vérifiées sur les rôles agent et superviseur.
 
 
-**Bloc 4 — jeudi 22 octobre 2026**
+**Bloc 4 — vendredi 23 octobre 2026**
 Présences : Massyle, Eric, Chrysler, Michael
 Tickets suivis : #10, #12, #16, #62, #64, #65, #66
 Ce qui a avancé :
@@ -125,7 +125,7 @@ Décisions prises :
 •   La revue finale se fera sur `main` après intégration des correctifs, sans contourner la CI.
 
 
-**Bloc 5 — lundi 26 octobre 2026 (Point de contrôle 2)**
+**Bloc 5 — mercredi 28 octobre 2026 (Point de contrôle 2)**
 Présences : Massyle, Eric, Chrysler, Michael
 Tickets suivis : #11, #12, #16, #53, #54, #55, #62, #63, #64, #65, #66
 Ce qui a avancé :
@@ -140,7 +140,7 @@ Décisions prises :
 •   Le récit #11 est considéré livré seulement après fusion de cette PR et ajout d'une trace dans son ticket.
 
 
-**Bloc 6 — jeudi 29 octobre 2026 (Rétrospective et remise)**
+**Bloc 6 — vendredi 30 octobre 2026 (Rétrospective et remise)**
 Présences : Massyle, Eric, Chrysler, Michael
 Tickets suivis : #11, #12, #16 et les tickets de la bêta #53 à #66
 Ce qui a avancé :
