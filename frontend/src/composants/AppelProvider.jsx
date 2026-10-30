@@ -4,6 +4,7 @@ import { nomAgent } from '../agents.js';
 import { AppelContext } from './AppelContext.js';
 import { useEvenement, useTempsReel } from './TempsReelContext.js';
 import Avatar from './Avatar.jsx';
+import { messageErreurMedia } from '../erreurMedia.js';
 
 // Appels audio et vidéo à deux (#56), en WebRTC : le son et l'image vont directement d'un navigateur
 // à l'autre. Le serveur ne relaie que la signalisation (Socket.IO : call:invite, call:accept,
@@ -108,10 +109,9 @@ export default function AppelProvider({ children }) {
         audio: CONTRAINTES_AUDIO,
         video: video ? contraintesVideo('user') : false,
       });
-    } catch {
-      throw new Error(video
-        ? 'Micro ou caméra refusé : autorisez-les pour ce site dans le navigateur, puis réessayez.'
-        : 'Micro refusé : autorisez le micro pour ce site dans le navigateur, puis réessayez.');
+    } catch (err) {
+      console.error('getUserMedia (appel) :', err?.name, err?.message);
+      throw new Error(messageErreurMedia(err, video));
     }
     setFluxLocal(local.current);
     if (video) {
