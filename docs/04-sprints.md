@@ -154,21 +154,58 @@ On ne coupe jamais #50 (connexion GitHub), #11 (temps réel) ni #12 (alerte urge
 
 **Contrôle documentaire du point 9** : la consultation des revues GitHub pour les PR #51, #52, #60, #61, #68, #69, #70 et #72 n'a renvoyé aucune revue enregistrée. Une recherche dans le dépôt n'a trouvé aucun relevé de burndown; le responsable confirme ne pas disposer de données fiables pour les blocs manquants. Aucun graphique ni journal rétrospectif n'est donc reconstitué. La protection de `main` et le Project ne sont pas modifiés par ce constat.
 
-### Travail réalisé par Massyle (au 15 octobre)
+### Travail réalisé par Massyle — sprint 2
+
+Établi à partir de l'historique GitHub du 7 au 30 octobre 2026 (PR fusionnées, commits sur `main`, tickets). Compte GitHub : `dr-arobase` / `massyle`. Les PR #38, #41 et #42, fusionnées le 7 octobre, terminent la remise du sprint 1 et ne sont pas comptées ici.
+
+**7 octobre : nettoyage du dépôt et écrans manquants**
 
 | PR | Ticket(s) | Contenu |
 |---|---|---|
-| #51 | #50 | Connexion GitHub (OAuth 2) avec la bibliothèque arctic : `state` vérifié contre la falsification, compte jamais vu créé avec le rôle policier, 18 tests (décision 10) |
-| #60 | #53 | Annuaire : prénom, nom et matricule des agents connectés |
-| #61 | #54, #55 | Messagerie : seulement les conversations existantes, recherche d'un agent pour en commencer une, groupes de discussion (le créateur gère les membres, un non-membre reçoit `403`), 29 tests dont 4 sur un vrai PostgreSQL |
-| #68 | #62 | Accents « ?? » réparés dans les données de départ, fichiers SQL forcés en UTF-8 |
-| #69 | #63 | Notification des alertes et des communiqués sur toutes les pages, et notification du navigateur en arrière-plan |
-| #70 | #64, #65, #66 | Dernière adresse connue d'un dossier placée sur la carte (géocodage Nominatim côté serveur, décision 11), adresse d'un signalement écrite à la main, recherche de dossier par nom ou numéro |
-| #72 | #71 | Les erreurs ne renvoient plus de détail interne au navigateur (chemin du serveur, message SQL) |
-| #52 | — | Compte rapide de l'équipe ajouté au démarrage s'il manque |
-| — | #67 | Vérification de bout en bout à travers nginx avec de vrais clients Socket.IO : 59 vérifications sur 59, puis audit de sécurité et des cas limites (voir les tickets créés le 15 octobre) |
+| [#44](https://github.com/dr-arobase/projet-DA_3/pull/44), [#45](https://github.com/dr-arobase/projet-DA_3/pull/45), [#46](https://github.com/dr-arobase/projet-DA_3/pull/46) | #43 | Fichiers inutilisés retirés : routeur `dossier.js` jamais branché, `/api/dossiers` de Swagger, `yamljs`, dossier `idée/` et copie de l'énoncé |
+| [#47](https://github.com/dr-arobase/projet-DA_3/pull/47) | — | Docker : dossier des photos de profil (`uploads`) accessible en écriture |
+| [#48](https://github.com/dr-arobase/projet-DA_3/pull/48) | — | Pages Alertes, Communiqués, Annuaire, Statistiques, Utilisateurs et page 404 |
+| [#49](https://github.com/dr-arobase/projet-DA_3/pull/49) | — | Messagerie privée et carte des signalements (premières versions) |
 
-Toutes ces PR ont été fusionnées **sans revue d'un coéquipier**, ce qui ne respecte pas notre définition de « terminé ». Une revue après coup est demandée pour chacune, voir le tableau des changements ci-dessus.
+**15 et 16 octobre : récits de la bêta et audit**
+
+| PR | Ticket(s) | Contenu |
+|---|---|---|
+| [#51](https://github.com/dr-arobase/projet-DA_3/pull/51) | #50 | Connexion GitHub (OAuth 2) avec la bibliothèque arctic : `state` vérifié contre la falsification, compte jamais vu créé avec le rôle policier, 18 tests (décision 10) |
+| [#60](https://github.com/dr-arobase/projet-DA_3/pull/60) | #53 | Annuaire : prénom, nom et matricule des agents connectés |
+| [#61](https://github.com/dr-arobase/projet-DA_3/pull/61) | #54, #55 | Messagerie : seulement les conversations existantes, recherche d'un agent, groupes de discussion (le créateur gère les membres, un non-membre reçoit `403`), 29 tests dont 4 sur un vrai PostgreSQL |
+| [#68](https://github.com/dr-arobase/projet-DA_3/pull/68) | #62 | Accents « ?? » réparés dans les données de départ, fichiers SQL forcés en UTF-8 |
+| [#69](https://github.com/dr-arobase/projet-DA_3/pull/69) | #63 | Notification des alertes et des communiqués sur toutes les pages, et notification du navigateur en arrière-plan |
+| [#70](https://github.com/dr-arobase/projet-DA_3/pull/70) | #64, #65, #66 | Dernière adresse connue d'un dossier placée sur la carte (géocodage Nominatim côté serveur, décision 11), adresse d'un signalement écrite à la main, recherche de dossier par nom ou numéro |
+| [#72](https://github.com/dr-arobase/projet-DA_3/pull/72) | #71 | Les erreurs ne renvoient plus de détail interne au navigateur (chemin du serveur, message SQL) |
+| [#52](https://github.com/dr-arobase/projet-DA_3/pull/52) | — | Compte rapide de l'équipe ajouté au démarrage s'il manque |
+| [#116](https://github.com/dr-arobase/projet-DA_3/pull/116) | — | Engagement du sprint 2 écrit dans ce document (en retard, voir plus haut) |
+| — | #67 | Vérification de bout en bout à travers nginx avec de vrais clients Socket.IO (59 vérifications sur 59), puis audit de sécurité et des cas limites : 61 tickets créés le 15 octobre (#73 à #133) et répartis dans l'équipe |
+
+Aucun commit de Massyle entre le 17 et le 27 octobre.
+
+**28 au 30 octobre : mise en ligne, intégration et messagerie**
+
+| PR | Ticket(s) | Contenu |
+|---|---|---|
+| [#134](https://github.com/dr-arobase/projet-DA_3/pull/134), [#135](https://github.com/dr-arobase/projet-DA_3/pull/135) | — | Frontend publié sur GitHub Pages, puis redirection de GitHub Pages vers l'application en ligne |
+| — | — | Déploiement sur une machine virtuelle Azure le 28 octobre : Caddy en HTTPS devant les images Docker publiées par la CI, mise à jour automatique toutes les 5 minutes depuis `main`, connexion GitHub configurée pour cette adresse |
+| [#139](https://github.com/dr-arobase/projet-DA_3/pull/139) | #12, #74, #77, #83, #84 | Intégration du travail de Chrysler (10 commits de Chrysler conservés, 5 commits d'intégration) : validations, permissions et logique déplacée dans les services |
+| commit [`4bf17a5`](https://github.com/dr-arobase/projet-DA_3/commit/4bf17a5) | — | Clé JWT réelle retirée des fichiers `.env.example` (dans la PR #150 d'Eric) |
+| [#142](https://github.com/dr-arobase/projet-DA_3/pull/142) | #141 | Nombre de messages non lus sur le lien Messagerie du menu |
+| [#145](https://github.com/dr-arobase/projet-DA_3/pull/145) | #143, #144 | Modifier un message pendant 15 minutes, le supprimer |
+| [#146](https://github.com/dr-arobase/projet-DA_3/pull/146) | #57, #59 | Fichiers, images, GIF et messages vocaux dans la messagerie |
+| [#147](https://github.com/dr-arobase/projet-DA_3/pull/147) | #56 | Appels audio et vidéo entre deux agents (WebRTC, décision 14) |
+| [#148](https://github.com/dr-arobase/projet-DA_3/pull/148), [#149](https://github.com/dr-arobase/projet-DA_3/pull/149), [#152](https://github.com/dr-arobase/projet-DA_3/pull/152) | #58 | Nouvel affichage du fil de messagerie, lecteur des messages vocaux, sélecteur d'émojis, fond clair |
+| [#153](https://github.com/dr-arobase/projet-DA_3/pull/153) | — | Boutons d'appel lisibles et toujours cliquables |
+| [#155](https://github.com/dr-arobase/projet-DA_3/pull/155) | — | Fondations de la direction de design E : menu latéral réductible, barre de navigation en bas sur téléphone, polices (décision 17) |
+| [#158](https://github.com/dr-arobase/projet-DA_3/pull/158) | — | Réactions emoji aux messages, appels utilisables sur téléphone et vers un agent hors ligne (appel manqué), page Utilisateurs (recherche, filtres, pagination, cartes sur téléphone), nouvelle page de connexion, pagination de l'Annuaire et corrections de pagination du Registre et des Alertes |
+
+**Revues et méthode** :
+- Les 28 PR de Massyle du sprint 2 ont été fusionnées **sans revue d'un coéquipier**, ce qui ne respecte pas notre définition de « terminé ».
+- Massyle a approuvé la PR [#156](https://github.com/dr-arobase/projet-DA_3/pull/156) de Michael et revu la PR [#137](https://github.com/dr-arobase/projet-DA_3/pull/137) d'Eric.
+- Le travail est arrivé en deux grands lots (15-16 octobre, puis 28-30 octobre), au lieu d'être réparti sur le sprint.
+- L'étiquette `beta-v1` n'a pas été posée à l'échéance du 29 octobre.
 
 ### Travail réalisé par Michael — sprint 2
 
