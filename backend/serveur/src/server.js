@@ -1,7 +1,9 @@
 import app from './app.js';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
-import registerSockets from './sockets/index.js';
+import registerSockets, { disconnectUser } from './sockets/index.js';
+import { listenForAccountDeactivations } from './utils/account-status.js';
+import { assertJwtSecret } from './utils/jwt.js';
 
 dotenv.config();
 
@@ -9,10 +11,13 @@ const PORT = process.env.PORT || 3000;
 
 async function startServer() {
   try {
+    assertJwtSecret();
+
     // Initialisation du pool ou des tables si nécessaire
     if (typeof initializeDatabase === 'function') {
       await initializeDatabase();
     }
+    await listenForAccountDeactivations((userId) => disconnectUser(userId));
 
     const server = app.listen(PORT, () => {
       console.log(`Serveur CrimeTracker démarré sur http://localhost:${PORT}`);

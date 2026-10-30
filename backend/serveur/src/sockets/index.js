@@ -1,6 +1,8 @@
 import { Server } from 'socket.io';
 import { verifyToken } from '../utils/jwt.js';
 import { tokenFrom } from '../utils/session.js';
+import { getAccountAuthInfo } from '../utils/account-status.js';
+import { getAllowedOrigins } from '../utils/allowed-origins.js';
 import { registerCallHandlers } from './appels.js';
 
 let io;
@@ -13,17 +15,28 @@ function getPresenceList() {
 }
 
 export default function registerSockets(server) {
+  const allowedOrigins = getAllowedOrigins();
   io = new Server(server, {
-    cors: { origin: '*' }
+    cors: { origin: allowedOrigins, credentials: true }
   });
 
   // Authentification au moment de la connexion, via le même jeton JWT que l'API
-  io.use((socket, next) => {
+  io.use(async (socket, next) => {
     try {
       // Jeton passé explicitement (scripts) ou cookie de session (navigateur)
+      const origin = socket.handshake.headers.origin;
+      if (origin && !allowedOrigins.includes(origin)) throw new Error('Origine non autorisée');
       const token = socket.handshake.auth?.token || tokenFrom(socket.handshake.headers);
       if (!token) throw new Error('Jeton manquant');
-      socket.user = verifyToken(token);
+      const decoded = verifyToken(token);
+      const account = await getAccountAuthInfo(decoded.id);
+      if (!account?.is_active) throw new Error('Compte désactivé');
+      socket.user = {
+        id: account.id,
+        badge_number: account.badge_number,
+        role: account.role,
+        grade: account.grade,
+      };
       next();
     } catch {
       next(new Error('Authentification Socket.IO échouée'));
@@ -62,4 +75,8 @@ const roomOf = (userId) => `agent:${userId}`;
 // Envoie un événement aux seuls agents indiqués (ex. un message privé : destinataire et expéditeur)
 export function emitToUsers(userIds, event, payload) {
   if (io) io.to([...new Set(userIds)].map(roomOf)).emit(event, payload);
+}
+
+export function disconnectUser(userId) {
+  if (io) io.in(roomOf(userId)).disconnectSockets(true);
 }

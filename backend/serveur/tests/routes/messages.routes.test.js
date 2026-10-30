@@ -17,10 +17,21 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const emitToUsers = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers,
+  disconnectUser,
+}));
+
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-003', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
