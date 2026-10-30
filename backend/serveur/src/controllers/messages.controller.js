@@ -126,6 +126,8 @@ export const updateMessage = async (req, res) => {
   try {
     const existant = await messageDeLAgent(req, res, 'modifier');
     if (!existant) return undefined;
+    // Un appel manqué est un événement, pas un texte : il se supprime, il ne se réécrit pas
+    if (existant.kind) return res.status(400).json({ message: 'Ce message ne peut pas être modifié' });
     const age = Date.now() - new Date(existant.created_at).getTime();
     if (age > messageModel.EDIT_WINDOW_MINUTES * 60 * 1000) return delaiDepasse();
 
@@ -246,6 +248,40 @@ export const getAttachment = async (req, res) => {
     });
   } catch (error) {
     console.error('Erreur lors de la lecture du fichier:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// Une seule emoji (avec ses variantes : couleur de peau, drapeau, séquence ZWJ), pas du texte
+const EMOJI = /^(?:\p{Extended_Pictographic}|\p{Regional_Indicator}|\p{Emoji_Component}|\u200d|\ufe0f)+$/u;
+export const MAX_EMOJI = 16; // message_reaction.emoji VARCHAR(16)
+
+// POST /api/messages/:messageId/reactions { emoji } : réagir à un message de sa conversation ou de son groupe.
+// La même emoji retire la réaction, une autre la remplace. Les participants la voient en direct.
+export const reactToMessage = async (req, res) => {
+  const emoji = typeof req.body?.emoji === 'string' ? req.body.emoji.trim() : '';
+  if (!emoji || emoji.length > MAX_EMOJI || !EMOJI.test(emoji) || /^[\d#*]+$/.test(emoji)) {
+    return res.status(400).json({ message: 'La réaction doit être une emoji' });
+  }
+
+  try {
+    const message = await messageModel.findById(lireId(req.params.messageId));
+    if (!message || message.deleted_at) return res.status(404).json({ message: 'Message introuvable' });
+
+    const autorise = message.group_id
+      ? await groupModel.isMember(message.group_id, req.user.id)
+      : [message.sender_id, message.recipient_id].includes(req.user.id);
+    if (!autorise) return res.status(403).json({ message: 'Ce message appartient à une autre conversation' });
+
+    const reactions = await messageModel.setReaction(message.id, req.user.id, emoji);
+    const evenement = {
+      id: message.id, sender_id: message.sender_id, recipient_id: message.recipient_id,
+      group_id: message.group_id, reactions,
+    };
+    emitToUsers(await participants(message), 'message:reactions', evenement);
+    return res.json({ message: 'Réaction enregistrée', data: evenement });
+  } catch (error) {
+    console.error('Erreur lors de la réaction au message:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 };

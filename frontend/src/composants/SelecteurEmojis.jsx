@@ -10,7 +10,8 @@ const CATEGORIES = [
   { nom: 'Symboles', emojis: ['✅', '❌', '⚠️', '❗', '❓', '🔴', '🟢', '⏰', '🔒', '❤️', '🔥', '💯'] },
 ];
 
-export default function SelecteurEmojis({ onChoisir, onFermer }) {
+// verbe : début du libellé lu par les lecteurs d'écran (« Insérer 😀 », « Réagir avec 😀 »)
+export default function SelecteurEmojis({ onChoisir, onFermer, verbe = 'Insérer' }) {
   const [categorie, setCategorie] = useState(0);
   const boite = useRef(null);
 
@@ -43,7 +44,7 @@ export default function SelecteurEmojis({ onChoisir, onFermer }) {
       </div>
       <div className="emojis-grille" role="tabpanel">
         {CATEGORIES[categorie].emojis.map((emoji) => (
-          <button key={emoji} type="button" aria-label={`Insérer ${emoji}`} onClick={() => onChoisir(emoji)}>
+          <button key={emoji} type="button" aria-label={`${verbe} ${emoji}`} onClick={() => onChoisir(emoji)}>
             {emoji}
           </button>
         ))}

@@ -15,20 +15,30 @@ const DELAI_SONNERIE = 30 * 1000;
 const DUREE_AVIS = 6000;
 
 const dureeLisible = (ms) => {
-  const s = Math.floor(ms / 1000);
+  // Jamais négatif : l'horloge de l'écran peut retarder d'une seconde au tout début de l'appel
+  const s = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 const nomDe = (agent) => (agent?.first_name ? nomAgent(agent) : agent?.badge_number ?? 'L\'agent');
 
-// Flux audio ou vidéo branché sur un élément <audio> ou <video>
-function Media({ flux, video, muet = false, className }) {
+// Micro : suppression d'écho et de bruit (haut-parleur du téléphone, rue, voiture).
+// Caméra : avant par défaut, en qualité modérée pour passer sur un réseau mobile.
+const CONTRAINTES_AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+const contraintesVideo = (face = 'user') => ({ facingMode: face, width: { ideal: 640 }, height: { ideal: 480 } });
+
+// Flux audio ou vidéo branché sur un élément <audio> ou <video>.
+// Sur téléphone (Safari surtout), la lecture automatique peut être refusée : onBloque le signale.
+function Media({ flux, video, muet = false, className, onBloque }) {
   const ref = useRef(null);
   useEffect(() => {
-    if (ref.current) ref.current.srcObject = flux ?? null;
-  }, [flux]);
+    const el = ref.current;
+    if (!el) return;
+    el.srcObject = flux ?? null;
+    if (flux) el.play().catch(() => onBloque?.());
+  }, [flux, onBloque]);
   return video
     ? <video ref={ref} className={className} autoPlay playsInline muted={muet} />
-    : <audio ref={ref} autoPlay muted={muet} />;
+    : <audio ref={ref} autoPlay playsInline muted={muet} />;
 }
 
 export default function AppelProvider({ children }) {
@@ -40,6 +50,9 @@ export default function AppelProvider({ children }) {
   const [fluxLocal, setFluxLocal] = useState(null);
   const [fluxDistant, setFluxDistant] = useState(null);
   const [maintenant, setMaintenant] = useState(() => Date.now());
+  const [sonBloque, setSonBloque] = useState(false);
+  const [face, setFace] = useState('user'); // caméra avant ('user') ou arrière ('environment')
+  const [plusieursCameras, setPlusieursCameras] = useState(false);
 
   // Copies pour les gestionnaires d'événements (toujours l'appel en cours, sans attendre un rendu)
   const appelRef = useRef(null);
@@ -65,6 +78,8 @@ export default function AppelProvider({ children }) {
     setFluxDistant(null);
     setMicro(true);
     setCamera(true);
+    setSonBloque(false);
+    setFace('user');
     changerAppel(null);
     setAvis(message);
   }, [changerAppel]);
@@ -81,17 +96,29 @@ export default function AppelProvider({ children }) {
   }, [signaler, terminer]);
 
   async function ouvrirMicroEtCamera(video) {
+    // Hors https (ex. téléphone sur http://192.168.x.x:5173), le navigateur cache micro et caméra
+    if (!window.isSecureContext) {
+      throw new Error('Les appels exigent une adresse sécurisée (https). Ouvrez CrimeTracker par son adresse https, puis réessayez.');
+    }
     if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === 'undefined') {
       throw new Error('Ce navigateur ne permet pas les appels.');
     }
     try {
-      local.current = await navigator.mediaDevices.getUserMedia({ audio: true, video });
+      local.current = await navigator.mediaDevices.getUserMedia({
+        audio: CONTRAINTES_AUDIO,
+        video: video ? contraintesVideo('user') : false,
+      });
     } catch {
       throw new Error(video
         ? 'Micro ou caméra refusé : autorisez-les pour ce site dans le navigateur, puis réessayez.'
         : 'Micro refusé : autorisez le micro pour ce site dans le navigateur, puis réessayez.');
     }
     setFluxLocal(local.current);
+    if (video) {
+      // Téléphone : caméra avant et arrière, on propose de basculer
+      const appareils = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+      setPlusieursCameras(appareils.filter((a) => a.kind === 'videoinput').length > 1);
+    }
   }
 
   const creerConnexion = useCallback(() => {
@@ -132,11 +159,14 @@ export default function AppelProvider({ children }) {
     changerAppel({ phase: 'sortant', callId, agent, video });
     setAvis('');
     socket.emit('call:invite', { to: agent.id, callId, video }, (reponse) => {
-      if (reponse?.error && appelRef.current?.callId === callId) terminer(reponse.error);
+      if (appelRef.current?.callId !== callId) return;
+      if (reponse?.error) terminer(reponse.error);
+      // Hors ligne : le serveur garde l'appel ; ça sonne chez lui s'il se connecte pendant la sonnerie
+      else if (reponse?.horsLigne) changerAppel({ ...appelRef.current, horsLigne: true });
     });
     sonnerie.current = window.setTimeout(() => {
       if (appelRef.current?.callId === callId && appelRef.current.phase === 'sortant') {
-        raccrocher(`${nomDe(agent)} n'a pas répondu.`);
+        raccrocher(`${nomDe(agent)} n'a pas répondu. Un appel manqué lui a été laissé dans la messagerie.`);
       }
     }, DELAI_SONNERIE);
     return undefined;
@@ -278,6 +308,30 @@ export default function AppelProvider({ children }) {
     setMicro(!micro);
   }
 
+  // Caméra avant ↔ arrière : on remplace la piste vidéo envoyée, sans couper l'appel
+  async function changerDeCamera() {
+    const suivante = face === 'user' ? 'environment' : 'user';
+    try {
+      const flux = await navigator.mediaDevices.getUserMedia({ video: contraintesVideo(suivante) });
+      const nouvelle = flux.getVideoTracks()[0];
+      nouvelle.enabled = camera;
+      const envoi = connexion.current?.getSenders().find((x) => x.track?.kind === 'video');
+      await envoi?.replaceTrack(nouvelle);
+      local.current.getVideoTracks().forEach((piste) => { piste.stop(); local.current.removeTrack(piste); });
+      local.current.addTrack(nouvelle);
+      setFluxLocal(new MediaStream(local.current.getTracks()));
+      setFace(suivante);
+    } catch {
+      setAvis('Impossible de changer de caméra sur cet appareil.');
+    }
+  }
+
+  const sonRefuse = useCallback(() => setSonBloque(true), []);
+  function activerSon() {
+    document.querySelectorAll('.appel video, .appel audio').forEach((el) => el.play().catch(() => {}));
+    setSonBloque(false);
+  }
+
   function basculerCamera() {
     local.current?.getVideoTracks().forEach((piste) => { piste.enabled = !camera; });
     setCamera(!camera);
@@ -285,7 +339,7 @@ export default function AppelProvider({ children }) {
 
   const etat = appel && {
     entrant: `Appel ${appel.video ? 'vidéo' : 'audio'} entrant…`,
-    sortant: 'Ça sonne…',
+    sortant: appel.horsLigne ? 'Hors ligne · ça sonnera s\'il se connecte…' : 'Ça sonne…',
     connexion: 'Connexion…',
     'en-cours': dureeLisible(maintenant - (appel.debut ?? maintenant)),
   }[appel.phase];
@@ -295,7 +349,7 @@ export default function AppelProvider({ children }) {
       {children}
 
       {appel && (
-        <section className={`appel${appel.video ? ' video' : ''}`} role="dialog" aria-label={`Appel avec ${nomDe(appel.agent)}`}>
+        <section className={`appel${appel.video ? ' video' : ''} ${appel.phase}`} role="dialog" aria-label={`Appel avec ${nomDe(appel.agent)}`}>
           <header className="appel-entete">
             <Avatar utilisateur={appel.agent} className="avatar appel-avatar" />
             <div>
@@ -306,11 +360,15 @@ export default function AppelProvider({ children }) {
 
           {appel.video ? (
             <div className="appel-videos">
-              <Media flux={fluxDistant} video className="appel-distant" />
-              <Media flux={fluxLocal} video muet className="appel-local" />
+              <Media flux={fluxDistant} video className="appel-distant" onBloque={sonRefuse} />
+              <Media flux={fluxLocal} video muet className={`appel-local${face === 'user' ? ' miroir' : ''}`} />
             </div>
           ) : (
-            <Media flux={fluxDistant} />
+            <Media flux={fluxDistant} onBloque={sonRefuse} />
+          )}
+
+          {sonBloque && (
+            <button type="button" className="appel-son" onClick={activerSon}>Toucher pour activer le son</button>
           )}
 
           <div className="appel-boutons">
@@ -327,6 +385,11 @@ export default function AppelProvider({ children }) {
                 {appel.video && (
                   <button type="button" aria-pressed={!camera} onClick={basculerCamera}>
                     {camera ? 'Couper la caméra' : 'Réactiver la caméra'}
+                  </button>
+                )}
+                {appel.video && plusieursCameras && (
+                  <button type="button" onClick={changerDeCamera}>
+                    {face === 'user' ? 'Caméra arrière' : 'Caméra avant'}
                   </button>
                 )}
                 <button type="button" className="appel-raccrocher" onClick={() => raccrocher()}>Raccrocher</button>

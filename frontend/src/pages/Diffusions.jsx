@@ -10,6 +10,7 @@ import '../styles/registre.css';
 import '../styles/pages.css';
 
 const MAX_MESSAGE = 500; // alert.message VARCHAR(500)
+const PAR_PAGE = 20;
 
 // Une alerte est une diffusion « urgent », un communiqué une diffusion « info » (table alert)
 const TYPES = {
@@ -37,7 +38,8 @@ export default function Diffusions({ severite }) {
 
   const [diffusions, setDiffusions] = useState([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [nouvelles, setNouvelles] = useState(0); // arrivées en direct pendant qu'on lit une page plus ancienne
   const [chargement, setChargement] = useState(true);
   const [erreur, setErreur] = useState('');
   const [message, setMessage] = useState('');
@@ -47,11 +49,12 @@ export default function Diffusions({ severite }) {
   useEffect(() => {
     let actif = true;
     setChargement(true);
-    api.listerAlertes({ severity: severite, page, limit: 20 })
+    api.listerAlertes({ severity: severite, page, limit: PAR_PAGE })
       .then((resultat) => {
         if (!actif) return;
         setDiffusions(resultat.data);
-        setTotalPages(resultat.totalPages ?? 1);
+        setTotal(resultat.total ?? resultat.data.length);
+        if (page === 1) setNouvelles(0);
       })
       .catch((err) => actif && setErreur(err.message))
       .finally(() => actif && setChargement(false));
@@ -60,11 +63,23 @@ export default function Diffusions({ severite }) {
 
   useEffect(() => setPage(1), [severite]);
 
+  const totalPages = Math.max(1, Math.ceil(total / PAR_PAGE));
+
+  // Une nouvelle diffusion va en tête de la page 1 (la plus récente). Sur une page plus ancienne,
+  // on ne la glisse pas au milieu : un bandeau propose de revenir à la page 1.
+  const recevoir = useCallback((a) => {
+    setTotal((t) => t + 1);
+    if (page === 1) {
+      setDiffusions((enCours) => [a, ...enCours.filter((x) => x.id !== a.id)].slice(0, PAR_PAGE));
+    } else {
+      setNouvelles((n) => n + 1);
+    }
+  }, [page]);
+
   // Une diffusion faite ailleurs (autre agent, autre onglet) apparaît sans recharger
   useEvenement('alert:broadcast', useCallback((a) => {
-    if (a.severity !== severite) return;
-    setDiffusions((enCours) => [a, ...enCours.filter((x) => x.id !== a.id)]);
-  }, [severite]));
+    if (a.severity === severite) recevoir(a);
+  }, [severite, recevoir]));
 
   async function diffuser(e) {
     e.preventDefault();
@@ -76,7 +91,8 @@ export default function Diffusions({ severite }) {
     setEnvoi({ enCours: true, erreur: '', succes: '' });
     try {
       const { alert } = await api.diffuserAlerte(texte, severite, dossier?.id);
-      setDiffusions((enCours) => [alert, ...enCours.filter((x) => x.id !== alert.id)]);
+      // Sa propre diffusion : on revient en page 1 pour la voir en tête
+      if (page === 1) recevoir(alert); else setPage(1);
       setMessage('');
       setDossier(null);
       setEnvoi({ enCours: false, erreur: '', succes: 'Diffusé à tous les agents connectés.' });
@@ -129,6 +145,12 @@ export default function Diffusions({ severite }) {
         )}
 
         {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
+
+        {nouvelles > 0 && (
+          <button type="button" className="pages-nouvelles" onClick={() => setPage(1)}>
+            {nouvelles} {nouvelles > 1 ? 'nouvelles diffusions' : 'nouvelle diffusion'} : revenir à la page 1
+          </button>
+        )}
 
         <ul className="pages-fil">
           {diffusions.map((a) => (
