@@ -46,7 +46,7 @@ export default function Profil() {
     api.moi()
       .then(({ user }) => mettreAJourUtilisateur(user))
       .catch((err) => setErreurProfil(err.message));
-  }, []);
+  }, [mettreAJourUtilisateur]);
 
   if (!utilisateur) return null;
 

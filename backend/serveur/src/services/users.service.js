@@ -1,6 +1,8 @@
 import bcrypt from 'bcrypt';
 import * as userModel from '../models/user.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
+import { publishAccountDeactivated } from '../utils/account-status.js';
+import { disconnectUser } from '../sockets/index.js';
 
 // Logique métier des comptes. Les erreurs prévues portent un statusCode (400, 403, 404, 409) ;
 // le contrôleur les traduit en réponse HTTP, comme pour les dossiers (criminals.service.js).
@@ -105,7 +107,34 @@ export const createUser = async (data = {}, actor) => {
   }
 };
 
-// Désactiver ou réactiver un compte, avec une entrée au journal d'audit
+// Désactiver un compte; un superviseur ne peut ni se désactiver ni désactiver la direction.
+export const deactivateUser = async (id, actor) => {
+  if (Number(id) === Number(actor.id)) {
+    throw httpError(403, 'Vous ne pouvez pas désactiver votre propre compte.');
+  }
+
+  const user = await userModel.deactivate(id, actor.role);
+  if (!user) {
+    const target = await userModel.findById(id);
+    if (!target) throw notFound();
+    if (actor.role === 'superviseur' && target.role === 'direction') {
+      throw httpError(403, 'Un superviseur ne peut pas désactiver un compte de direction.');
+    }
+    throw notFound();
+  }
+
+  disconnectUser(user.id);
+  await publishAccountDeactivated(user.id);
+  await auditLogModel.record({
+    actor_id: actor.id,
+    action: 'USER_DEACTIVATED',
+    target_type: 'user',
+    target_id: user.id
+  });
+  return user;
+};
+
+// Réactiver un compte, avec une entrée au journal d'audit
 export const setUserActive = async (id, isActive, actorId) => {
   const user = await userModel.setActive(id, isActive);
   if (!user) throw notFound();
