@@ -3,7 +3,12 @@ import { useSearchParams } from 'react-router-dom';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
-import { IconeRecherche, IconeGroupe, IconePoints, IconePlus, IconeQuitter } from '../composants/Icones.jsx';
+import { useAppel } from '../composants/AppelContext.js';
+import {
+  IconeRecherche, IconeGroupe, IconePlus, IconeQuitter, IconeTelephone, IconeCamera, IconeInfo,
+  IconeSourire, IconeMicro, IconeImage, IconeTrombone,
+} from '../composants/Icones.jsx';
+import SelecteurEmojis from '../composants/SelecteurEmojis.jsx';
 import Avatar from '../composants/Avatar.jsx';
 import SelecteurAgents from '../composants/SelecteurAgents.jsx';
 import { LIBELLES_ROLE, nomAgent } from '../agents.js';
@@ -13,6 +18,7 @@ import '../styles/pages.css';
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
 const DELAI_MODIFICATION = 15 * 60 * 1000; // le serveur refuse aussi après 15 minutes (#143)
+const ECART_HEURE = 15 * 60 * 1000; // l'heure s'affiche au centre du fil après 15 minutes de silence
 const MAX_FICHIER = 10 * 1024 * 1024; // 10 Mo, comme le serveur (#57)
 const DUREE_MAX_VOCAL = 120; // secondes (#59)
 const TYPES_FICHIER = 'image/jpeg,image/png,image/webp,image/gif,application/pdf,audio/webm,audio/ogg,audio/mp4,audio/mpeg';
@@ -39,6 +45,7 @@ const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
 export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
+  const { appeler, enAppel } = useAppel();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
   const groupeId = Number(params.get('groupe')) || null;
@@ -56,6 +63,7 @@ export default function Messagerie() {
   const [enEdition, setEnEdition] = useState(null); // mon message en cours de modification
   const [maintenant, setMaintenant] = useState(() => Date.now());
   const [vocal, setVocal] = useState(null); // { secondes } pendant un enregistrement
+  const [emojisOuverts, setEmojisOuverts] = useState(false);
   const fin = useRef(null);
   const menu = useRef(null);
   const saisie = useRef(null);
@@ -273,6 +281,19 @@ export default function Messagerie() {
   // Changer de conversation ou quitter la page annule l'enregistrement en cours (et coupe le micro)
   useEffect(() => () => arreterVocal(true), [avecId, groupeId]);
 
+  // L'émoji choisi va à la position du curseur dans le champ
+  const fermerEmojis = useCallback(() => setEmojisOuverts(false), []);
+  function insererEmoji(emoji) {
+    const champ = saisie.current;
+    const debut = champ?.selectionStart ?? texte.length;
+    const finSelection = champ?.selectionEnd ?? texte.length;
+    setTexte((t) => (t.slice(0, debut) + emoji + t.slice(finSelection)).slice(0, MAX_MESSAGE));
+    requestAnimationFrame(() => {
+      champ?.focus();
+      champ?.setSelectionRange(debut + emoji.length, debut + emoji.length);
+    });
+  }
+
   function commencerEdition(m) {
     setEnEdition(m);
     setTexte(m.body);
@@ -448,17 +469,36 @@ export default function Messagerie() {
                       : `${correspondant.badge_number} · ${enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}`}
                   </small>
                 </div>
+                {!groupeId && (
+                  // Appels à deux seulement, vers un agent connecté (#56)
+                  <div className="messagerie-appels">
+                    {[[false, IconeTelephone, 'Appel audio'], [true, IconeCamera, 'Appel vidéo']].map(([video, Icone, libelle]) => (
+                      <button
+                        key={libelle}
+                        type="button"
+                        className="messagerie-icone"
+                        aria-label={`${libelle} avec ${nomAgent(correspondant)}`}
+                        title={enLigne.has(correspondant.id) ? libelle : `${libelle} : ${correspondant.first_name} est hors ligne`}
+                        disabled={enAppel || !enLigne.has(correspondant.id)}
+                        onClick={() => appeler(correspondant, video)}
+                      >
+                        <Icone taille={24} />
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {groupeId && (
                   <div className="messagerie-menu" ref={menu}>
                     <button
                       type="button"
-                      className="messagerie-bouton-icone"
-                      aria-label="Options de la conversation"
+                      className="messagerie-icone"
+                      aria-label="Informations du groupe"
+                      title="Informations du groupe"
                       aria-expanded={menuOuvert}
                       onClick={() => setMenuOuvert((o) => !o)}
                       onKeyDown={(e) => e.key === 'Escape' && setMenuOuvert(false)}
                     >
-                      <IconePoints taille={18} />
+                      <IconeInfo taille={24} />
                     </button>
                     {menuOuvert && (
                       <ul className="carte messagerie-menu-liste" role="menu">
@@ -482,8 +522,12 @@ export default function Messagerie() {
                 {messages.map((m, i) => {
                   const moi = m.sender_id === utilisateur.id;
                   const precedent = messages[i - 1];
+                  const suivant = messages[i + 1];
                   const nouveauJour = !precedent || jourDe(precedent.created_at) !== jourDe(m.created_at);
-                  const suite = !nouveauJour && precedent.sender_id === m.sender_id;
+                  // L'heure au centre du fil : nouveau jour, ou 15 minutes sans message
+                  const heureAuCentre = nouveauJour
+                    || new Date(m.created_at) - new Date(precedent.created_at) >= ECART_HEURE;
+                  const suite = !heureAuCentre && precedent.sender_id === m.sender_id;
                   const auteur = groupeId
                     ? { first_name: m.sender_first_name, last_name: m.sender_last_name }
                     : correspondant;
@@ -491,29 +535,45 @@ export default function Messagerie() {
                   // Une pièce jointe ne se modifie pas : on la supprime et on en renvoie une autre
                   const modifiable = moi && !supprime && !m.attachment_kind
                     && maintenant - new Date(m.created_at).getTime() < DELAI_MODIFICATION;
+                  // Image ou GIF seul : affiché en grand, sans bulle autour
+                  const media = !supprime && m.attachment_kind === 'image' && !m.body;
+                  // « Vu » ou « Envoyé » sous mon dernier message seulement (conversation à deux)
+                  const statut = moi && !groupeId && !supprime && !messages.slice(i + 1).some((x) => x.sender_id === utilisateur.id);
+                  const finDeSerie = !suivant || suivant.sender_id !== m.sender_id;
+                  const classes = [
+                    'messagerie-bulle', moi && 'moi', supprime && 'supprime', media && 'media',
+                    !supprime && m.attachment_kind === 'audio' && 'vocal', enEdition?.id === m.id && 'en-edition',
+                  ].filter(Boolean).join(' ');
                   return (
                     <Fragment key={m.id}>
-                      {nouveauJour && <li className="messagerie-jour">{jourDe(m.created_at)}</li>}
-                      <li className={`messagerie-ligne${moi ? ' moi' : ''}`}>
-                        {!moi && (suite
-                          ? <span className="messagerie-avatar-vide" aria-hidden="true" />
-                          : <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />)}
-                        <div className={`messagerie-bulle${moi ? ' moi' : ''}${supprime ? ' supprime' : ''}${enEdition?.id === m.id ? ' en-edition' : ''}`}>
+                      {heureAuCentre && (
+                        <li className="messagerie-jour">
+                          {nouveauJour ? `${jourDe(m.created_at)} · ${heureDe(m.created_at)}` : heureDe(m.created_at)}
+                        </li>
+                      )}
+                      <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}`}>
+                        {!moi && (finDeSerie
+                          ? <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />
+                          : <span className="messagerie-avatar-vide" aria-hidden="true" />)}
+                        <div className="messagerie-colonne">
                           {groupeId && !moi && !suite && <strong className="messagerie-auteur">{nomAgent(auteur)}</strong>}
-                          {supprime && <p className="messagerie-supprime">Message supprimé</p>}
-                          {!supprime && m.attachment_kind && <PieceJointe message={m} />}
-                          {!supprime && m.body && <p>{m.body}</p>}
-                          <small>
-                            {heureDe(m.created_at)}
-                            {m.edited_at && !supprime && ' · modifié'}
-                            {moi && !groupeId && !supprime && (m.read_at ? ' · Lu' : ' · Envoyé')}
-                          </small>
-                          {moi && !supprime && (
-                            <span className="messagerie-actions">
-                              {modifiable && (
-                                <button type="button" onClick={() => commencerEdition(m)} aria-label="Modifier ce message">Modifier</button>
+                          <div className={classes} title={heureDe(m.created_at)}>
+                            {supprime && <p className="messagerie-supprime">Message supprimé</p>}
+                            {!supprime && m.attachment_kind && <PieceJointe message={m} />}
+                            {!supprime && m.body && <p>{m.body}</p>}
+                            {m.edited_at && !supprime && <small>modifié</small>}
+                          </div>
+                          {(statut || (moi && !supprime)) && (
+                            <span className="messagerie-meta">
+                              {moi && !supprime && (
+                                <span className="messagerie-actions">
+                                  {modifiable && (
+                                    <button type="button" onClick={() => commencerEdition(m)} aria-label="Modifier ce message">Modifier</button>
+                                  )}
+                                  <button type="button" onClick={() => supprimer(m)} aria-label="Supprimer ce message">Supprimer</button>
+                                </span>
                               )}
-                              <button type="button" onClick={() => supprimer(m)} aria-label="Supprimer ce message">Supprimer</button>
+                              {statut && <span className="messagerie-statut">{m.read_at ? 'Vu' : 'Envoyé'}</span>}
                             </span>
                           )}
                         </div>
@@ -533,64 +593,90 @@ export default function Messagerie() {
                   <button type="button" onClick={annulerEdition}>Annuler</button>
                 </p>
               )}
+              {/* Barre de saisie arrondie : émojis à gauche ; micro, image et fichier à droite.
+                  Dès qu'on écrit, « Envoyer » remplace le micro et l'image. */}
               <form className="messagerie-saisie" onSubmit={envoyer}>
+                <input ref={choixFichier} type="file" accept={TYPES_FICHIER} hidden onChange={fichierChoisi} />
                 {vocal ? (
                   <div className="messagerie-vocal" role="status">
                     <span className="messagerie-vocal-point" aria-hidden="true" />
                     Enregistrement… {dureeLisible(vocal.secondes)} / {dureeLisible(DUREE_MAX_VOCAL)}
-                    <button type="button" onClick={() => arreterVocal(true)}>Annuler</button>
-                    <button type="button" className="registre-bouton-principal" onClick={() => arreterVocal(false)}>Envoyer</button>
+                    <button type="button" className="messagerie-lien" onClick={() => arreterVocal(true)}>Annuler</button>
+                    <button type="button" className="messagerie-envoyer" onClick={() => arreterVocal(false)}>Envoyer</button>
                   </div>
                 ) : (
-                  <>
-                    <input
-                      ref={choixFichier}
-                      type="file"
-                      accept={TYPES_FICHIER}
-                      hidden
-                      onChange={fichierChoisi}
+                  <div className="messagerie-barre">
+                    <div className="messagerie-emojis">
+                      <button
+                        type="button"
+                        className="messagerie-icone"
+                        aria-label="Émojis"
+                        aria-expanded={emojisOuverts}
+                        onClick={() => setEmojisOuverts((o) => !o)}
+                      >
+                        <IconeSourire taille={24} />
+                      </button>
+                      {emojisOuverts && <SelecteurEmojis onChoisir={insererEmoji} onFermer={fermerEmojis} />}
+                    </div>
+                    <textarea
+                      ref={saisie}
+                      rows={1}
+                      maxLength={MAX_MESSAGE}
+                      placeholder={enEdition ? 'Modifier le message…' : 'Votre message…'}
+                      aria-label={enEdition ? 'Modifier le message' : `Message à ${groupeId ? groupe.name : nomAgent(correspondant)}`}
+                      value={texte}
+                      onChange={(e) => setTexte(e.target.value)}
+                      onKeyDown={(e) => {
+                        // Entrée envoie, Maj+Entrée va à la ligne, Échap annule une modification
+                        if (e.key === 'Enter' && !e.shiftKey) envoyer(e);
+                        if (e.key === 'Escape' && enEdition) annulerEdition();
+                      }}
                     />
-                    <button
-                      type="button"
-                      className="messagerie-bouton-icone"
-                      aria-label="Joindre un fichier, une image ou un GIF"
-                      title="Joindre un fichier, une image ou un GIF (10 Mo)"
-                      disabled={enCours || Boolean(enEdition)}
-                      onClick={() => choixFichier.current?.click()}
-                    >
-                      <span aria-hidden="true">📎</span>
-                    </button>
-                    <button
-                      type="button"
-                      className="messagerie-bouton-icone"
-                      aria-label="Enregistrer un message vocal"
-                      title="Message vocal (2 minutes)"
-                      disabled={enCours || Boolean(enEdition)}
-                      onClick={demarrerVocal}
-                    >
-                      <span aria-hidden="true">🎤</span>
-                    </button>
-                  </>
-                )}
-                <textarea
-                  hidden={Boolean(vocal)}
-                  ref={saisie}
-                  rows={2}
-                  maxLength={MAX_MESSAGE}
-                  placeholder={groupeId ? `Écrire à ${groupe.name}…` : `Écrire à ${correspondant.first_name}…`}
-                  aria-label={enEdition ? 'Modifier le message' : 'Message'}
-                  value={texte}
-                  onChange={(e) => setTexte(e.target.value)}
-                  onKeyDown={(e) => {
-                    // Entrée envoie, Maj+Entrée va à la ligne, Échap annule une modification
-                    if (e.key === 'Enter' && !e.shiftKey) envoyer(e);
-                    if (e.key === 'Escape' && enEdition) annulerEdition();
-                  }}
-                />
-                {!vocal && (
-                  <button type="submit" className="registre-bouton-principal" disabled={enCours || !texte.trim()}>
-                    {enEdition ? 'Enregistrer' : 'Envoyer'}
-                  </button>
+                    {texte.trim() ? (
+                      <button type="submit" className="messagerie-envoyer" disabled={enCours}>
+                        {enEdition ? 'Enregistrer' : 'Envoyer'}
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="messagerie-icone"
+                          aria-label="Enregistrer un message vocal"
+                          title="Message vocal (2 minutes)"
+                          disabled={enCours || Boolean(enEdition)}
+                          onClick={demarrerVocal}
+                        >
+                          <IconeMicro taille={24} />
+                        </button>
+                        <button
+                          type="button"
+                          className="messagerie-icone"
+                          aria-label="Envoyer une image ou un GIF"
+                          title="Image ou GIF (10 Mo)"
+                          disabled={enCours || Boolean(enEdition)}
+                          onClick={() => {
+                            choixFichier.current.accept = 'image/jpeg,image/png,image/webp,image/gif';
+                            choixFichier.current.click();
+                          }}
+                        >
+                          <IconeImage taille={24} />
+                        </button>
+                        <button
+                          type="button"
+                          className="messagerie-icone"
+                          aria-label="Joindre un fichier (PDF, audio)"
+                          title="Fichier : PDF ou audio (10 Mo)"
+                          disabled={enCours || Boolean(enEdition)}
+                          onClick={() => {
+                            choixFichier.current.accept = TYPES_FICHIER;
+                            choixFichier.current.click();
+                          }}
+                        >
+                          <IconeTrombone taille={24} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
               </form>
             </>
@@ -611,15 +697,74 @@ function PieceJointe({ message: m }) {
       </a>
     );
   }
-  if (m.attachment_kind === 'audio') {
-    return <audio className="messagerie-audio" controls preload="metadata" src={url} aria-label="Message vocal" />;
-  }
+  if (m.attachment_kind === 'audio') return <LecteurVocal url={url} />;
   return (
     <a href={url} className="messagerie-fichier" download={m.attachment_name}>
-      <span aria-hidden="true">📄</span>
+      <IconeTrombone taille={18} />
       <span>{m.attachment_name}</span>
       {m.attachment_size ? <small>{tailleLisible(m.attachment_size)}</small> : null}
     </a>
+  );
+}
+
+// Message vocal : lecture / pause, barre de progression qu'on peut déplacer, durée
+function LecteurVocal({ url }) {
+  const audio = useRef(null);
+  const [lecture, setLecture] = useState(false);
+  const [position, setPosition] = useState(0);
+  const [duree, setDuree] = useState(0);
+
+  // Chrome ne connaît pas la durée d'un WebM enregistré par le navigateur (« Infinity ») :
+  // on saute à la fin pour la lui faire calculer, puis on revient au début
+  function metadonnees() {
+    const a = audio.current;
+    if (Number.isFinite(a.duration)) return setDuree(a.duration);
+    const revenir = () => {
+      a.removeEventListener('timeupdate', revenir);
+      setDuree(Number.isFinite(a.duration) ? a.duration : 0);
+      a.currentTime = 0;
+    };
+    a.addEventListener('timeupdate', revenir);
+    a.currentTime = 1e101;
+    return undefined;
+  }
+
+  function basculer() {
+    const a = audio.current;
+    if (a.paused) a.play().catch(() => {}); else a.pause();
+  }
+
+  const secondes = (s) => dureeLisible(Math.round(Number.isFinite(s) ? s : 0));
+  return (
+    <div className="lecteur-vocal">
+      <audio
+        ref={audio}
+        src={url}
+        preload="metadata"
+        onLoadedMetadata={metadonnees}
+        onTimeUpdate={(e) => setPosition(e.currentTarget.currentTime)}
+        onPlay={() => setLecture(true)}
+        onPause={() => setLecture(false)}
+        onEnded={() => { setLecture(false); setPosition(0); }}
+      />
+      <button type="button" className="lecteur-vocal-bouton" onClick={basculer} aria-label={lecture ? 'Pause' : 'Écouter le message vocal'}>
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+          {lecture ? <path d="M6 4h4v16H6zM14 4h4v16h-4z" /> : <path d="M7 4v16l13-8z" />}
+        </svg>
+      </button>
+      <input
+        type="range"
+        className="lecteur-vocal-barre"
+        min={0}
+        max={duree || 1}
+        step="any"
+        value={Math.min(position, duree || 1)}
+        aria-label="Position dans le message vocal"
+        onChange={(e) => { audio.current.currentTime = Number(e.target.value); setPosition(Number(e.target.value)); }}
+        style={{ '--progression': `${duree ? (position / duree) * 100 : 0}%` }}
+      />
+      <span className="lecteur-vocal-temps">{lecture || position ? secondes(position) : secondes(duree)}</span>
+    </div>
   );
 }
 

@@ -211,6 +211,59 @@ button, input { font: inherit; }
 }
 
 /* ---------- Notifications d'alertes et de communiqués (#63) ---------- */
+/* Appel audio ou vidéo (#56) : fenêtre en bas à droite, visible sur toutes les pages */
+.appel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1100;
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--marine-900);
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(12, 26, 48, 0.35);
+}
+.appel.video { width: min(480px, calc(100vw - 32px)); }
+.appel-entete { display: flex; align-items: center; gap: 10px; }
+.appel-entete div { display: grid; min-width: 0; }
+.appel-entete strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.appel-entete small { color: #b8c2d0; font-variant-numeric: tabular-nums; }
+.appel-avatar { width: 40px; height: 40px; }
+.appel-videos { position: relative; aspect-ratio: 4 / 3; max-width: 100%; overflow: hidden; border-radius: 10px; background: #000; }
+.appel-distant { width: 100%; height: 100%; object-fit: cover; }
+.appel-local { position: absolute; right: 8px; bottom: 8px; width: 28%; border: 2px solid #fff; border-radius: 8px; transform: scaleX(-1); }
+.appel-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+.appel-boutons button {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.appel-boutons button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.15); }
+.appel-boutons .appel-accepter { border-color: var(--succes); background: var(--succes); }
+.appel-boutons .appel-raccrocher { border-color: var(--danger); background: var(--danger); }
+.appel-avis {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1100;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--marine-900);
+  color: #fff;
+  font-size: 14px;
+}
+
 .notifications {
   position: fixed;
   top: 16px;
