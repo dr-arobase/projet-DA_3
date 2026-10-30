@@ -1,5 +1,5 @@
 import { pool } from '../config/db.js';
-import { attachmentValues } from './message.model.js';
+import { attachmentValues, REACTIONS } from './message.model.js';
 
 // Groupes de discussion de la messagerie (#55). Les fonctions qui écrivent reçoivent
 // le client d'une transaction (withTransaction), ou utilisent le pool par défaut.
@@ -16,8 +16,9 @@ const MEMBERS = `
 // Message de groupe, avec le nom de l'expéditeur (plusieurs personnes écrivent dans le fil)
 const SELECT_GROUP_MESSAGE = `
   SELECT m.id, m.sender_id, m.group_id, m.body, m.created_at, m.edited_at, m.deleted_at,
-         m.attachment_name, m.attachment_type, m.attachment_size, m.attachment_kind,
-         u.first_name AS sender_first_name, u.last_name AS sender_last_name, u.badge_number AS sender_badge_number
+         m.attachment_name, m.attachment_type, m.attachment_size, m.attachment_kind, m.kind,
+         u.first_name AS sender_first_name, u.last_name AS sender_last_name, u.badge_number AS sender_badge_number,
+         ${REACTIONS}
   FROM message m JOIN app_user u ON u.id = m.sender_id
 `;
 

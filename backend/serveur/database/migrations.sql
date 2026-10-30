@@ -93,3 +93,20 @@ ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_name VARCHAR(255);
 ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_type VARCHAR(50);
 ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_size INTEGER;
 ALTER TABLE message ADD COLUMN IF NOT EXISTS attachment_kind VARCHAR(10); -- 'image', 'audio' ou 'file'
+
+-- Réactions aux messages (emoji) : une par agent et par message, comme dans Messenger.
+-- Toucher un autre emoji remplace la réaction ; retoucher le même la retire.
+CREATE TABLE IF NOT EXISTS message_reaction (
+  message_id INTEGER NOT NULL REFERENCES message(id) ON DELETE CASCADE,
+  user_id    INTEGER NOT NULL REFERENCES app_user(id) ON DELETE CASCADE,
+  emoji      VARCHAR(16) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (message_id, user_id)
+);
+
+-- Messages-événements (pas écrits par l'agent) : 'appel-manque-audio' ou 'appel-manque-video'.
+-- Ils s'affichent comme un événement du fil ; on peut les supprimer, pas les modifier.
+ALTER TABLE message ADD COLUMN IF NOT EXISTS kind VARCHAR(30);
+-- Appels manqués créés avant la colonne kind (texte avec une emoji) : on les convertit.
+UPDATE message SET kind = 'appel-manque-audio', body = 'Appel audio manqué' WHERE kind IS NULL AND body = '📞 Appel audio manqué';
+UPDATE message SET kind = 'appel-manque-video', body = 'Appel vidéo manqué' WHERE kind IS NULL AND body = '📞 Appel vidéo manqué';

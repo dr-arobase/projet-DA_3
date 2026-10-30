@@ -3,7 +3,9 @@
  * qu'entre deux agents connectés, et seulement des messages WebRTC valides.
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import { registerCallHandlers, nettoyerSignal } from '../../src/sockets/appels.js';
+import {
+  registerCallHandlers, nettoyerSignal, livrerAppelsEnAttente, oublierInvitations,
+} from '../../src/sockets/appels.js';
 
 const CALL = 'appel-1234-abcd';
 
@@ -22,12 +24,15 @@ function socketDe(user) {
 
 let socket;
 let envoyerA;
+let laisserAppelManque;
 const connectes = new Set([3, 2]);
 
 beforeEach(() => {
   socket = socketDe({ id: 3, badge_number: 'PL-003' });
   envoyerA = jest.fn();
-  registerCallHandlers(socket, { estConnecte: (id) => connectes.has(id), envoyerA });
+  laisserAppelManque = jest.fn(async () => {});
+  oublierInvitations(); // les invitations sont gardées d'un test à l'autre par le module
+  registerCallHandlers(socket, { estConnecte: (id) => connectes.has(id), envoyerA, laisserAppelManque });
 });
 
 describe('call:invite', () => {
@@ -41,10 +46,10 @@ describe('call:invite', () => {
     expect(ack).toHaveBeenCalledWith({ ok: true });
   });
 
-  test('agent hors ligne : message clair, rien n\'est envoyé', () => {
+  test('agent hors ligne : l\'appel attend, sans rien envoyer pour l\'instant', () => {
     const ack = jest.fn();
     socket.handlers['call:invite']({ to: 9, callId: CALL }, ack);
-    expect(ack).toHaveBeenCalledWith({ error: 'Cet agent n\'est pas connecté' });
+    expect(ack).toHaveBeenCalledWith({ ok: true, horsLigne: true });
     expect(envoyerA).not.toHaveBeenCalled();
   });
 
@@ -116,5 +121,69 @@ describe('call:signal', () => {
 describe('nettoyerSignal', () => {
   test('garde seulement type et sdp d\'une réponse', () => {
     expect(nettoyerSignal({ type: 'answer', sdp: 'v=0', extra: true })).toEqual({ type: 'answer', sdp: 'v=0' });
+  });
+});
+
+const attendre = () => new Promise((r) => setImmediate(r));
+
+describe('appeler un agent hors ligne', () => {
+  test('il se connecte pendant que ça sonne : l\'appel lui parvient', () => {
+    socket.handlers['call:invite']({ to: 9, callId: CALL, video: true }, jest.fn());
+    const versNouveau = jest.fn();
+    livrerAppelsEnAttente(9, versNouveau);
+    expect(versNouveau).toHaveBeenCalledWith(9, 'call:incoming', {
+      callId: CALL, video: true, from: { id: 3, badge_number: 'PL-003' },
+    });
+  });
+
+  test('sonnerie terminée : il ne reçoit plus l\'appel en se connectant', () => {
+    socket.handlers['call:invite']({ to: 9, callId: CALL }, jest.fn());
+    const versNouveau = jest.fn();
+    livrerAppelsEnAttente(9, versNouveau, Date.now() + 31 * 1000);
+    expect(versNouveau).not.toHaveBeenCalled();
+  });
+
+  test('l\'appelant raccroche sans réponse : un « appel manqué » est laissé', async () => {
+    socket.handlers['call:invite']({ to: 9, callId: CALL, video: true }, jest.fn());
+    socket.handlers['call:end']({ to: 9, callId: CALL });
+    await attendre();
+    expect(laisserAppelManque).toHaveBeenCalledWith({ fromId: 3, toId: 9, video: true });
+    livrerAppelsEnAttente(9, envoyerA);
+    expect(envoyerA).not.toHaveBeenCalled(); // l'invitation est oubliée
+  });
+});
+
+describe('appels manqués entre agents connectés', () => {
+  test('décroché puis raccroché : pas d\'appel manqué', async () => {
+    socket.handlers['call:invite']({ to: 2, callId: CALL }, jest.fn());
+    socket.handlers['call:accept']({ to: 2, callId: CALL });
+    socket.handlers['call:end']({ to: 2, callId: CALL });
+    await attendre();
+    expect(laisserAppelManque).not.toHaveBeenCalled();
+  });
+
+  test('refusé exprès : pas d\'appel manqué ; sans réponse : appel manqué', async () => {
+    socket.handlers['call:invite']({ to: 2, callId: CALL }, jest.fn());
+    socket.handlers['call:refuse']({ to: 2, callId: CALL, reason: 'refuse' });
+    socket.handlers['call:invite']({ to: 2, callId: 'appel-5678-efgh' }, jest.fn());
+    socket.handlers['call:refuse']({ to: 2, callId: 'appel-5678-efgh', reason: 'sans-reponse' });
+    await attendre();
+    expect(laisserAppelManque).toHaveBeenCalledTimes(1);
+  });
+
+  test('une deuxième invitation vers le même agent pendant que ça sonne est refusée', () => {
+    socket.handlers['call:invite']({ to: 9, callId: CALL }, jest.fn());
+    const ack = jest.fn();
+    socket.handlers['call:invite']({ to: 9, callId: 'appel-5678-efgh' }, ack);
+    expect(ack).toHaveBeenCalledWith({ error: 'Un appel vers cet agent est déjà en cours' });
+  });
+
+  test('un agent étranger à l\'appel ne peut pas le clore', async () => {
+    socket.handlers['call:invite']({ to: 9, callId: CALL }, jest.fn());
+    const intrus = socketDe({ id: 5, badge_number: 'PL-005' });
+    registerCallHandlers(intrus, { estConnecte: () => true, envoyerA, laisserAppelManque });
+    intrus.handlers['call:end']({ to: 9, callId: CALL });
+    await attendre();
+    expect(laisserAppelManque).not.toHaveBeenCalled();
   });
 });

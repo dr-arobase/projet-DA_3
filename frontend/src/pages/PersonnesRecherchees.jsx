@@ -24,7 +24,9 @@ export default function PersonnesRecherchees() {
   const [erreur, setErreur] = useState('');
   const [chargement, setChargement] = useState(true);
 
-  // Change un critère dans l'URL ; tout changement de filtre revient à la page 1
+  // Change un critère dans l'URL ; tout changement de filtre revient à la page 1.
+  // La saisie de recherche remplace l'entrée d'historique (une entrée par touche serait pénible),
+  // mais un changement de page ou de statut en ajoute une : le bouton Retour revient à la page d'avant.
   const changer = useCallback((modifs) => {
     setParams((actuels) => {
       const suivants = new URLSearchParams(actuels);
@@ -34,7 +36,7 @@ export default function PersonnesRecherchees() {
       }
       if (!('page' in modifs)) suivants.delete('page');
       return suivants;
-    }, { replace: true });
+    }, { replace: 'q' in modifs });
   }, [setParams]);
 
   // La recherche part un peu après la dernière touche

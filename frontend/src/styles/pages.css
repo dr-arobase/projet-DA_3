@@ -15,6 +15,20 @@
 
 /* ---------- Alertes et communiqués ---------- */
 .pages-fil { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+/* Bandeau « nouvelles diffusions » quand on lit une page plus ancienne */
+.pages-nouvelles {
+  justify-self: center;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marine-700);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(12, 26, 48, 0.2);
+}
+.pages-nouvelles:hover { background: var(--marine-600); }
 .pages-diffusion { display: grid; gap: 6px; padding: 14px 18px; border-left: 4px solid var(--marine-600); }
 .pages-diffusion.urgent { border-left-color: var(--danger); }
 .pages-diffusion p { white-space: pre-line; overflow-wrap: anywhere; }
@@ -27,6 +41,49 @@
 .pages-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
 .pages-promotion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pages-promotion .registre-bouton-principal { padding: 7px 12px; font-size: 13px; }
+
+/* ---------- Annuaire : le nom d'abord, le courriel en lien discret ---------- */
+.annuaire-tableau td strong { display: block; font-size: 15px; font-weight: 700; }
+.annuaire-tableau .annuaire-matricule { font-family: var(--mono); }
+.annuaire-tableau td a { color: var(--lien); font-weight: 400; overflow-wrap: anywhere; }
+
+/* ---------- Utilisateurs (direction E) ---------- */
+.utilisateurs-compte { margin-left: auto; color: var(--texte-doux); font-size: 13px; font-variant-numeric: tabular-nums; }
+.utilisateurs-tableau .utilisateurs-matricule { font-family: var(--mono); font-size: 13px; color: #606a77; white-space: nowrap; }
+.utilisateurs-agent strong { display: block; font-size: 15px; font-weight: 700; }
+.utilisateurs-agent small { overflow-wrap: anywhere; }
+.utilisateurs-tableau .utilisateurs-col-actions { text-align: right; }
+.utilisateurs-col-actions .pages-actions { justify-content: flex-end; }
+/* État : un point de couleur ET le mot, pour ne pas dépendre de la couleur seule */
+.utilisateurs-etat { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.utilisateurs-etat > span { width: 9px; height: 9px; border-radius: 50%; background: var(--succes); }
+.utilisateurs-etat.inactif { color: var(--texte-doux); }
+.utilisateurs-etat.inactif > span { border: 2px solid var(--texte-pale); background: none; }
+
+/* Téléphone : chaque compte devient une carte, sans défilement horizontal */
+@media (max-width: 700px) {
+  .utilisateurs-compte { width: 100%; margin-left: 0; }
+  .utilisateurs-tableau thead { display: none; }
+  .utilisateurs-tableau, .utilisateurs-tableau tbody { display: block; }
+  .utilisateurs-tableau tr:not(.registre-vide) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--bordure);
+  }
+  .utilisateurs-tableau tr.registre-vide { display: block; }
+  .utilisateurs-tableau tr:last-child { border-bottom: 0; }
+  .utilisateurs-tableau td { display: block; padding: 0; border: 0; }
+  .utilisateurs-tableau .utilisateurs-matricule { grid-column: 2; grid-row: 1; text-align: right; }
+  .utilisateurs-tableau .utilisateurs-agent { grid-column: 1; grid-row: 1; }
+  .utilisateurs-tableau td[data-label] { grid-column: 1 / -1; display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+  .utilisateurs-tableau td[data-label]::before { content: attr(data-label); min-width: 64px; color: var(--texte-pale); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+  .utilisateurs-tableau td[data-label] small { display: inline; margin: 0 0 0 4px; }
+  .utilisateurs-tableau .utilisateurs-col-actions { grid-column: 1 / -1; padding-top: 6px; text-align: left; }
+  .utilisateurs-tableau .utilisateurs-col-actions .pages-actions { justify-content: flex-start; }
+  .utilisateurs-tableau .pages-actions .registre-lien { min-height: 40px; }
+}
 
 /* ---------- Annuaire ---------- */
 .pages-point { width: 10px; height: 10px; border-radius: 50%; background: var(--succes); }
@@ -148,7 +205,7 @@
 .messagerie-nom small { overflow: hidden; color: var(--texte-doux); font-weight: 400; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .messagerie-non-lus { min-width: 20px; padding: 1px 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 12px; font-weight: 700; text-align: center; }
 
-.messagerie-fil { display: grid; grid-template-rows: auto 1fr auto auto; min-height: 0; }
+.messagerie-fil { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto auto; min-height: 0; } /* minmax : aucun enfant ne peut élargir le fil */
 .messagerie-entete { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--bordure); }
 .messagerie-entete-titre { display: grid; flex: 1; min-width: 0; }
 .messagerie-entete-titre small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -428,3 +485,160 @@
   .messagerie-fil .messagerie-entete, .messagerie-fil .messagerie-messages { padding-left: 14px; padding-right: 14px; }
   .messagerie-fil .messagerie-saisie { padding: 8px 12px 14px; }
 }
+
+/* ---------- Réactions aux messages (emoji) ---------- */
+/* La bulle et son bouton « Réagir » côte à côte ; chez moi, le bouton passe à gauche */
+.messagerie-bulle-ligne { display: flex; align-items: center; gap: 6px; max-width: 100%; min-width: 0; }
+.messagerie-ligne.moi .messagerie-bulle-ligne { flex-direction: row-reverse; }
+
+.reagir { position: relative; flex-shrink: 0; }
+.reagir-bouton {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--fil-doux);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+.reagir-bouton:hover { background: var(--fond); color: var(--fil-texte); }
+/* Visible au survol de la ligne, au clavier, quand la barre est ouverte, et toujours sur écran tactile */
+.messagerie-ligne:hover .reagir-bouton,
+.reagir-bouton:focus-visible,
+.reagir.ouvert .reagir-bouton { opacity: 1; }
+@media (hover: none) { .reagir-bouton { opacity: 0.6; } }
+
+.reagir-barre {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: -6px;
+  z-index: 15;
+  display: flex;
+  gap: 2px;
+  padding: 5px 6px;
+  border: 1px solid var(--fil-trait);
+  border-radius: 999px;
+  background: var(--fil-surface);
+  box-shadow: 0 8px 24px rgba(12, 26, 48, 0.18);
+  animation: reagir-entree 0.16s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.reagir-barre button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--fil-doux);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.reagir-barre button:hover { background: var(--fond); transform: scale(1.18); }
+.reagir-barre button.choisie { background: #dfe7f5; }
+.reagir-plus { font-size: 0 !important; }
+@keyframes reagir-entree { from { opacity: 0; transform: translateY(4px) scale(0.96); } }
+
+/* Pastilles sous la bulle, qui mordent légèrement sur son bord */
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: -8px; padding: 0 8px; position: relative; z-index: 1; }
+.reaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 24px;
+  padding: 1px 7px;
+  border: 1px solid var(--fil-trait);
+  border-radius: 999px;
+  background: var(--fil-surface);
+  color: var(--fil-texte);
+  font-size: 14px;
+  line-height: 1.2;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(12, 26, 48, 0.08);
+}
+.reaction:hover { border-color: var(--marine-600); }
+.reaction.mienne { border-color: var(--marine-600); background: #e8eef9; }
+.reaction-nombre { color: var(--fil-doux); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.reagir-bouton:focus-visible, .reagir-barre button:focus-visible, .reaction:focus-visible { outline: 2px solid var(--marine-600); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reagir-bouton, .reagir-barre button { transition: none; }
+  .reagir-barre { animation: none; }
+  .reagir-barre button:hover { transform: none; }
+}
+/* Premier message du fil : pas de place au-dessus, la barre et le sélecteur s'ouvrent dessous */
+.reagir.vers-le-bas .reagir-barre { top: calc(100% + 6px); bottom: auto; }
+.reagir.vers-le-bas .emojis { top: calc(100% + 8px); bottom: auto; }
+/* Pas assez de place à droite (bulle au bord) : le menu s'aligne sur le bord droit du bouton */
+.reagir .emojis { left: -6px; right: auto; width: min(300px, calc(100vw - 96px)); } /* petit écran : tient d'un côté ou de l'autre */
+.reagir.vers-la-gauche .reagir-barre, .reagir.vers-la-gauche .emojis { left: auto; right: -6px; }
+
+/* Téléphone : le sélecteur complet devient une feuille fixe au-dessus de la barre du bas,
+   comme le menu « Plus » (il ne peut ni sortir de l'écran ni passer sous la barre). */
+@media (max-width: 600px) {
+  .reagir .reagir-tout .emojis,
+  .reagir.vers-le-bas .reagir-tout .emojis,
+  .reagir.vers-la-gauche .reagir-tout .emojis {
+    position: fixed;
+    top: auto;
+    right: 8px;
+    bottom: calc(84px + env(safe-area-inset-bottom));
+    left: 8px;
+    z-index: 950;
+    width: auto;
+  }
+  .reagir-barre button { width: 34px; height: 34px; font-size: 20px; }
+}
+
+/* ---------- Appel manqué : un événement centré dans le fil, pas une bulle ---------- */
+.messagerie-evenement {
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 10px;
+  max-width: 100%;
+  margin: 6px 0;
+  padding: 6px 8px 6px 6px;
+  border: 1px solid var(--fil-trait);
+  border-radius: 999px;
+  background: var(--fil-surface);
+  color: var(--fil-texte);
+  font-size: 14px;
+}
+.messagerie-evenement-icone {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--fond);
+  color: var(--fil-doux);
+}
+/* Appel manqué reçu : en rouge, c'est à lui de rappeler */
+.messagerie-evenement.recu .messagerie-evenement-icone { background: var(--danger-fond); color: var(--danger); }
+.messagerie-evenement-texte small { margin-left: 4px; color: var(--fil-doux); font-size: 12px; font-variant-numeric: tabular-nums; }
+.messagerie-evenement-action {
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--marine-700);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.messagerie-evenement-action:hover:not(:disabled) { background: var(--marine-600); }
+.messagerie-evenement-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.messagerie-evenement-action.discret { background: none; color: var(--fil-doux); text-decoration: underline; }
+.messagerie-evenement-action.discret:hover { background: none; color: var(--danger); }
+.messagerie-evenement-action:focus-visible { outline: 2px solid var(--marine-600); outline-offset: 2px; }

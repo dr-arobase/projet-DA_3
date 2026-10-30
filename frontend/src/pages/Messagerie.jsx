@@ -9,6 +9,7 @@ import {
   IconeSourire, IconeMicro, IconeImage, IconeTrombone,
 } from '../composants/Icones.jsx';
 import SelecteurEmojis from '../composants/SelecteurEmojis.jsx';
+import { BoutonReagir, PastillesReactions } from '../composants/ReactionsMessage.jsx';
 import Avatar from '../composants/Avatar.jsx';
 import SelecteurAgents from '../composants/SelecteurAgents.jsx';
 import { LIBELLES_ROLE, nomAgent } from '../agents.js';
@@ -153,6 +154,11 @@ export default function Messagerie() {
     setEnEdition((enCours) => (enCours?.id === m.id ? null : enCours));
     if (m.group_id) chargerGroupes(); else chargerContacts();
   }, [remplacerMessage, chargerContacts, chargerGroupes]));
+
+  // Quelqu'un a réagi à un message (privé ou de groupe) : on met à jour ses pastilles
+  useEvenement('message:reactions', useCallback(({ id, reactions }) => {
+    setMessages((enCours) => enCours.map((x) => (x.id === id ? { ...x, reactions } : x)));
+  }, []));
 
   // L'autre agent a lu nos messages
   useEvenement('message:read', useCallback(({ by }) => {
@@ -306,6 +312,15 @@ export default function Messagerie() {
     setTexte('');
   }
 
+  async function reagir(m, emoji) {
+    try {
+      const { data } = await api.reagirMessage(m.id, emoji);
+      setMessages((enCours) => enCours.map((x) => (x.id === m.id ? { ...x, reactions: data.reactions } : x)));
+    } catch (err) {
+      setErreur(err.message);
+    }
+  }
+
   async function supprimer(m) {
     if (!window.confirm('Supprimer ce message ? Il sera remplacé par « Message supprimé » pour tout le monde.')) return;
     try {
@@ -355,6 +370,11 @@ export default function Messagerie() {
 
   const correspondant = contacts.find((c) => c.id === avecId);
   const ouvert = groupeId ? groupe : correspondant;
+  // Nom d'un participant, pour l'infobulle des réactions (« Eric Tremblay, vous »)
+  const nomParticipant = (id) => {
+    const agent = groupeId ? groupe?.members.find((m) => m.id === id) : (id === correspondant?.id ? correspondant : null);
+    return agent ? nomAgent(agent) : '';
+  };
 
   return (
     <>
@@ -481,11 +501,8 @@ export default function Messagerie() {
                         title={libelle}
                         disabled={enAppel}
                         onClick={() => {
-                          // Toujours cliquable : hors ligne, on explique pourquoi l'appel est impossible
-                          if (!enLigne.has(correspondant.id)) {
-                            setErreur(`${nomAgent(correspondant)} est hors ligne : l'appel n'est possible que si l'agent est connecté.`);
-                            return;
-                          }
+                          // Hors ligne aussi : ça sonne s'il se connecte pendant la sonnerie,
+                          // sinon un « appel manqué » l'attend dans la conversation
                           setErreur('');
                           appeler(correspondant, video);
                         }}
@@ -552,25 +569,66 @@ export default function Messagerie() {
                     'messagerie-bulle', moi && 'moi', supprime && 'supprime', media && 'media',
                     !supprime && m.attachment_kind === 'audio' && 'vocal', enEdition?.id === m.id && 'en-edition',
                   ].filter(Boolean).join(' ');
+                  const dateAuCentre = heureAuCentre && (
+                    <li className="messagerie-jour">
+                      {nouveauJour ? `${jourDe(m.created_at)} · ${heureDe(m.created_at)}` : heureDe(m.created_at)}
+                    </li>
+                  );
+
+                  // Appel manqué : un événement du fil, pas une bulle. On rappelle ou on supprime, on ne modifie pas.
+                  if (m.kind?.startsWith('appel-manque')) {
+                    if (supprime) return null;
+                    const video = m.kind === 'appel-manque-video';
+                    const IconeAppel = video ? IconeCamera : IconeTelephone;
+                    const type = video ? 'vidéo' : 'audio';
+                    return (
+                      <Fragment key={m.id}>
+                        {dateAuCentre}
+                        <li className={`messagerie-evenement${moi ? '' : ' recu'}`}>
+                          <span className="messagerie-evenement-icone" aria-hidden="true"><IconeAppel taille={16} /></span>
+                          <span className="messagerie-evenement-texte">
+                            {moi
+                              ? <>Appel {type} sans réponse <small>{heureDe(m.created_at)}</small></>
+                              : <>Appel {type} manqué{auteur?.first_name ? ` de ${auteur.first_name}` : ''} <small>{heureDe(m.created_at)}</small></>}
+                          </span>
+                          {!moi && !groupeId && correspondant && (
+                            <button type="button" className="messagerie-evenement-action" disabled={enAppel} onClick={() => appeler(correspondant, video)}>
+                              Rappeler
+                            </button>
+                          )}
+                          {moi && (
+                            <button type="button" className="messagerie-evenement-action discret" onClick={() => supprimer(m)} aria-label="Supprimer cet appel manqué">
+                              Supprimer
+                            </button>
+                          )}
+                        </li>
+                      </Fragment>
+                    );
+                  }
+
                   return (
                     <Fragment key={m.id}>
-                      {heureAuCentre && (
-                        <li className="messagerie-jour">
-                          {nouveauJour ? `${jourDe(m.created_at)} · ${heureDe(m.created_at)}` : heureDe(m.created_at)}
-                        </li>
-                      )}
+                      {dateAuCentre}
                       <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}`}>
                         {!moi && (finDeSerie
                           ? <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />
                           : <span className="messagerie-avatar-vide" aria-hidden="true" />)}
                         <div className="messagerie-colonne">
                           {groupeId && !moi && !suite && <strong className="messagerie-auteur">{nomAgent(auteur)}</strong>}
-                          <div className={classes} title={heureDe(m.created_at)}>
-                            {supprime && <p className="messagerie-supprime">Message supprimé</p>}
-                            {!supprime && m.attachment_kind && <PieceJointe message={m} />}
-                            {!supprime && m.body && <p>{m.body}</p>}
-                            {m.edited_at && !supprime && <small>modifié</small>}
+                          <div className="messagerie-bulle-ligne">
+                            <div className={classes} title={heureDe(m.created_at)}>
+                              {supprime && <p className="messagerie-supprime">Message supprimé</p>}
+                              {!supprime && m.attachment_kind && <PieceJointe message={m} />}
+                              {!supprime && m.body && <p>{m.body}</p>}
+                              {m.edited_at && !supprime && <small>modifié</small>}
+                            </div>
+                            {!supprime && (
+                              <BoutonReagir moi={moi} reactions={m.reactions} utilisateurId={utilisateur.id} onReagir={(e) => reagir(m, e)} />
+                            )}
                           </div>
+                          {!supprime && (
+                            <PastillesReactions reactions={m.reactions} utilisateurId={utilisateur.id} onReagir={(e) => reagir(m, e)} nomDe={nomParticipant} />
+                          )}
                           {(statut || (moi && !supprime)) && (
                             <span className="messagerie-meta">
                               {moi && !supprime && (
