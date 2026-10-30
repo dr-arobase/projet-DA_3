@@ -111,7 +111,7 @@ export default function AppelProvider({ children }) {
       });
     } catch (err) {
       console.error('getUserMedia (appel) :', err?.name, err?.message);
-      throw new Error(messageErreurMedia(err, video));
+      throw new Error(messageErreurMedia(err, video), { cause: err });
     }
     setFluxLocal(local.current);
     if (video) {
