@@ -5,12 +5,6 @@ import { IconeBouclier, IconeUtilisateur, IconeCadenas, IconeChevron, IconeGithu
 import { SANS_SERVEUR, urlApi } from '../config.js';
 import '../styles/auth.css';
 
-// Chiffres de démonstration, pas encore lus dans l'API : signalés à l'écran (voir README)
-const STATS = [
-  { valeur: 128, libelle: 'Fiches actives' },
-  { valeur: 58, libelle: 'Agents connectés' },
-  { valeur: 6, libelle: "Alertes aujourd'hui" },
-];
 
 // Retour du serveur après la connexion GitHub : /connexion?erreur=…
 const ERREURS_GITHUB = {
@@ -76,15 +70,6 @@ export default function Auth() {
             Échangez sur les personnes recherchées, suivez les alertes en temps réel et
             communiquez avec vos équipes, depuis un seul espace de travail.
           </p>
-          <p className="auth-demo">Chiffres de démonstration</p>
-          <ul className="auth-stats">
-            {STATS.map((s) => (
-              <li key={s.libelle}>
-                <strong>{s.valeur}</strong>
-                <span>{s.libelle}</span>
-              </li>
-            ))}
-          </ul>
         </div>
 
         <p className="auth-pied">CrimeTracker</p>
