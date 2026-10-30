@@ -1,73 +1,112 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import {
-  IconeBouclier, IconeMaison, IconeRecherche, IconeSirene, IconeMegaphone,
-  IconeMessage, IconeRepere, IconeStats, IconeGroupe,
-} from './Icones.jsx';
+import { IconeBouclier, IconeChevron } from './Icones.jsx';
 import UserProfileMenu from './UserProfileMenu.jsx';
 import { useAuth } from './AuthContext.js';
+import { useTempsReel } from './TempsReelContext.js';
 import { estAuMoins } from '../agents.js';
-import useNonLus from '../hooks/useNonLus.js';
+import { SECTIONS } from './navigation.js';
+import { lireReglage, ecrireReglage } from '../reglages.js';
 
-// role : lien affiché seulement à partir de ce rôle (le serveur refuse de toute façon les autres)
-const sections = [
-  {
-    titre: 'Principal',
-    liens: [
-      { vers: '/', libelle: 'Accueil', Icone: IconeMaison, fin: true },
-      { vers: '/personnes-recherchees', libelle: 'Personnes recherchées', Icone: IconeRecherche },
-      { vers: '/alertes', libelle: 'Alertes', Icone: IconeSirene },
-      { vers: '/communiques', libelle: 'Communiqués', Icone: IconeMegaphone },
-      { vers: '/messagerie', libelle: 'Messagerie', Icone: IconeMessage, pastille: 'nonLus' },
-      { vers: '/annuaire', libelle: 'Annuaire', Icone: IconeRecherche },
-      { vers: '/carte', libelle: 'Carte', Icone: IconeRepere },
-    ],
-  },
-  {
-    titre: 'Gestion',
-    liens: [
-      { vers: '/statistiques', libelle: 'Statistiques', Icone: IconeStats },
-      { vers: '/utilisateurs', libelle: 'Utilisateurs', Icone: IconeGroupe, role: 'superviseur' },
-    ],
-  },
-];
-
-export default function Menu() {
+// Menu latéral (ordinateur et tablette). Réductible à une colonne d'icônes ; le choix est gardé
+// dans le navigateur. Sur téléphone, il est remplacé par la barre du bas (NavMobile).
+export default function Menu({ reduit, onBasculer, pastilles }) {
   const { utilisateur } = useAuth();
-  const nonLus = useNonLus();
-  const pastilles = { nonLus };
+  const { enLigne, agentsConnectes } = useTempsReel();
+  const [gestionOuverte, setGestionOuverte] = useState(() => lireReglage('menu-gestion', true));
+
+  function basculerGestion() {
+    setGestionOuverte((o) => {
+      ecrireReglage('menu-gestion', !o);
+      return !o;
+    });
+  }
 
   return (
-    <aside className="menu">
+    <aside className="menu" aria-label="Menu principal">
       <div className="menu-marque">
         <span className="logo-carre"><IconeBouclier /></span>
-        <span>CrimeTracker</span>
+        {!reduit && <strong className="menu-texte">CrimeTracker</strong>}
       </div>
 
+      <button
+        type="button"
+        className="menu-bascule"
+        onClick={onBasculer}
+        aria-expanded={!reduit}
+        aria-label={reduit ? 'Agrandir le menu' : 'Réduire le menu'}
+        title={reduit ? 'Agrandir le menu' : undefined}
+      >
+        <IconeChevron taille={18} />
+        {!reduit && <span className="menu-texte">Réduire le menu</span>}
+      </button>
+
+      {/* L'agent sait d'un coup d'œil s'il reçoit les alertes en direct */}
+      <p className={`menu-direct${enLigne ? '' : ' coupe'}`} role="status" title={reduit ? etatDirect(enLigne, agentsConnectes) : undefined}>
+        <span className="menu-direct-point" aria-hidden="true" />
+        {!reduit && <span className="menu-texte">{etatDirect(enLigne, agentsConnectes)}</span>}
+        {reduit && <span className="visuellement-cache">{etatDirect(enLigne, agentsConnectes)}</span>}
+      </p>
+
       <nav className="menu-nav">
-        {sections.map((section) => (
-          <div key={section.titre} className="menu-section">
-            <p className="menu-titre">{section.titre}</p>
-            {section.liens
-              .filter(({ role }) => !role || estAuMoins(utilisateur, role))
-              .map(({ vers, libelle, Icone, fin, pastille }) => {
-                const nombre = pastille ? pastilles[pastille] : 0;
-                return (
-                  <NavLink key={vers} to={vers} end={fin} className="menu-lien">
-                    <Icone />
-                    <span>{libelle}</span>
-                    {nombre > 0 && (
-                      <span className="menu-pastille" aria-label={`${nombre} message${nombre > 1 ? 's' : ''} non lu${nombre > 1 ? 's' : ''}`}>
-                        {nombre > 99 ? '99+' : nombre}
-                      </span>
-                    )}
-                  </NavLink>
-                );
-              })}
-          </div>
-        ))}
+        {SECTIONS.map((section) => {
+          const liens = section.liens.filter(({ role }) => !role || estAuMoins(utilisateur, role));
+          if (liens.length === 0) return null;
+          // Menu réduit : pas de titres, toutes les icônes restent visibles
+          const ouverte = reduit || !section.repliable || gestionOuverte;
+          const idListe = `menu-section-${section.id}`;
+          return (
+            <div key={section.id} className="menu-section">
+              {!reduit && (section.repliable ? (
+                <button type="button" className="menu-titre" onClick={basculerGestion} aria-expanded={ouverte} aria-controls={idListe}>
+                  {section.titre}
+                  <IconeChevron taille={14} className={`menu-fleche${ouverte ? ' ouverte' : ''}`} />
+                </button>
+              ) : (
+                <p className="menu-titre">{section.titre}</p>
+              ))}
+              <div id={idListe} className={`menu-groupe${ouverte ? ' ouvert' : ''}`} inert={ouverte ? undefined : true}>
+                <div>
+                  {liens.map(({ vers, libelle, Icone, fin, pastille }) => {
+                    const nombre = pastille ? pastilles[pastille] ?? 0 : 0;
+                    const texteNombre = nombre > 99 ? '99+' : String(nombre);
+                    return (
+                      <NavLink
+                        key={vers}
+                        to={vers}
+                        end={fin}
+                        className="menu-lien"
+                        title={reduit ? (nombre ? `${libelle} (${texteNombre} non lus)` : libelle) : undefined}
+                      >
+                        <span className="menu-barre" aria-hidden="true" />
+                        <Icone taille={20} />
+                        {reduit
+                          ? <span className="visuellement-cache">{libelle}</span>
+                          : <span className="menu-texte menu-libelle">{libelle}</span>}
+                        {nombre > 0 && (
+                          <span
+                            className={reduit ? 'menu-point' : 'menu-pastille'}
+                            aria-label={`${texteNombre} message${nombre > 1 ? 's' : ''} non lu${nombre > 1 ? 's' : ''}`}
+                          >
+                            {reduit ? '' : texteNombre}
+                          </span>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
-      <UserProfileMenu />
+      <UserProfileMenu reduit={reduit} />
     </aside>
   );
+}
+
+function etatDirect(enLigne, agents) {
+  if (!enLigne) return 'Temps réel coupé · reconnexion…';
+  return `Temps réel connecté · ${agents} agent${agents > 1 ? 's' : ''}`;
 }
