@@ -253,13 +253,27 @@ describeDb('Intégration PostgreSQL', () => {
 
     test('PUT par un superviseur met à jour le dossier', async () => {
       await pool.query("UPDATE app_user SET role = 'superviseur' WHERE id = $1", [userId]);
+      const { rows: [{ version }] } = await pool.query('SELECT version FROM criminal WHERE id = $1', [criminalId]);
       const res = await request(app)
         .put(`/api/criminals/${criminalId}`)
         .set('Authorization', bearer('superviseur'))
-        .send({ first_name: 'Api', last_name: 'Modifié', description: 'Mis à jour' });
+        .send({ first_name: 'Api', last_name: 'Modifié', description: 'Mis à jour', version });
 
       expect(res.status).toBe(200);
-      expect(res.body.criminal).toMatchObject({ last_name: 'Modifié', updated_by: 'Test Jest' });
+      expect(res.body.criminal).toMatchObject({ last_name: 'Modifié', updated_by: 'Test Jest', version: version + 1 });
+    });
+
+    // #98 : une version périmée ne doit rien écraser, sur une vraie base
+    test('PUT avec une version périmée : 409 et le dossier reste intact', async () => {
+      const { rows: [avant] } = await pool.query('SELECT version, last_name FROM criminal WHERE id = $1', [criminalId]);
+      const res = await request(app)
+        .put(`/api/criminals/${criminalId}`)
+        .set('Authorization', bearer('superviseur'))
+        .send({ first_name: 'Api', last_name: 'Écrasé', version: avant.version - 1 });
+
+      expect(res.status).toBe(409);
+      const { rows: [apres] } = await pool.query('SELECT version, last_name FROM criminal WHERE id = $1', [criminalId]);
+      expect(apres).toEqual(avant);
     });
 
     test('POST /api/sightings signale une observation', async () => {
