@@ -9,8 +9,9 @@ import { messageErreurMedia } from '../erreurMedia.js';
 // Appels audio et vidéo à deux (#56), en WebRTC : le son et l'image vont directement d'un navigateur
 // à l'autre. Le serveur ne relaie que la signalisation (Socket.IO : call:invite, call:accept,
 // call:refuse, call:end, call:signal), et seulement entre deux agents connectés.
-// Un serveur STUN public trouve l'adresse de chaque navigateur ; sans serveur TURN, un réseau très
-// fermé (pare-feu d'entreprise) peut empêcher l'appel : le message « connexion perdue » s'affiche alors.
+// Un serveur STUN public trouve l'adresse de chaque navigateur. Quand la connexion directe est
+// bloquée (données mobiles, pare-feu d'entreprise), le relais TURN donné par GET /api/turn fait
+// passer le son et l'image. Sans réponse de l'API, on se contente du STUN.
 const SERVEURS_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
 const DELAI_SONNERIE = 30 * 1000;
 const DUREE_AVIS = 6000;
@@ -59,6 +60,7 @@ export default function AppelProvider({ children }) {
   const appelRef = useRef(null);
   const connexion = useRef(null);
   const local = useRef(null);
+  const serveursIce = useRef(null);
   const candidatsEnAttente = useRef([]);
   const sonnerie = useRef(null);
 
@@ -97,6 +99,8 @@ export default function AppelProvider({ children }) {
   }, [signaler, terminer]);
 
   async function ouvrirMicroEtCamera(video) {
+    // Serveurs ICE demandés pendant que le navigateur ouvre le micro : identifiants TURN neufs à chaque appel
+    const ice = api.serveursIce().then((r) => r?.iceServers ?? SERVEURS_ICE).catch(() => SERVEURS_ICE);
     // Hors https (ex. téléphone sur http://192.168.x.x:5173), le navigateur cache micro et caméra
     if (!window.isSecureContext) {
       throw new Error('Les appels exigent une adresse sécurisée (https). Ouvrez CrimeTracker par son adresse https, puis réessayez.');
@@ -113,6 +117,7 @@ export default function AppelProvider({ children }) {
       console.error('getUserMedia (appel) :', err?.name, err?.message);
       throw new Error(messageErreurMedia(err, video), { cause: err });
     }
+    serveursIce.current = await ice;
     setFluxLocal(local.current);
     if (video) {
       // Téléphone : caméra avant et arrière, on propose de basculer
@@ -122,7 +127,7 @@ export default function AppelProvider({ children }) {
   }
 
   const creerConnexion = useCallback(() => {
-    const conn = new RTCPeerConnection({ iceServers: SERVEURS_ICE });
+    const conn = new RTCPeerConnection({ iceServers: serveursIce.current ?? SERVEURS_ICE });
     local.current.getTracks().forEach((piste) => conn.addTrack(piste, local.current));
     conn.onicecandidate = (e) => {
       if (e.candidate) signaler('call:signal', { data: { candidate: e.candidate.toJSON() } });
