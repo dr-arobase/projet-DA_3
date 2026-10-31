@@ -1632,6 +1632,59 @@
           }
         }
       }
+    },
+    "/api/turn": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "summary": "Serveurs ICE pour un appel audio ou vidéo",
+        "description": "STUN, plus le relais TURN (coturn) avec des identifiants temporaires (12 h) s'il est configuré (`TURN_URLS`, `TURN_SECRET`). Ajoutée par la PR #162.\n\n**Rôle requis :** tout agent connecté",
+        "responses": {
+          "200": {
+            "description": "Serveurs ICE à donner à RTCPeerConnection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "iceServers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "urls": {
+                            "oneOf": [
+                              {
+                                "type": "string"
+                              },
+                              {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            ]
+                          },
+                          "username": {
+                            "type": "string"
+                          },
+                          "credential": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
     }
   },
   "components": {
