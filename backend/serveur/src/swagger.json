@@ -320,7 +320,7 @@
       "put": {
         "tags": ["Criminals"],
         "summary": "Mettre à jour un dossier",
-        "description": "Met à jour les informations du dossier (sans le statut) et diffuse `criminal:updated`.\n\n**Rôle requis :** `superviseur`",
+        "description": "Met à jour les informations du dossier (sans le statut) et diffuse `criminal:updated`. Verrouillage optimiste : si le dossier a changé depuis la `version` envoyée, rien n'est écrit (409, avec l'état courant).\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
           "content": {
@@ -347,6 +347,10 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "409": {
+            "description": "Conflit de version",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VersionConflict" } } }
+          },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       },
@@ -1129,14 +1133,16 @@
       },
       "CriminalUpdate": {
         "type": "object",
-        "required": ["first_name", "last_name"],
+        "required": ["first_name", "last_name", "version"],
         "properties": {
           "first_name": { "type": "string", "maxLength": 100, "example": "Jean" },
           "last_name": { "type": "string", "maxLength": 100, "example": "Dupont" },
           "date_of_birth": { "type": "string", "format": "date", "example": "1985-04-12" },
           "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
           "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "crimes": { "type": "string", "example": "Vol à main armée" }
+          "crimes": { "type": "string", "example": "Vol à main armée" },
+          "photo_url": { "type": "string", "nullable": true, "description": "null ou \"\" efface la photo; absent, elle est gardée" },
+          "version": { "type": "integer", "example": 1, "description": "Version lue par le client avant la modification" }
         }
       },
       "CriminalStatusUpdate": {
