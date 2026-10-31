@@ -200,7 +200,8 @@ describe('POST /api/criminals', () => {
   test('201 : crée le dossier au nom de l\'agent et diffuse criminal:added', async () => {
     query
       .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // INSERT
-      .mockResolvedValueOnce({ rows: [dossier] }); // findById
+      .mockResolvedValueOnce({ rows: [dossier] }) // findById
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await request(app)
       .post('/api/criminals')
@@ -214,6 +215,10 @@ describe('POST /api/criminals', () => {
     expect(params[6]).toBe('recherche'); // statut par défaut
     expect(params[8]).toBe(7); // added_by = agent du jeton
     expect(emitEvent).toHaveBeenCalledWith('criminal:added', dossier);
+    // #100 : la création est inscrite au journal d'audit
+    const [sqlAudit, audit] = query.mock.calls[2];
+    expect(sqlAudit).toMatch(/INSERT INTO audit_log/);
+    expect(audit.slice(0, 4)).toEqual([7, 'CRIMINAL_CREATED', 'criminal', 1]);
   });
 
   test('400 si le prénom ou le nom manque', async () => {
@@ -331,7 +336,8 @@ describe('PATCH /api/criminals/:id/status', () => {
     const capture = { ...dossier, status: 'capture', version: 2 };
     query
       .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-      .mockResolvedValueOnce({ rows: [capture] });
+      .mockResolvedValueOnce({ rows: [capture] })
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await request(app).patch(url).set('Authorization', bearer()).send({ status: 'capture', version: 1 });
 
@@ -341,6 +347,8 @@ describe('PATCH /api/criminals/:id/status', () => {
     expect(sql).toMatch(/WHERE id = \$3 AND version = \$4/);
     expect(params).toEqual(['capture', 7, '1', 1]);
     expect(emitEvent).toHaveBeenCalledWith('criminal:updated', capture);
+    // #100 : le changement de statut est inscrit au journal d'audit
+    expect(query.mock.calls[2][1].slice(0, 5)).toEqual([7, 'CRIMINAL_STATUS_CHANGED', 'criminal', 1, '{"status":"capture"}']);
   });
 
   test('409 avec l\'état courant si la version est périmée', async () => {

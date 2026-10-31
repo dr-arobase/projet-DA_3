@@ -99,12 +99,21 @@ export const createUser = async (data = {}, actor) => {
   }
 
   const password_hash = await bcrypt.hash(password, 10);
+  let user;
   try {
-    return await userModel.create({ first_name, last_name, badge_number, email, password_hash, role, grade });
+    user = await userModel.create({ first_name, last_name, badge_number, email, password_hash, role, grade });
   } catch (error) {
     if (isUniqueViolation(error)) throw httpError(409, 'Ce matricule ou ce courriel est déjà utilisé');
     throw error;
   }
+  await auditLogModel.record({
+    actor_id: actor.id,
+    action: 'USER_CREATED',
+    target_type: 'user',
+    target_id: user.id,
+    details: { badge_number, role, grade },
+  });
+  return user;
 };
 
 // Désactiver un compte; un superviseur ne peut ni se désactiver ni désactiver la direction.
