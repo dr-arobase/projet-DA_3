@@ -14,20 +14,20 @@ describe('utils/texte', () => {
   });
 
   test.each([
-    ['espace de largeur nulle', '​'],
-    ['plusieurs invisibles mélangés', '​‌‍⁠﻿'],
-    ['marques de direction', '‎‏'],
-    ['caractère braille vide', '⠀'],
-    ['remplissage hangul', 'ㅤ'],
-    ['espaces insécables', '  '],
+    ['espace de largeur nulle', '\u200B'],
+    ['plusieurs invisibles mélangés', '\u200B\u200C\u200D\u2060\uFEFF'],
+    ['marques de direction', '\u200E\u200F'],
+    ['caractère braille vide', '\u2800'],
+    ['remplissage hangul', '\u3164'],
+    ['espaces insécables', '\u00A0\u202F'],
   ])('invisible : %s', (_, valeur) => {
     expect(estVisible(valeur)).toBe(false);
   });
 
   test.each([
     ['du texte', 'Bonjour'],
-    ['une emoji composée (famille, ZWJ)', '👨‍👩‍👧'],
-    ['une emoji avec sélecteur de variante', '❤️'],
+    ['une emoji composée (famille, ZWJ)', '👨\u200D👩\u200D👧'],
+    ['une emoji avec sélecteur de variante', '❤\uFE0F'],
     ['un point', '.'],
   ])('visible : %s', (_, valeur) => {
     expect(estVisible(valeur)).toBe(true);
