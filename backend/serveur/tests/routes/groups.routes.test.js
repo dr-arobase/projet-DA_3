@@ -115,6 +115,12 @@ describe('POST /api/messages/groups', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  test('400 si le nom n\'a que des caractères invisibles (#94)', async () => {
+    const res = await creer({ name: '\u200B\u3164', member_ids: [2] });
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   test('400 si le nom est trop long', async () => {
     const res = await creer({ name: 'x'.repeat(101), member_ids: [2] });
     expect(res.status).toBe(400);
@@ -194,6 +200,7 @@ describe('POST /api/messages/groups/:groupId/messages', () => {
 
   test('400 si le message est vide ou trop long', async () => {
     expect((await envoyer(MOI, { body: '  ' })).status).toBe(400);
+    expect((await envoyer(MOI, { body: '\u200B' })).status).toBe(400); // #94 : invisible
     expect((await envoyer(MOI, { body: 'x'.repeat(2001) })).status).toBe(400);
   });
 });

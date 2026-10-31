@@ -2,6 +2,7 @@ import * as groupModel from '../models/group.model.js';
 import { withTransaction } from '../config/db.js';
 import { emitToUsers } from '../sockets/index.js';
 import { MAX_BODY } from './messages.controller.js';
+import { texte, estVisible } from '../utils/texte.js';
 
 // Groupes de discussion (#55) : tout agent en crée un; seul le créateur ajoute ou retire
 // des membres; chaque membre peut quitter. Un non-membre ne lit ni n'écrit rien (403).
@@ -55,10 +56,10 @@ export const getGroups = async (req, res) => {
 
 // POST /api/messages/groups { name, member_ids }
 export const createGroup = async (req, res) => {
-  const name = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+  const name = texte(req.body.name);
   const membres = lireMembres(req.body.member_ids, req.user.id);
 
-  if (!name) return res.status(400).json({ message: 'Le nom du groupe est obligatoire' });
+  if (!name || !estVisible(name)) return res.status(400).json({ message: 'Le nom du groupe est obligatoire' });
   if (name.length > MAX_NAME) {
     return res.status(400).json({ message: `Le nom du groupe dépasse ${MAX_NAME} caractères` });
   }
@@ -107,8 +108,8 @@ export const getGroupMessages = async (req, res) => {
 
 // POST /api/messages/groups/:groupId/messages { body }
 export const sendGroupMessage = async (req, res) => {
-  const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
-  if (!body) return res.status(400).json({ message: 'Le message est vide' });
+  const body = texte(req.body.body);
+  if (!body || !estVisible(body)) return res.status(400).json({ message: 'Le message est vide' });
   if (body.length > MAX_BODY) {
     return res.status(400).json({ message: `Le message dépasse ${MAX_BODY} caractères` });
   }

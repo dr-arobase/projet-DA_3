@@ -64,6 +64,23 @@ describe('/api/sightings', () => {
     expect(emitEvent).toHaveBeenCalledWith('sighting:added', sighting);
   });
 
+  // #94 : le lieu et les notes doivent être du texte visible
+  test.each([
+    ['un lieu objet', { location: { rue: 'Berri' } }],
+    ['un lieu tableau', { location: ['Montréal'] }],
+    ['un lieu fait de caractères invisibles', { location: '\u200B\u200B' }],
+    ['un lieu trop long', { location: 'x'.repeat(256) }],
+    ['des notes objet', { location: 'Montréal', notes: { texte: 'vu' } }],
+  ])('POST 400 avec %s, sans rien enregistrer', async (_, champs) => {
+    const res = await request(app)
+      .post('/api/sightings')
+      .set('Authorization', bearer('policier'))
+      .send({ criminal_id: 1, ...champs });
+
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   test('POST 400 sans lieu', async () => {
     const res = await request(app)
       .post('/api/sightings')
@@ -85,7 +102,7 @@ describe('/api/sightings', () => {
       .send({ criminal_id: 1, location: 'Vieux-Port', latitude: '45.5075', longitude: -73.5536 });
 
     expect(res.status).toBe(201);
-    expect(query.mock.calls[1][1]).toEqual([1, 3, 'Vieux-Port', undefined, 45.5075, -73.5536]);
+    expect(query.mock.calls[1][1]).toEqual([1, 3, 'Vieux-Port', null, 45.5075, -73.5536]);
   });
 
   test.each([
