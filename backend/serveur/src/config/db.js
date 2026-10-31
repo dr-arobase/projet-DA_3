@@ -10,6 +10,9 @@
  * qui retourne { rows, rowCount }, et `pool.connect()` pour une transaction.
  * Le reste de repository/ ne sait pas lequel des deux répond.
  */
+// .env chargé ici aussi (#101) : le moteur est choisi dès l'import, quel que soit l'importeur
+import 'dotenv/config';
+
 const engine = process.env.DATABASE_URL?.startsWith('sqlite:')
   ? await import('./db-sqlite.js')
   : await import('./db-postgres.js');

@@ -1,13 +1,9 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-// Charger les variables d'environnement (.env)
-dotenv.config();
 
 // Import des routes
 import authRoutes from './routes/auth.routes.js';
