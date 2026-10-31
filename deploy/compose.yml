@@ -32,6 +32,9 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       SOCKET_ALLOWED_ORIGINS: ${SOCKET_ALLOWED_ORIGINS:?SOCKET_ALLOWED_ORIGINS manquant dans .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      # Relais TURN des appels (service turn ci-dessous) : vide = STUN seulement
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_SECRET: ${TURN_SECRET:-}
     volumes:
       # Les photos de profil survivent aux mises à jour de l'image
       - crimetracker-uploads:/app/serveur/src/uploads
@@ -47,6 +50,41 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  # Relais TURN (coturn) pour les appels : quand deux appareils ne peuvent pas se joindre
+  # directement (données mobiles, pare-feu), le son et l'image passent par ici.
+  # Démarré seulement avec COMPOSE_PROFILES=turn dans .env (voir .env.example).
+  # network_mode host : coturn doit voir la vraie adresse de la machine et ouvrir ses ports de relais.
+  # Ports à ouvrir dans le pare-feu (Azure : groupe de sécurité réseau) :
+  #   3478 TCP et UDP, puis 49160-49200 UDP.
+  turn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    profiles: ["turn"]
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET:-}
+      - --realm=${TURN_REALM:-crimetracker}
+      # Adresse publique/adresse privée de la machine (Azure : la VM ne voit que l'adresse privée)
+      - --external-ip=${TURN_EXTERNAL_IP:-}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      # Le relais ne doit pas servir à atteindre le réseau interne de la machine
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
 
 volumes:
   crimetracker-pgdata:
