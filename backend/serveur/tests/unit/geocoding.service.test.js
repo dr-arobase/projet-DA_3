@@ -8,7 +8,7 @@ const fetchOriginal = globalThis.fetch;
 const fetchSimule = jest.fn();
 globalThis.fetch = fetchSimule;
 
-const { geocode, geocodeOrNull } = await import('../../src/services/geocoding.service.js');
+const { geocode, geocodeOrNull, MAX_EN_ATTENTE_PAR_AGENT, MAX_EN_ATTENTE } = await import('../../src/services/geocoding.service.js');
 
 const reponse = (corps, ok = true) => ({ ok, status: ok ? 200 : 500, json: async () => corps });
 
@@ -50,4 +50,38 @@ describe('services/geocoding', () => {
     fetchSimule.mockRejectedValue(new Error('réseau coupé'));
     expect(await geocodeOrNull('Panne deux')).toBeNull();
   });
+
+  // #91 : avant, la file n'avait pas de fin : 300 adresses d'un agent bloquaient tout le monde 5 minutes
+  test('file plafonnée : un agent ne peut pas avoir plus de 2 adresses en attente', async () => {
+    let liberer;
+    const bloque = new Promise((resolve) => { liberer = () => resolve(reponse([])); });
+    fetchSimule.mockReturnValue(bloque);
+
+    const enCours = [1, 2].map((n) => geocode(`Plafond agent ${n}`, 7));
+    expect(MAX_EN_ATTENTE_PAR_AGENT).toBe(2);
+    await expect(geocode('Plafond agent 3', 7)).rejects.toThrow('GEOCODER_BUSY');
+
+    // Un autre agent n'est pas pénalisé
+    const autre = geocode('Plafond autre agent', 8);
+
+    liberer();
+    await Promise.all([...enCours, autre]);
+    // Les demandes terminées libèrent la place
+    fetchSimule.mockResolvedValue(reponse([]));
+    await expect(geocode('Plafond agent 4', 7)).resolves.toBeNull();
+  }, 15000);
+
+  test('file plafonnée pour tout le monde : au plus 10 adresses en attente', async () => {
+    let liberer;
+    const bloque = new Promise((resolve) => { liberer = () => resolve(reponse([])); });
+    fetchSimule.mockReturnValue(bloque);
+
+    // Sans agent (dossiers enregistrés par le serveur) : seul le plafond global s'applique
+    const enCours = Array.from({ length: MAX_EN_ATTENTE }, (_, n) => geocode(`Plafond global ${n}`));
+    await expect(geocode('Plafond global de trop')).rejects.toThrow('GEOCODER_BUSY');
+    expect(await geocodeOrNull('Plafond global de trop 2')).toBeNull();
+
+    liberer();
+    await Promise.all(enCours);
+  }, 30000);
 });

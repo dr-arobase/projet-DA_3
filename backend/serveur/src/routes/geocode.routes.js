@@ -16,10 +16,14 @@ router.get('/', verifyToken, async (req, res) => {
   }
 
   try {
-    const position = await geocode(adresse);
+    const position = await geocode(adresse, req.user.id);
     if (!position) return res.status(404).json({ message: 'Adresse introuvable. Précisez la ville ou le code postal.' });
     return res.json(position);
   } catch (error) {
+    if (error.message === 'GEOCODER_BUSY') {
+      res.set('Retry-After', '2');
+      return res.status(429).json({ message: 'Trop d\'adresses à la fois. Attendez quelques secondes, puis réessayez.' });
+    }
     console.error('Erreur de géocodage:', error.cause ?? error);
     return res.status(503).json({ message: 'Le service de localisation ne répond pas. Réessayez, ou cliquez sur la carte.' });
   }
