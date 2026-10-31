@@ -78,10 +78,13 @@ export const create = async ({
   return result.rows[0];
 };
 
-// Mettre à jour les informations d'un dossier (sans changer le statut)
+// Mettre à jour les informations d'un dossier (sans changer le statut), avec verrouillage
+// optimiste (#98) : rien n'est écrit si la version en base n'est plus celle que le client a lue.
+// effacer_photo retire la photo; sinon elle est gardée telle quelle.
+// Retourne null si le dossier n'existe pas ou si la version ne correspond plus.
 export const update = async (id, {
-  first_name, last_name, date_of_birth, nationality, description, crimes, photo_url, updated_by
-}) => {
+  first_name, last_name, date_of_birth, nationality, description, crimes, effacer_photo, updated_by
+}, expectedVersion) => {
   const query = `
     UPDATE criminal
     SET first_name = $1,
@@ -90,14 +93,14 @@ export const update = async (id, {
         nationality = $4,
         description = $5,
         crimes = $6,
-        photo_url = COALESCE($7, photo_url),
+        photo_url = CASE WHEN $7 THEN NULL ELSE photo_url END,
         updated_by = $8
-    WHERE id = $9
+    WHERE id = $9 AND version = $10
     RETURNING *
   `;
   const values = [
     first_name, last_name, date_of_birth || null, nationality || null,
-    description || null, crimes || null, photo_url || null, updated_by, id
+    description || null, crimes || null, Boolean(effacer_photo), updated_by, id, expectedVersion
   ];
   const result = await pool.query(query, values);
   return result.rows[0] || null;

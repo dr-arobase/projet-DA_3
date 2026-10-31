@@ -237,7 +237,7 @@ describe('POST /api/criminals', () => {
 });
 
 describe('PUT /api/criminals/:id', () => {
-  const body = { first_name: 'Jean', last_name: 'Dupont', description: 'Modifié' };
+  const body = { first_name: 'Jean', last_name: 'Dupont', description: 'Modifié', version: 1 };
 
   test('403 pour un policier', async () => {
     const res = await request(app).put('/api/criminals/1').set('Authorization', bearer()).send(body);
@@ -264,6 +264,43 @@ describe('PUT /api/criminals/:id', () => {
     const res = await request(app).put('/api/criminals/999').set('Authorization', bearer('direction')).send(body);
 
     expect(res.status).toBe(404);
+  });
+
+  // #98 : avant, le PUT écrasait le dossier sans regarder la version
+  test('400 sans version : le verrouillage optimiste est obligatoire', async () => {
+    const { version, ...sansVersion } = body;
+    const res = await request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(sansVersion);
+
+    expect(version).toBe(1);
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('409 si quelqu\'un a modifié le dossier entre-temps : rien n\'est écrasé', async () => {
+    const actuel = { ...dossier, version: 2 };
+    query
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE … WHERE version = 1 : aucune ligne
+      .mockResolvedValueOnce({ rows: [actuel] });
+
+    const res = await request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(body);
+
+    expect(res.status).toBe(409);
+    expect(res.body.criminal).toEqual(actuel);
+    expect(query.mock.calls[0][0]).toMatch(/version = \$10/);
+    expect(query.mock.calls[0][1][9]).toBe(1);
+    expect(emitEvent).not.toHaveBeenCalled();
+  });
+
+  test('photo_url: null efface la photo; absent, la photo est gardée', async () => {
+    query.mockResolvedValue({ rows: [dossier] });
+    const envoyer = (corps) => request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(corps);
+
+    await envoyer({ ...body, photo_url: null });
+    expect(query.mock.calls[0][1][6]).toBe(true);
+
+    query.mockClear();
+    await envoyer(body);
+    expect(query.mock.calls[0][1][6]).toBe(false);
   });
 });
 
