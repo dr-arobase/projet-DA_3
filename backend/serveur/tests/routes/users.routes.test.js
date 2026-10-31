@@ -112,6 +112,7 @@ describe('POST /api/users', () => {
         if (insertError) throw insertError;
         return { rows: [agent] };
       }
+      if (sql.includes('INSERT INTO audit_log')) return { rows: [{ id: 99 }] };
       throw new Error(`Requête inattendue : ${sql}`);
     });
 
@@ -127,6 +128,16 @@ describe('POST /api/users', () => {
     const params = insertParams();
     expect(params[4]).toMatch(/^\$2[aby]\$/); // hash bcrypt, jamais le mot de passe en clair
     expect(params.slice(5)).toEqual(['policier', 'sergent_autres_fonctions']);
+  });
+
+  // #100 : avant, la création d'un compte n'était pas journalisée
+  test('la création du compte est inscrite au journal d\'audit', async () => {
+    mockDb();
+    await post(body);
+    const audit = query.mock.calls.find(([sql]) => sql.includes('INSERT INTO audit_log'))?.[1];
+    expect(audit.slice(0, 3)).toEqual([1, 'USER_CREATED', 'user']);
+    expect(audit[3]).toBe(agent.id);
+    expect(JSON.parse(audit[4])).toEqual({ badge_number: 'PL-005', role: 'policier', grade: 'sergent_autres_fonctions' });
   });
 
   test.each(['superviseur', 'direction'])(
@@ -151,7 +162,8 @@ describe('POST /api/users', () => {
     query
       .mockResolvedValueOnce({ rows: [] })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ ...agent, role, grade }] });
+      .mockResolvedValueOnce({ rows: [{ ...agent, role, grade }] })
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await request(app)
       .post('/api/users')
