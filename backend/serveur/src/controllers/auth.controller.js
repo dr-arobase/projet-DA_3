@@ -4,6 +4,7 @@ import {
   COOKIE_NAME, CSRF_COOKIE_NAME, cookieOptions, csrfCookieOptions, readCookie,
 } from '../utils/session.js';
 import { createCsrfToken } from '../utils/csrf.js';
+import * as auditLogModel from '../models/auditLog.model.js';
 
 export const login = async (req, res) => {
   const { badge_number, password, se_souvenir } = req.body || {};
@@ -24,6 +25,16 @@ export const login = async (req, res) => {
   } catch (error) {
     // Gestion des erreurs métiers renvoyées par le service
     if (error.message === 'INVALID_CREDENTIALS') {
+      // Journal d'audit (#100), pour toutes les connexions ratées, matricule connu ou non :
+      // le même travail dans les deux cas ne révèle pas si le matricule existe (#90).
+      // Sans attendre : une panne du journal ne doit pas changer la réponse.
+      auditLogModel.record({
+        actor_id: null,
+        action: 'LOGIN_FAILED',
+        target_type: 'user',
+        target_id: null,
+        details: { badge_number: String(badge_number).slice(0, 50), ip: req.ip },
+      }).catch((err) => console.error('Journal d\'audit (connexion ratée) :', err.message));
       return res.status(401).json({ message: 'Identifiants invalides ou compte inactif' });
     }
 
