@@ -1,6 +1,10 @@
 import * as sightingModel from '../models/sighting.model.js';
 import * as criminalModel from '../models/criminal.model.js';
 import { emitEvent } from '../sockets/index.js';
+import { texte, estVisible } from '../utils/texte.js';
+
+const MAX_LOCATION = 255; // sighting.location VARCHAR(255)
+const MAX_NOTES = 2000;
 
 const MAX_RECENT = 500;
 
@@ -19,10 +23,21 @@ function lirePosition(latitude, longitude) {
 
 // POST /api/sightings : signaler une observation
 export const createSighting = async (req, res) => {
-  const { criminal_id, location, notes, latitude, longitude } = req.body;
-
-  if (!criminal_id || !location) {
+  const { criminal_id, latitude, longitude } = req.body;
+  // Le lieu et les notes doivent être du texte (#94) : un objet ou un tableau était enregistré tel quel
+  const location = texte(req.body.location);
+  if (!criminal_id || !location || !estVisible(location)) {
     return res.status(400).json({ message: 'criminal_id et location sont obligatoires' });
+  }
+  if (location.length > MAX_LOCATION) {
+    return res.status(400).json({ message: `Le lieu dépasse ${MAX_LOCATION} caractères` });
+  }
+  if (req.body.notes !== undefined && req.body.notes !== null && typeof req.body.notes !== 'string') {
+    return res.status(400).json({ message: 'Les notes doivent être un texte' });
+  }
+  const notes = texte(req.body.notes) || null;
+  if (notes && notes.length > MAX_NOTES) {
+    return res.status(400).json({ message: `Les notes dépassent ${MAX_NOTES} caractères` });
   }
   const position = lirePosition(latitude, longitude);
   if (!position) {
