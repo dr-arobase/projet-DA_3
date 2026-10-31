@@ -3,12 +3,13 @@
  *
  *   postgres://…   PostgreSQL, le moteur du cours (db-postgres.js). C'est le
  *                  défaut : le service postgres de compose.yml.
- *   sqlite:…       SQLite, un simple fichier, pour un poste SANS Docker
- *                  (db-sqlite.js). Rien à installer : il est dans Node.
+ *   sqlite:…       SQLite en mémoire, pour les tests automatisés seulement
+ *                  (db-sqlite.js). L'application refuse de démarrer dessus (#87) :
+ *                  le schéma et les requêtes sont écrits pour PostgreSQL.
  *
  * Les deux modules offrent la même interface : `pool.query(sql, [valeurs])`
  * qui retourne { rows, rowCount }, et `pool.connect()` pour une transaction.
- * Le reste de repository/ ne sait pas lequel des deux répond.
+ * Les modèles (models/) ne savent pas lequel des deux répond.
  */
 const engine = process.env.DATABASE_URL?.startsWith('sqlite:')
   ? await import('./db-sqlite.js')

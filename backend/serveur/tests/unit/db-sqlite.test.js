@@ -73,3 +73,13 @@ describe('adaptateur SQLite', () => {
     expect(() => client.release()).not.toThrow();
   });
 });
+
+// #87 : schema.sql est écrit pour PostgreSQL, le démarrage sur SQLite plantait sur « SET ».
+// L'application refuse maintenant clairement de démarrer et dit quoi faire.
+describe('démarrage de l\'application sur SQLite', () => {
+  test('refusé, avec la marche à suivre', async () => {
+    const { initializeDatabase } = await import('../../src/config/db-sqlite.js');
+
+    await expect(initializeDatabase()).rejects.toThrow(/exige PostgreSQL.*docker compose up -d postgres/);
+  });
+});
