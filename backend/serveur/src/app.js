@@ -73,6 +73,12 @@ app.get('/', (req, res) => {
   });
 });
 
+// Route inconnue (#97) : une réponse JSON en français, comme le reste de l'API,
+// au lieu de la page HTML « Cannot GET » d'Express (qui révèle aussi le framework)
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route introuvable' });
+});
+
 // Middleware global de gestion des erreurs
 app.use(errorHandler);
 

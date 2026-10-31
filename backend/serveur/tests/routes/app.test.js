@@ -59,6 +59,16 @@ describe('Application Express', () => {
     expect(res.status).toBe(404);
   });
 
+  // #97 : avant, Express répondait une page HTML « Cannot GET /api/nimporte »
+  test('une route inconnue répond en JSON, en français, sans révéler Express', async () => {
+    const res = await request(app).post('/api/nimporte').send({});
+
+    expect(res.status).toBe(404);
+    expect(res.headers['content-type']).toMatch(/application\/json/);
+    expect(res.body).toEqual({ message: 'Route introuvable' });
+    expect(res.text).not.toMatch(/Cannot|<html|<pre/i);
+  });
+
   test('un JSON mal formé est intercepté par errorHandler (400)', async () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
