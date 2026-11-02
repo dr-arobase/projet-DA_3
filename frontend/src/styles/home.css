@@ -12,6 +12,9 @@
 .entete-sous-titre { margin-top: 2px; color: var(--texte-doux); font-family: var(--mono); font-size: 11px; }
 
 .entete-actions { display: flex; align-items: center; gap: 16px; }
+.accueil-alerte { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 12px 16px; border-left: 4px solid var(--danger); border-radius: 8px; background: var(--danger-fond); color: var(--danger); text-decoration: none; }
+.accueil-alerte span { flex: 1; }
+.accueil-alerte small { color: var(--texte-doux); }
 
 .recherche {
   display: flex;
@@ -123,6 +126,7 @@
   font-weight: 700;
   text-decoration: none;
 }
+.action { min-height: 40px; }
 .action:hover { border-color: var(--marine-600); }
 .action-principale { border-color: var(--marine-700); background: var(--marine-700); color: #fff; }
 .action-principale:hover { background: var(--marine-600); }

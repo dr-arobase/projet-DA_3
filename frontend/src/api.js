@@ -113,6 +113,7 @@ export const promouvoirUtilisateur = (id, role, grade) =>
 
 // Signalements terrain (carte) : latitude et longitude facultatives
 export const listerSignalementsRecents = (params = {}) => requete(`/api/sightings/recent?${qs(params)}`);
+export const listerSignalementsDossier = (criminalId) => requete(`/api/sightings?criminal_id=${criminalId}`);
 
 export const signaler = (signalement) => requete('/api/sightings', { method: 'POST', body: signalement });
 

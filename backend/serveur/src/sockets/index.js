@@ -19,7 +19,11 @@ function getPresenceList() {
 export default function registerSockets(server) {
   const allowedOrigins = getAllowedOrigins();
   io = new Server(server, {
-    cors: { origin: allowedOrigins, credentials: true }
+    cors: { origin: allowedOrigins, credentials: true },
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 30_000,
+      skipMiddlewares: false,
+    },
   });
 
   // Authentification au moment de la connexion, via le même jeton JWT que l'API
