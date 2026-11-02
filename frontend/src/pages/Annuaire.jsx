@@ -7,6 +7,8 @@ import { LIBELLES_ROLE, LIBELLES_GRADE, estAuMoins, nomAgent } from '../agents.j
 import '../styles/registre.css';
 import '../styles/pages.css';
 
+const PAR_PAGE = 20;
+
 // Agents connectés en temps réel (#14, présence Socket.IO) pour tous;
 // l'annuaire complet (GET /api/users) pour les superviseurs et la direction
 export default function Annuaire() {
@@ -19,6 +21,7 @@ export default function Annuaire() {
   // /api/messages/contacts est ouvert à tout agent, contrairement à /api/users.
   const [noms, setNoms] = useState(new Map());
   const [recherche, setRecherche] = useState('');
+  const [page, setPage] = useState(1);
   const [erreur, setErreur] = useState('');
 
   useEffect(() => {
@@ -49,9 +52,14 @@ export default function Annuaire() {
   const enLigne = new Set(connectes.map((p) => p.id));
 
   const terme = recherche.trim().toLowerCase();
+  // Les agents en ligne d'abord : ce sont ceux qu'on peut joindre tout de suite
   const filtres = agents
     .filter((a) => a.is_active)
-    .filter((a) => !terme || `${nomAgent(a)} ${a.badge_number}`.toLowerCase().includes(terme));
+    .filter((a) => !terme || `${nomAgent(a)} ${a.badge_number}`.toLowerCase().includes(terme))
+    .sort((a, b) => Number(enLigne.has(b.id)) - Number(enLigne.has(a.id)));
+  const totalPages = Math.max(1, Math.ceil(filtres.length / PAR_PAGE));
+  const pageCourante = Math.min(page, totalPages);
+  const visibles = filtres.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
 
   return (
     <>
@@ -90,15 +98,16 @@ export default function Annuaire() {
                   placeholder="Rechercher par nom ou matricule…"
                   aria-label="Rechercher par nom ou matricule"
                   value={recherche}
-                  onChange={(e) => setRecherche(e.target.value)}
+                  onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
                 />
               </label>
+              <span className="utilisateurs-compte" aria-live="polite">{filtres.length} agent{filtres.length > 1 ? 's' : ''} actif{filtres.length > 1 ? 's' : ''}</span>
             </div>
 
             {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
 
             <div className="carte registre-tableau-cadre">
-              <table className="registre-tableau pages-tableau-fixe">
+              <table className="registre-tableau pages-tableau-fixe annuaire-tableau">
                 <thead>
                   <tr>
                     <th scope="col">Agent</th>
@@ -108,9 +117,9 @@ export default function Annuaire() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtres.map((a) => (
+                  {visibles.map((a) => (
                     <tr key={a.id}>
-                      <td>{nomAgent(a)}<small>{a.badge_number}</small></td>
+                      <td><strong>{nomAgent(a)}</strong><small className="annuaire-matricule">{a.badge_number}</small></td>
                       <td>{LIBELLES_ROLE[a.role]}<small>{LIBELLES_GRADE[a.grade]}</small></td>
                       <td><a href={`mailto:${a.email}`}>{a.email}</a></td>
                       <td>
@@ -126,6 +135,14 @@ export default function Annuaire() {
                 </tbody>
               </table>
             </div>
+
+            {totalPages > 1 && (
+              <nav className="pagination" aria-label="Pagination de l'annuaire">
+                <button type="button" disabled={pageCourante <= 1} onClick={() => setPage(pageCourante - 1)}>← Précédente</button>
+                <span>Page {pageCourante} sur {totalPages}</span>
+                <button type="button" disabled={pageCourante >= totalPages} onClick={() => setPage(pageCourante + 1)}>Suivante →</button>
+              </nav>
+            )}
           </section>
         )}
       </div>

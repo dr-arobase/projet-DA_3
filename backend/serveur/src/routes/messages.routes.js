@@ -1,7 +1,7 @@
 import express from 'express';
 import {
   getContacts, getUnreadCount, getConversation, sendMessage, updateMessage, deleteMessage,
-  sendAttachment, getAttachment,
+  sendAttachment, getAttachment, reactToMessage,
 } from '../controllers/messages.controller.js';
 import { readAttachment } from '../middleware/attachment.middleware.js';
 import {
@@ -38,6 +38,8 @@ router.post('/', sendMessage);
 // Un message précis (privé ou de groupe) : seul son expéditeur le modifie (15 minutes) ou le supprime
 router.patch('/:messageId', updateMessage);
 router.delete('/:messageId', deleteMessage);
+// Réagir avec une emoji : tout participant de la conversation ou du groupe
+router.post('/:messageId/reactions', reactToMessage);
 
 // Tout identifiant de l'URL doit être un entier positif (sinon 400)
 router.param('groupId', validateId);
