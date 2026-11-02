@@ -33,6 +33,9 @@
 .pages-diffusion.urgent { border-left-color: var(--danger); }
 .pages-diffusion p { white-space: pre-line; overflow-wrap: anywhere; }
 .pages-diffusion small { color: var(--texte-doux); font-size: 12px; }
+.diffusion-gravite { justify-self: start; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+.diffusion-gravite.urgent { background: var(--danger-fond); color: var(--danger); }
+.diffusion-gravite.info { background: #e6e9f0; color: var(--marine-700); }
 .pages-vide { padding: 18px; color: var(--texte-doux); text-align: center; }
 
 /* ---------- Tableaux d'agents ---------- */
@@ -46,6 +49,9 @@
 .annuaire-tableau td strong { display: block; font-size: 15px; font-weight: 700; }
 .annuaire-tableau .annuaire-matricule { font-family: var(--mono); }
 .annuaire-tableau td a { color: var(--lien); font-weight: 400; overflow-wrap: anywhere; }
+.annuaire-actions { display: flex !important; flex-wrap: wrap; gap: 10px; align-items: center; }
+.annuaire-actions button { border: 0; background: none; font: inherit; cursor: pointer; }
+.annuaire-actions button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ---------- Utilisateurs (direction E) ---------- */
 .utilisateurs-compte { margin-left: auto; color: var(--texte-doux); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -121,6 +127,14 @@
 .pages-barre.statut-capture { background: var(--succes); }
 .pages-barre.statut-libere { background: var(--marine-600); }
 .pages-barre-valeur { color: var(--texte-doux); text-align: right; }
+.evolution { display: flex; align-items: end; justify-content: space-around; gap: 12px; min-height: 150px; padding: 18px 8px 0; border-bottom: 1px solid var(--bordure); }
+.evolution-semaine { display: grid; justify-items: center; gap: 6px; min-width: 0; }
+.evolution-barres { display: flex; align-items: end; gap: 3px; height: 115px; }
+.evolution-barre { display: block; width: 10px; min-height: 4px; border-radius: 3px 3px 0 0; }
+.evolution-barre.ajoutes { background: var(--marine-600); }
+.evolution-barre.captures { background: var(--succes); }
+.evolution-barre.alertes { background: var(--danger); }
+.evolution-semaine small { color: var(--texte-doux); font-size: 11px; }
 
 /* ---------- Carte ---------- */
 .carte-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
@@ -132,7 +146,7 @@
 .carte-legende .carte-legende-signalement { background: #8a93a0; }
 .carte-legende .carte-legende-dossier { border-radius: 3px; background: #8a93a0; }
 /* Repère d'un dossier (divIcon Leaflet) : un carré, distinct des ronds des signalements */
-.carte-repere-dossier span { display: block; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 4px; box-shadow: 0 1px 4px rgba(12, 26, 48, 0.45); }
+.carte-repere-dossier span { display: block; width: 32px; height: 32px; border: 3px solid #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(12, 26, 48, 0.45); }
 .carte-adresse { display: grid; gap: 6px; }
 .carte-adresse .registre-lien { justify-self: start; }
 .recherche-dossier { position: relative; }
@@ -154,6 +168,7 @@
 .recherche-dossier-liste li[role='option'] { padding: 8px 10px; border-radius: 7px; font-size: 14px; cursor: pointer; }
 .recherche-dossier-liste li.actif { background: var(--fond); }
 .recherche-dossier-choisi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); font-size: 14px; }
+.carte-cadre .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 38px; font-size: 22px; }
 .carte-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .carte-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
 .carte-liste li > :first-child { justify-self: start; }

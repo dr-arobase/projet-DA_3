@@ -83,6 +83,7 @@ export const update = async (id, {
   first_name, last_name, date_of_birth, nationality, description, crimes, photo_url, updated_by
 }) => {
   const query = `
+    WITH before AS (SELECT status AS previous_status FROM criminal WHERE id = $9)
     UPDATE criminal
     SET first_name = $1,
         last_name = $2,
@@ -93,7 +94,7 @@ export const update = async (id, {
         photo_url = COALESCE($7, photo_url),
         updated_by = $8
     WHERE id = $9
-    RETURNING *
+    RETURNING criminal.*, (SELECT previous_status FROM before) AS previous_status
   `;
   const values = [
     first_name, last_name, date_of_birth || null, nationality || null,
@@ -108,11 +109,12 @@ export const update = async (id, {
 // Retourne null si le dossier n'existe pas ou si la version ne correspond plus.
 export const updateStatus = async (id, status, expectedVersion, updated_by) => {
   const query = `
+    WITH before AS (SELECT status AS previous_status FROM criminal WHERE id = $3)
     UPDATE criminal
     SET status = $1,
         updated_by = $2
     WHERE id = $3 AND version = $4
-    RETURNING *
+    RETURNING criminal.*, (SELECT previous_status FROM before) AS previous_status
   `;
   const result = await pool.query(query, [status, updated_by, id, expectedVersion]);
   return result.rows[0] || null;
@@ -121,16 +123,17 @@ export const updateStatus = async (id, status, expectedVersion, updated_by) => {
 // Dernière adresse connue et sa position (null si introuvable, ou pour effacer l'adresse)
 export const setAddress = async (id, { last_known_address, latitude, longitude, updated_by }) => {
   const result = await pool.query(
-    `UPDATE criminal
+    `WITH before AS (SELECT status AS previous_status FROM criminal WHERE id = $5)
+     UPDATE criminal
      SET last_known_address = $1, latitude = $2, longitude = $3, updated_by = $4
      WHERE id = $5
-     RETURNING id`,
+     RETURNING criminal.id, (SELECT previous_status FROM before) AS previous_status`,
     [last_known_address || null, latitude ?? null, longitude ?? null, updated_by, id]
   );
   return result.rows[0] || null;
 };
 
 export const remove = async (id) => {
-  const result = await pool.query('DELETE FROM criminal WHERE id = $1 RETURNING id', [id]);
+  const result = await pool.query('DELETE FROM criminal WHERE id = $1 RETURNING id, status', [id]);
   return result.rows[0] || null;
 };
