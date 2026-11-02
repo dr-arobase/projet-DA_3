@@ -58,6 +58,7 @@ export default function Messagerie() {
   const [groupe, setGroupe] = useState(null); // groupe ouvert, avec ses membres
   const [texte, setTexte] = useState('');
   const [erreur, setErreur] = useState('');
+  const [chargementConversation, setChargementConversation] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [panneau, setPanneau] = useState(null); // 'nouveau-groupe' | 'membres' | null
   const [menuOuvert, setMenuOuvert] = useState(false);
@@ -122,7 +123,10 @@ export default function Messagerie() {
     setErreur('');
     if (!avecId && !groupeId) return undefined;
     let actif = true;
-    ouvrir(() => actif).catch((err) => actif && setErreur(err.message));
+    setChargementConversation(true);
+    ouvrir(() => actif)
+      .catch((err) => actif && setErreur(err.message))
+      .finally(() => actif && setChargementConversation(false));
     return () => { actif = false; };
   }, [avecId, groupeId, ouvrir]);
 
@@ -471,7 +475,11 @@ export default function Messagerie() {
             />
           ) : !ouvert ? (
             <p className="messagerie-vide">
-              {avecId || groupeId ? 'Chargement…' : 'Choisissez une conversation, ou cherchez un agent pour lui écrire.'}
+              {chargementConversation
+                ? 'Chargement de la conversation…'
+                : erreur
+                  ? 'Impossible de charger cette conversation.'
+                  : 'Choisissez une conversation, ou cherchez un agent pour lui écrire.'}
             </p>
           ) : (
             <>

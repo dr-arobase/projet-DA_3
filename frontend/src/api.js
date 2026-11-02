@@ -38,7 +38,7 @@ export async function requete(chemin, { method = 'GET', body } = {}) {
 
   const donnees = await reponse.json().catch(() => ({}));
   if (!reponse.ok) {
-    if ((reponse.status === 401 || reponse.status === 403)
+    if ((reponse.status === 401 || (reponse.status === 403 && donnees.message === 'Jeton invalide ou expiré.'))
       && !chemin.startsWith('/api/auth/login')
       && !chemin.startsWith('/api/auth/github')) {
       window.location.assign('/connexion');
