@@ -18,6 +18,11 @@
   --rayon: 10px;
   --police: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* Titres : condensée, lisible de loin, ton « service public » (direction E) */
+  --titre: 'Barlow Condensed', 'Arial Narrow', 'Segoe UI', sans-serif;
+  --largeur-menu: 256px;
+  --duree-menu: 0.28s;
+  --courbe: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 * { box-sizing: border-box; }
@@ -48,11 +53,14 @@ button, input { font: inherit; }
 }
 
 /* ---------- Mise en page ---------- */
+/* Direction E : menu marine à gauche (réductible), contenu clair ; sur téléphone, barre en bas */
 .app {
   display: grid;
-  grid-template-columns: 250px 1fr;
+  grid-template-columns: var(--largeur-menu) minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns var(--duree-menu) var(--courbe);
 }
+.app.menu-reduit { --largeur-menu: 76px; }
 
 .contenu { min-width: 0; display: flex; flex-direction: column; }
 
@@ -63,48 +71,152 @@ button, input { font: inherit; }
   height: 100vh;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 16px 12px 12px;
+  overflow: hidden;
   background: var(--marine-900);
-  color: #c9d1dd;
+  color: #c3ccd8;
 }
 
 .menu-marque {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px 18px;
-  font-size: 17px;
-  font-weight: 700;
+  padding: 0 4px 14px;
   color: #fff;
 }
-.menu-marque .logo-carre { width: 34px; height: 34px; border-radius: 9px; }
+.menu-marque .logo-carre { flex-shrink: 0; width: 34px; height: 34px; border-radius: 9px; background: none; border-color: rgba(255, 255, 255, 0.2); }
+.menu-marque strong { font-family: var(--titre); font-size: 22px; font-weight: 700; letter-spacing: 0.01em; }
 
-.menu-nav { flex: 1; overflow-y: auto; padding: 8px 10px; }
-.menu-section + .menu-section { margin-top: 14px; }
+/* Le texte du menu réapparaît en glissant quand on l'agrandit */
+.menu-texte { animation: menu-apparait 0.22s ease both; white-space: nowrap; }
+@keyframes menu-apparait { from { opacity: 0; transform: translateX(-6px); } }
+
+.menu-bascule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: none;
+  color: #c3ccd8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.menu-bascule:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
+.menu-bascule svg { flex-shrink: 0; transform: rotate(180deg); transition: transform var(--duree-menu) var(--courbe); }
+.menu-reduit .menu-bascule svg { transform: none; }
+
+/* État du temps réel : point vert qui respire quand tout va bien, orange si la connexion est coupée */
+.menu-direct {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(38, 119, 63, 0.18);
+  color: #d7f2df;
+  font-size: 12px;
+  font-weight: 600;
+}
+.menu-direct.coupe { background: rgba(224, 138, 30, 0.18); color: #fbe3c4; }
+.menu-direct-point { flex-shrink: 0; width: 8px; height: 8px; border-radius: 50%; background: #3fbf6a; animation: menu-respire 2s ease-in-out infinite; }
+.menu-direct.coupe .menu-direct-point { background: #e08a1e; animation: none; }
+@keyframes menu-respire { 50% { opacity: 0.4; } }
+
+.menu-nav { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; margin: 0 -12px; padding: 0 12px; }
+.menu-section { display: grid; gap: 2px; margin-bottom: 10px; }
 
 .menu-titre {
-  padding: 8px 13px 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border: 0;
+  background: none;
+  color: #8f9bb0;
   font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #7f8a9b;
+  text-align: left;
 }
+button.menu-titre { cursor: pointer; }
+button.menu-titre:hover { color: #c3ccd8; }
+.menu-fleche { transform: rotate(0deg); transition: transform 0.2s ease; }
+.menu-fleche.ouverte { transform: rotate(90deg); }
+
+/* La section se replie en glissant (hauteur animée) au lieu de disparaître d'un coup */
+.menu-groupe { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 0.26s var(--courbe), opacity 0.2s ease; }
+.menu-groupe.ouvert { grid-template-rows: 1fr; opacity: 1; }
+.menu-groupe > div { display: grid; gap: 2px; min-height: 0; overflow: hidden; }
 
 .menu-lien {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 8px 13px;
-  margin-bottom: 2px;
-  border-radius: 7px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: #c3ccd8;
   font-size: 14px;
   font-weight: 600;
-  color: #b8c2d0;
   text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.menu-lien:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.menu-lien svg { flex-shrink: 0; }
+.menu-lien:hover { background: rgba(255, 255, 255, 0.07); color: #fff; transform: translateX(2px); }
 .menu-lien.active { background: #1f2f4a; color: #fff; }
-.menu-lien span:first-of-type { flex: 1; }
+/* Barre bleue de la page courante, qui grandit depuis le centre */
+.menu-barre {
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #8fb0e6;
+  transform: scaleY(0);
+  transition: transform 0.25s var(--courbe);
+}
+.menu-lien.active .menu-barre { transform: scaleY(1); }
+.menu-libelle { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+
+/* Nombre de messages non lus, collé à droite du lien */
+.menu-pastille {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* Menu réduit : un simple point rouge sur l'icône */
+.menu-point {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--marine-900);
+  border-radius: 50%;
+  background: var(--danger);
+}
+
+.menu-reduit .menu-marque,
+.menu-reduit .menu-bascule,
+.menu-reduit .menu-direct,
+.menu-reduit .menu-lien,
+.menu-reduit .profil-bouton { justify-content: center; }
+.menu-reduit .menu-lien:hover { transform: none; }
 
 .pastille {
   min-width: 20px;
@@ -118,30 +230,30 @@ button, input { font: inherit; }
 }
 
 /* ---------- Profil (bas du menu) ---------- */
-.profil { border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 12px 10px; }
+.profil { position: relative; margin-top: auto; padding-top: 8px; }
 
 .profil-bouton {
   display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 4px;
+  padding: 8px;
   border: 0;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
   text-align: left;
   cursor: pointer;
 }
-.profil-bouton:hover { background: rgba(255, 255, 255, 0.05); }
+.profil-bouton:hover { background: rgba(255, 255, 255, 0.1); }
 
 .avatar {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: var(--marine-700);
   color: #fff;
   font-size: 13px;
@@ -150,28 +262,52 @@ button, input { font: inherit; }
 .avatar-photo { object-fit: cover; }
 
 .profil-texte { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.profil-texte strong { color: #fff; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.profil-texte small { color: #8995a6; font-size: 11px; }
-.chevron { transition: transform 0.15s; }
-.chevron.ouvert { transform: rotate(-90deg); }
+.profil-texte strong { color: #fff; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profil-texte small { overflow: hidden; color: #c3ccd8; font-family: var(--mono); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.chevron { flex-shrink: 0; transform: rotate(-90deg); transition: transform 0.2s ease; }
+.chevron.ouvert { transform: rotate(90deg); }
 
+/* Menu du profil : carte blanche au-dessus du bouton */
+.profil-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 4px);
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  width: 216px;
+  padding: 6px;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(12, 26, 48, 0.25);
+  animation: menu-pop 0.18s var(--courbe) both;
+  transform-origin: bottom left;
+}
+@keyframes menu-pop { from { opacity: 0; transform: translateY(6px) scale(0.97); } }
 .profil-action {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #e3e8ef;
-  font-size: 13px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--texte);
+  font-size: 14px;
+  text-align: left;
   text-decoration: none;
   cursor: pointer;
 }
-.profil-action:hover { background: rgba(255, 255, 255, 0.1); }
-.profil-action.deconnexion:hover { background: rgba(198, 40, 40, 0.25); }
+.profil-action:hover { background: var(--fond); }
+.profil-action.deconnexion { border-top: 1px solid #e6e9f0; color: var(--danger); font-weight: 600; }
+.profil-action.deconnexion:hover { background: var(--danger-fond); }
+
+.menu button:focus-visible, .menu a:focus-visible { outline: 2px solid #8fb0e6; outline-offset: 2px; }
+
+/* ---------- Barre du bas (téléphone) ---------- */
+.nav-mobile, .nav-mobile-feuille, .nav-mobile-voile { display: none; }
 
 /* ---------- Page générique ---------- */
 .page { padding: 28px 32px; }
@@ -183,21 +319,179 @@ button, input { font: inherit; }
 .carte {
   background: var(--surface);
   border: 1px solid var(--bordure);
-  border-radius: 14px;
+  border-radius: var(--rayon);
+}
+
+/* Titres de page : police condensée de la direction E */
+.entete h1, .entete-registre h1, .entete-profil h1 {
+  font-family: var(--titre);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.005em;
 }
 
 @media (max-width: 860px) {
-  .app { grid-template-columns: 1fr; }
-  .menu { position: static; height: auto; }
-  .menu-nav { display: flex; gap: 10px; overflow-x: auto; }
-  .menu-section + .menu-section { margin-top: 0; }
-  .menu-section { display: flex; align-items: center; gap: 2px; }
-  .menu-titre { display: none; }
-  .menu-lien { white-space: nowrap; }
+  .app, .app.menu-reduit { grid-template-columns: minmax(0, 1fr); }
+  .menu { display: none; }
+  /* Place pour la barre du bas (et l'encoche des téléphones) */
+  .contenu { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
   .page { padding: 20px 16px; }
+  .entete h1, .entete-registre h1, .entete-profil h1 { font-size: 26px; }
+
+  .nav-mobile {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 900;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    padding: 6px 4px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--bordure);
+    background: var(--surface);
+  }
+  .nav-mobile-lien {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 0 0;
+    border: 0;
+    background: none;
+    color: var(--texte-doux);
+    font-size: 11px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .nav-mobile-lien.active { color: var(--marine-700); font-weight: 700; }
+  .nav-mobile-lien.active::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    width: 28px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--marine-700);
+  }
+  .nav-mobile-pastille {
+    position: absolute;
+    top: 0;
+    right: 22%;
+    min-width: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+  .nav-mobile-feuille .nav-mobile-pastille { position: static; margin-left: auto; min-width: 22px; font-size: 12px; line-height: 20px; }
+
+  .nav-mobile-voile { display: block; position: fixed; inset: 0; z-index: 890; background: rgba(12, 26, 48, 0.45); animation: voile 0.2s ease both; }
+  .nav-mobile-feuille {
+    display: block;
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(80px + env(safe-area-inset-bottom));
+    z-index: 895;
+    padding: 6px;
+    border: 1px solid var(--bordure);
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 12px 32px rgba(12, 26, 48, 0.3);
+    animation: feuille 0.22s var(--courbe) both;
+  }
+  .nav-mobile-feuille ul { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+  .nav-mobile-ligne {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 10px;
+    background: none;
+    color: var(--texte);
+    font-size: 16px;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .nav-mobile-ligne.active { background: var(--fond); color: var(--marine-700); }
+  .nav-mobile-ligne.danger { border-top: 1px solid #e6e9f0; border-radius: 0 0 10px 10px; color: var(--danger); }
+  .nav-mobile a:focus-visible, .nav-mobile button:focus-visible, .nav-mobile-feuille a:focus-visible, .nav-mobile-feuille button:focus-visible { outline: 2px solid var(--marine-600); outline-offset: 2px; }
+}
+@keyframes voile { from { opacity: 0; } }
+@keyframes feuille { from { opacity: 0; transform: translateY(12px); } }
+
+/* Animations courtes et utiles ; coupées si l'agent préfère moins de mouvement */
+@media (prefers-reduced-motion: reduce) {
+  .app, .menu-bascule svg, .menu-fleche, .menu-groupe, .menu-lien, .menu-barre, .chevron { transition: none; }
+  .menu-texte, .menu-direct-point, .profil-menu, .nav-mobile-voile, .nav-mobile-feuille { animation: none; }
+  .menu-lien:hover { transform: none; }
 }
 
 /* ---------- Notifications d'alertes et de communiqués (#63) ---------- */
+/* Appel audio ou vidéo (#56) : fenêtre en bas à droite, visible sur toutes les pages */
+.appel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1100;
+  display: grid;
+  gap: 12px;
+  width: min(320px, calc(100vw - 32px));
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--marine-900);
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(12, 26, 48, 0.35);
+}
+.appel.video { width: min(480px, calc(100vw - 32px)); }
+.appel-entete { display: flex; align-items: center; gap: 10px; }
+.appel-entete div { display: grid; min-width: 0; }
+.appel-entete strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.appel-entete small { color: #b8c2d0; font-variant-numeric: tabular-nums; }
+.appel-avatar { width: 40px; height: 40px; }
+.appel-videos { position: relative; aspect-ratio: 4 / 3; max-width: 100%; overflow: hidden; border-radius: 10px; background: #000; }
+.appel-distant { width: 100%; height: 100%; object-fit: cover; }
+.appel-local { position: absolute; right: 8px; bottom: 8px; width: 28%; border: 2px solid #fff; border-radius: 8px; transform: scaleX(-1); }
+.appel-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+.appel-boutons button {
+  flex: 1 1 auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.appel-boutons button[aria-pressed="true"] { background: rgba(255, 255, 255, 0.15); }
+.appel-boutons .appel-accepter { border-color: var(--succes); background: var(--succes); }
+.appel-boutons .appel-raccrocher { border-color: var(--danger); background: var(--danger); }
+.appel-avis {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1100;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--marine-900);
+  color: #fff;
+  font-size: 14px;
+}
+
 .notifications {
   position: fixed;
   top: 16px;

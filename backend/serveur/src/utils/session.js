@@ -1,6 +1,7 @@
 // Session par cookie httpOnly : le navigateur renvoie le jeton tout seul et le
 // JavaScript de la page ne peut pas le lire (protection contre le vol par XSS).
 export const COOKIE_NAME = 'crimetracker_session';
+export const CSRF_COOKIE_NAME = 'crimetracker_csrf';
 
 const HUIT_HEURES = 8 * 60 * 60 * 1000; // même durée que le JWT
 
@@ -9,6 +10,14 @@ export const cookieOptions = (seSouvenir = false) => ({
   httpOnly: true,
   sameSite: 'lax', // le cookie n'est pas envoyé par les requêtes POST venant d'un autre site
   // true seulement derrière HTTPS : sinon le navigateur refuserait le cookie
+  secure: process.env.COOKIE_SECURE === 'true',
+  path: '/',
+  ...(seSouvenir ? { maxAge: HUIT_HEURES } : {}),
+});
+
+export const csrfCookieOptions = (seSouvenir = false) => ({
+  httpOnly: false,
+  sameSite: 'lax',
   secure: process.env.COOKIE_SECURE === 'true',
   path: '/',
   ...(seSouvenir ? { maxAge: HUIT_HEURES } : {}),

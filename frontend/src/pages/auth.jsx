@@ -40,7 +40,7 @@ export default function Auth() {
       setErreur(ERREURS_GITHUB.github);
       setParametres({}, { replace: true });
     });
-  }, [retourGithub]);
+  }, [retourGithub, terminerConnexionGithub, setParametres]);
 
   if (estConnecte) return <Navigate to="/" replace />;
 

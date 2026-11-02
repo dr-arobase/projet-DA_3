@@ -517,13 +517,28 @@
         }
       }
     },
-    "/api/messages/{userId}": {
+    "/api/messages/unread": {
+      "get": {
+        "tags": ["Messages"],
+        "summary": "Nombre de messages non lus",
+        "description": "Messages privés reçus et pas encore lus (d'agents actifs), plus les messages des groupes de l'agent écrits par les autres après sa dernière lecture. Sert à la pastille du lien « Messagerie ». Après une lecture, l'événement `messages:lus` est envoyé au lecteur.\n\n**Rôle requis :** `policier`",
+        "responses": {
+          "200": {
+            "description": "Total des non-lus",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "total": { "type": "integer", "example": 3 } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/messages/{id}": {
       "get": {
         "tags": ["Messages"],
         "summary": "Conversation avec un agent",
-        "description": "Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur).\n\n**Rôle requis :** `policier`",
+        "description": "`id` est l'identifiant de l'**agent**. Les 200 derniers messages, du plus ancien au plus récent. Les messages reçus de cet agent passent à « lus » (événement `message:read` envoyé à l'expéditeur, `messages:lus` au lecteur).\n\n**Rôle requis :** `policier`",
         "parameters": [
-          { "name": "userId", "in": "path", "required": true, "schema": { "type": "integer" } }
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant de l'agent", "schema": { "type": "integer" } }
         ],
         "responses": {
           "200": {
@@ -532,6 +547,42 @@
           },
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "patch": {
+        "tags": ["Messages"],
+        "summary": "Modifier son message (15 minutes)",
+        "description": "`id` est l'identifiant du **message** (privé ou de groupe). Seul l'expéditeur peut le modifier, pendant 15 minutes après l'envoi; `edited_at` est rempli. Les participants reçoivent l'événement `message:updated`.\n\n**Rôle requis :** `policier` (expéditeur du message)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant du message", "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["body"], "properties": { "body": { "type": "string", "maxLength": 2000, "example": "Suspect vu au métro Berri-UQAM, sortie nord." } } } } }
+        },
+        "responses": {
+          "200": { "description": "Message modifié", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "$ref": "#/components/schemas/Message" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "Message d'un autre agent, ou plus de 15 minutes après l'envoi" },
+          "404": { "description": "Message introuvable ou supprimé" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      },
+      "delete": {
+        "tags": ["Messages"],
+        "summary": "Supprimer son message",
+        "description": "`id` est l'identifiant du **message** (privé ou de groupe). Seul l'expéditeur peut le supprimer. Le message reste dans le fil, sans texte, avec `deleted_at`; il ne compte plus dans les non-lus. Les participants reçoivent l'événement `message:deleted`.\n\n**Rôle requis :** `policier` (expéditeur du message)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "description": "Identifiant du message", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Message supprimé", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "data": { "$ref": "#/components/schemas/Message" } } } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "Message d'un autre agent" },
+          "404": { "description": "Message introuvable ou déjà supprimé" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -592,7 +643,7 @@
       "post": {
         "tags": ["Users"],
         "summary": "Créer un compte policier",
-        "description": "Crée le compte d'un nouveau policier (récit #8). Le rôle est `policier` et le grade `sergent_autres_fonctions`.\n\n**Rôle requis :** `superviseur`",
+        "description": "Crée un compte (récit #8). Par défaut : rôle `policier`, grade `sergent_autres_fonctions`. Un superviseur ne crée que des policiers (403 sinon) ; la direction peut créer tous les rôles. Mot de passe de 8 caractères au moins, courriel valide.\n\n**Rôle requis :** `superviseur`",
         "requestBody": {
           "required": true,
           "content": {
@@ -614,7 +665,7 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "409": {
-            "description": "Matricule déjà utilisé",
+                    "description": "Matricule ou courriel déjà utilisé",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -840,6 +891,7 @@
           "400": { "$ref": "#/components/responses/BadRequest" },
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -954,7 +1006,7 @@
         "required": ["badge_number", "password"],
         "properties": {
           "badge_number": { "type": "string", "example": "P-1001" },
-          "password": { "type": "string", "format": "password", "example": "motdepasse" },
+          "password": { "type": "string", "format": "password", "minLenght": 8, "example": "motdepasse" },
           "se_souvenir": { "type": "boolean", "example": false }
         }
       },
@@ -1062,7 +1114,20 @@
           "updated_at": { "type": "string", "format": "date-time" }
         }
       },
-      "CriminalCreate": {
+            "CriminalCreate": {
+        "type": "object",
+        "required": ["first_name", "last_name"],
+        "description": "Un nouveau dossier commence toujours au statut recherche. photo_url est refusé tant que l'envoi de photo n'existe pas.",
+        "properties": {
+          "first_name": { "type": "string", "maxLength": 100, "example": "Jean" },
+          "last_name": { "type": "string", "maxLength": 100, "example": "Dupont" },
+          "date_of_birth": { "type": "string", "format": "date", "description": "AAAA-MM-JJ, pas dans le futur", "example": "1985-04-12" },
+          "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
+          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
+          "crimes": { "type": "string", "example": "Vol à main armée" }
+        }
+      },
+      "CriminalUpdate": {
         "type": "object",
         "required": ["first_name", "last_name"],
         "properties": {
@@ -1071,18 +1136,7 @@
           "date_of_birth": { "type": "string", "format": "date", "example": "1985-04-12" },
           "nationality": { "type": "string", "maxLength": 100, "example": "Canadienne" },
           "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "crimes": { "type": "string", "example": "Vol à main armée" },
-          "photo_url": { "type": "string", "maxLength": 500, "example": "/uploads/photos/1.jpg" }
-        }
-      },
-      "CriminalUpdate": {
-        "type": "object",
-        "properties": {
-          "first_name": { "type": "string", "example": "Jean" },
-          "last_name": { "type": "string", "example": "Dupont" },
-          "description": { "type": "string", "example": "Cicatrice sur la joue gauche" },
-          "status": { "$ref": "#/components/schemas/CriminalStatus" },
-          "photo_url": { "type": "string", "example": "/uploads/photos/1.jpg" }
+          "crimes": { "type": "string", "example": "Vol à main armée" }
         }
       },
       "CriminalStatusUpdate": {
@@ -1143,7 +1197,9 @@
           "recipient_id": { "type": "integer", "example": 2 },
           "body": { "type": "string", "example": "Suspect vu au métro Berri-UQAM." },
           "created_at": { "type": "string", "format": "date-time" },
-          "read_at": { "type": "string", "format": "date-time", "nullable": true }
+          "read_at": { "type": "string", "format": "date-time", "nullable": true },
+          "edited_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Rempli si l'expéditeur a modifié le message" },
+          "deleted_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Rempli si le message est supprimé (le texte est alors vide)" }
         }
       },
       "Contact": {
@@ -1235,7 +1291,7 @@
         "type": "object",
         "required": ["message"],
         "properties": {
-          "message": { "type": "string", "example": "Individu dangereux aperçu au centre-ville" },
+                    "message": { "type": "string", "minLength": 1, "maxLength": 500, "example": "Individu dangereux aperçu au centre-ville" },
           "severity": { "$ref": "#/components/schemas/Severity" },
           "criminal_id": { "type": "integer", "nullable": true, "example": 1 }
         }
