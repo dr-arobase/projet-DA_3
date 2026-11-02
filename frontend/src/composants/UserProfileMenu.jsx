@@ -1,22 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
-import { LIBELLES_ROLE } from '../agents.js';
+import { LIBELLES_ROLE, nomAgentCourt } from '../agents.js';
 import { IconeChevron, IconeDeconnexion, IconeUtilisateur } from './Icones.jsx';
 import Avatar from './Avatar.jsx';
-
-// Valeurs de app_user.role et app_user.grade (voir database/seed.sql)
-const ABREVIATIONS_GRADE = {
-  directeur_general: 'Dir.',
-  directeur_general_adjoint: 'DGA',
-  lieutenant: 'Lt.',
-  capitaine: 'Cap.',
-  sergent_gestionnaire: 'Sgt. gest.',
-  sergent_responsable_de_poste: 'Sgt. resp.',
-  sergent_autres_fonctions: 'Sgt.',
-  inspecteur: 'Insp.',
-  inspecteur_chef: 'Insp.-chef',
-};
 
 export default function UserProfileMenu({ reduit = false }) {
   const { utilisateur, seDeconnecter } = useAuth();
@@ -37,9 +24,7 @@ export default function UserProfileMenu({ reduit = false }) {
     };
   }, []);
 
-  const prenom = utilisateur?.first_name ?? '';
-  const nom = utilisateur?.last_name ?? '';
-  const nomAffiche = [ABREVIATIONS_GRADE[utilisateur?.grade], prenom, nom].filter(Boolean).join(' ');
+  const nomAffiche = nomAgentCourt(utilisateur);
   const role = LIBELLES_ROLE[utilisateur?.role?.toLowerCase()] ?? utilisateur?.role ?? '';
 
   async function quitter() {

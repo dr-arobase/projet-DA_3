@@ -19,6 +19,18 @@ export const LIBELLES_GRADE = {
   directeur_general: 'Directeur général',
 };
 
+export const ABREVIATIONS_GRADE = {
+  sergent_autres_fonctions: 'Sgt.',
+  sergent_gestionnaire: 'Sgt. gest.',
+  sergent_responsable_de_poste: 'Sgt. resp.',
+  lieutenant: 'Lt.',
+  capitaine: 'Cap.',
+  inspecteur: 'Insp.',
+  inspecteur_chef: 'Insp.-chef',
+  directeur_general_adjoint: 'DGA',
+  directeur_general: 'Dir.',
+};
+
 // Grades proposés selon le rôle choisi
 export const GRADES_PAR_ROLE = {
   policier: ['sergent_autres_fonctions'],
@@ -35,3 +47,4 @@ const NIVEAUX = { policier: 1, superviseur: 2, direction: 3 };
 export const estAuMoins = (utilisateur, role) => (NIVEAUX[utilisateur?.role] ?? 0) >= NIVEAUX[role];
 
 export const nomAgent = (u) => `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim();
+export const nomAgentCourt = (u) => [ABREVIATIONS_GRADE[u?.grade], nomAgent(u)].filter(Boolean).join(' ');
