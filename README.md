@@ -96,7 +96,7 @@ La bêta actuelle fonctionne avec une API Express, PostgreSQL, Socket.IO et une 
 |---|---|---|---|
 | Mot de passe oublié | Page de connexion | Réinitialisation administrée | 3 |
 | Authentification à deux facteurs | Authentification | OIDC/2FA après choix du fournisseur | 3 |
-| TURN pour les appels sur réseau cellulaire | Appels audio/vidéo | Coturn configuré hors dépôt | 3 |
+| TURN pour les appels sur réseau cellulaire | Appels audio/vidéo | Coturn activable dans `deploy/compose.yml`, secrets hors dépôt | 3 |
 
 Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 

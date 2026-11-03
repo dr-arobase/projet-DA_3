@@ -90,6 +90,9 @@ export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method:
 export const changerAdresse = (id, last_known_address) =>
   requete(`/api/criminals/${id}/address`, { method: 'PATCH', body: { last_known_address } });
 
+// Serveurs ICE des appels : STUN, plus le relais TURN s'il est configuré sur le serveur.
+export const serveursIce = () => requete('/api/turn');
+
 // Position d'une adresse écrite (géocodage par le serveur) : { latitude, longitude, display_name }
 export const localiser = (adresse) => requete(`/api/geocode?${qs({ q: adresse })}`);
 

@@ -32,6 +32,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET manquant dans .env}
       SOCKET_ALLOWED_ORIGINS: ${SOCKET_ALLOWED_ORIGINS:?SOCKET_ALLOWED_ORIGINS manquant dans .env}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_SECRET: ${TURN_SECRET:-}
     volumes:
       # Les photos de profil survivent aux mises à jour de l'image
       - crimetracker-uploads:/app/serveur/src/uploads
@@ -47,6 +49,33 @@ services:
     depends_on:
       api:
         condition: service_healthy
+
+  turn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    profiles: ["turn"]
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SECRET:-}
+      - --realm=${TURN_REALM:-crimetracker}
+      - --external-ip=${TURN_EXTERNAL_IP:-}
+      - --no-cli
+      - --no-tls
+      - --no-dtls
+      - --no-multicast-peers
+      - --denied-peer-ip=0.0.0.0-0.255.255.255
+      - --denied-peer-ip=10.0.0.0-10.255.255.255
+      - --denied-peer-ip=127.0.0.0-127.255.255.255
+      - --denied-peer-ip=169.254.0.0-169.254.255.255
+      - --denied-peer-ip=172.16.0.0-172.31.255.255
+      - --denied-peer-ip=192.168.0.0-192.168.255.255
 
 volumes:
   crimetracker-pgdata:

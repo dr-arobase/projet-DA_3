@@ -78,7 +78,7 @@
 | M19–M23 | Lisibilité, direction E, accessibilité, performance et maquettes | Faible | En cours |
 | M24–M25 | États de messagerie et recherche en direct | Faible | Implémenté |
 | M26–M30 | Démonstration, équipe, journal, rétrospective et idées | Faible | En cours |
-| M31–M32 | Réponses 403 et appels avec TURN | Élevée / moyenne | 403 implémenté, TURN à configurer |
+| M31–M32 | Réponses 403 et appels avec TURN | Élevée / moyenne | 403 implémenté, relais TURN intégré, coturn à configurer sur Azure |
 
 **Échelle Fibonacci** : 1, 2, 3, 5, 8, 13.
 
