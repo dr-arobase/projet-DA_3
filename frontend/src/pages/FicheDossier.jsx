@@ -104,8 +104,10 @@ export default function FicheDossier() {
         afficher(actuel);
         setMessage({
           type: 'erreur',
-          texte: `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} : `
-            + `son statut est maintenant « ${LIBELLES_STATUT[actuel.status]} ». Votre changement n'a pas été appliqué.`,
+          texte: actuel.status === dossier.status
+            ? `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} (adresse ou autre information). Votre changement de statut n'a pas été appliqué.`
+            : `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} : `
+              + `son statut est maintenant « ${LIBELLES_STATUT[actuel.status]} ». Votre changement n'a pas été appliqué.`,
         });
       } else {
         setMessage({ type: 'erreur', texte: err.message });
