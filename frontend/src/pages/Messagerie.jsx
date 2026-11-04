@@ -42,6 +42,21 @@ const heureDe = (iso) => new Date(iso).toLocaleTimeString('fr-CA', { hour: '2-di
 
 const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
 
+// Met en évidence chaque occurrence du terme cherché (sans tenir compte des majuscules) avec <mark>
+function surligner(texte, terme) {
+  if (!terme) return texte;
+  const morceaux = [];
+  const bas = texte.toLowerCase();
+  let debut = 0;
+  for (let i = bas.indexOf(terme); i !== -1; i = bas.indexOf(terme, debut)) {
+    if (i > debut) morceaux.push(texte.slice(debut, i));
+    morceaux.push(<mark key={i}>{texte.slice(i, i + terme.length)}</mark>);
+    debut = i + terme.length;
+  }
+  if (debut < texte.length) morceaux.push(texte.slice(debut));
+  return morceaux;
+}
+
 // Messagerie : conversations à deux (?avec=<id agent>) et groupes (?groupe=<id groupe>).
 // La liste ne montre que les conversations existantes; la recherche trouve tous les agents.
 export default function Messagerie() {
@@ -58,6 +73,9 @@ export default function Messagerie() {
   const [messages, setMessages] = useState([]);
   const [groupe, setGroupe] = useState(null); // groupe ouvert, avec ses membres
   const [texte, setTexte] = useState('');
+  // Recherche d'un mot dans la conversation ouverte : les messages trouvés sont mis en évidence
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
+  const [rechercheFil, setRechercheFil] = useState('');
   const [erreur, setErreur] = useState('');
   const [enCours, setEnCours] = useState(false);
   const [panneau, setPanneau] = useState(null); // 'nouveau-groupe' | 'membres' | null
@@ -126,6 +144,38 @@ export default function Messagerie() {
     ouvrir(() => actif).catch((err) => actif && setErreur(err.message));
     return () => { actif = false; };
   }, [avecId, groupeId, ouvrir]);
+
+  // Brouillon de chaque conversation : gardé quand on en change, rendu quand on y revient.
+  // Un message en cours de modification n'est pas un brouillon : il n'est pas gardé.
+  const brouillons = useRef(new Map());
+  const conversationActive = useRef('');
+  const texteActuel = useRef('');
+  const enEditionActuelle = useRef(false);
+  useEffect(() => { texteActuel.current = texte; }, [texte]);
+  useEffect(() => { enEditionActuelle.current = Boolean(enEdition); }, [enEdition]);
+  const cleConversation = groupeId ? `groupe-${groupeId}` : avecId ? `agent-${avecId}` : '';
+  useEffect(() => {
+    const ancienne = conversationActive.current;
+    if (ancienne === cleConversation) return;
+    if (ancienne && texteActuel.current.trim() && !enEditionActuelle.current) {
+      brouillons.current.set(ancienne, texteActuel.current);
+    } else if (ancienne) {
+      brouillons.current.delete(ancienne);
+    }
+    conversationActive.current = cleConversation;
+    setTexte(brouillons.current.get(cleConversation) ?? '');
+    setRechercheOuverte(false);
+    setRechercheFil('');
+  }, [cleConversation]);
+
+  const termeFil = rechercheFil.trim().toLowerCase();
+  const nombreTrouves = termeFil
+    ? messages.filter((m) => !m.deleted_at && m.body?.toLowerCase().includes(termeFil)).length
+    : 0;
+  // Le premier message trouvé est amené à l'écran
+  useEffect(() => {
+    if (termeFil) document.querySelector('.messagerie-messages .trouve')?.scrollIntoView({ block: 'center' });
+  }, [termeFil]);
 
   useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 
@@ -491,6 +541,16 @@ export default function Messagerie() {
                       : `${correspondant.badge_number} · ${enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}`}
                   </small>
                 </div>
+                <button
+                  type="button"
+                  className="messagerie-icone"
+                  aria-label="Rechercher dans la conversation"
+                  title="Rechercher dans la conversation"
+                  aria-expanded={rechercheOuverte}
+                  onClick={() => { setRechercheOuverte((o) => !o); setRechercheFil(''); }}
+                >
+                  <IconeRecherche taille={22} />
+                </button>
                 {!groupeId && (
                   // Appels à deux seulement, vers un agent connecté (#56)
                   <div className="messagerie-appels">
@@ -544,6 +604,32 @@ export default function Messagerie() {
                   </div>
                 )}
               </header>
+
+              {rechercheOuverte && (
+                <div className="messagerie-recherche-fil" role="search">
+                  <label className="registre-recherche">
+                    <IconeRecherche taille={15} />
+                    <input
+                      type="search"
+                      autoFocus
+                      placeholder="Rechercher un mot dans la conversation…"
+                      aria-label="Rechercher un mot dans la conversation"
+                      value={rechercheFil}
+                      onChange={(e) => setRechercheFil(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Escape') return;
+                        setRechercheOuverte(false);
+                        setRechercheFil('');
+                      }}
+                    />
+                  </label>
+                  <small aria-live="polite">
+                    {termeFil && (nombreTrouves === 0
+                      ? 'Aucun message trouvé'
+                      : `${nombreTrouves} message${nombreTrouves > 1 ? 's' : ''} trouvé${nombreTrouves > 1 ? 's' : ''}`)}
+                  </small>
+                </div>
+              )}
 
               <ol className="messagerie-messages">
                 {messages.map((m, i) => {
@@ -611,7 +697,7 @@ export default function Messagerie() {
                   return (
                     <Fragment key={m.id}>
                       {dateAuCentre}
-                      <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}`}>
+                      <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}${termeFil && !supprime && m.body?.toLowerCase().includes(termeFil) ? ' trouve' : ''}`}>
                         {!moi && (finDeSerie
                           ? <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />
                           : <span className="messagerie-avatar-vide" aria-hidden="true" />)}
@@ -621,7 +707,7 @@ export default function Messagerie() {
                             <div className={classes} title={heureDe(m.created_at)}>
                               {supprime && <p className="messagerie-supprime">Message supprimé</p>}
                               {!supprime && m.attachment_kind && <PieceJointe message={m} />}
-                              {!supprime && m.body && <p>{m.body}</p>}
+                              {!supprime && m.body && <p>{surligner(m.body, termeFil)}</p>}
                               {m.edited_at && !supprime && <small>modifié</small>}
                             </div>
                             {!supprime && (
