@@ -1,8 +1,12 @@
 /**
- * SQLite en secours, pour un poste sans Docker : DATABASE_URL=sqlite:<chemin>
+ * Adaptateur SQLite EN MÉMOIRE, réservé aux tests automatisés : DATABASE_URL=sqlite::memory:
+ *
+ * Ce n'est PAS une base pour faire tourner l'application (#87) : schema.sql et les requêtes
+ * des modèles sont écrits pour PostgreSQL (types ENUM, SERIAL, json_agg, ILIKE…).
+ * Pour développer sans installer PostgreSQL : docker compose up -d postgres.
  */
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -45,28 +49,12 @@ export const pool = {
   },
 };
 
-/** Crée les tables (schema.sql), puis les remplit (seed.sql) si la base est vide. */
+/** Refuse de démarrer l'application sur SQLite, avec la marche à suivre (#87). */
 export async function initializeDatabase() {
-  db.exec(readSql('schema.sql'));
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS login_rate_limit (
-      client_key TEXT PRIMARY KEY,
-      window_start INTEGER NOT NULL,
-      failed_attempts INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_login_rate_limit_window
-      ON login_rate_limit(window_start);
-  `);
-
-  const { rows } = await query('SELECT COUNT(*) AS n FROM app_user');
-  if (rows[0].n === 0) {
-    db.exec(readSql('seed.sql'));
-  }
-}
-
-function readSql(name) {
-  // Correction du chemin vers database/
-  return readFileSync(new URL(`../../database/${name}`, import.meta.url), 'utf8');
+  throw new Error(
+    'SQLite ne sert qu\'aux tests : l\'application exige PostgreSQL. '
+    + 'Lancez « docker compose up -d postgres » puis retirez DATABASE_URL=sqlite:… du fichier .env.'
+  );
 }
 
 /** Ferme le fichier. */
