@@ -48,6 +48,8 @@
 .pages-tableau-fixe td { vertical-align: middle; }
 .pages-tableau-fixe tr { cursor: default; }
 .pages-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
+.pages-actions button,
+.pages-actions a { min-height: 40px; }
 .pages-promotion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pages-promotion .registre-bouton-principal { padding: 7px 12px; font-size: 13px; }
 
