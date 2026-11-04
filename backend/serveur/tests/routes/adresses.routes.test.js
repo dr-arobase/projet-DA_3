@@ -57,7 +57,7 @@ describe('POST /api/criminals avec une adresse', () => {
   test('l\'adresse est convertie en position et enregistrée avec le dossier', async () => {
     geocodeOrNull.mockResolvedValue(BERRI);
     const cree = dossier({ last_known_address: '505 rue Sainte-Catherine Est, Montréal', ...BERRI });
-    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [cree] });
+    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [cree] }).mockResolvedValueOnce({ rows: [{ id: 99 }] });
 
     const res = await creer({ first_name: 'Jean', last_name: 'Tremblay', last_known_address: '  505 rue Sainte-Catherine Est, Montréal ' });
 
@@ -72,7 +72,8 @@ describe('POST /api/criminals avec une adresse', () => {
     geocodeOrNull.mockResolvedValue(null);
     query
       .mockResolvedValueOnce({ rows: [{ id: 5 }] })
-      .mockResolvedValueOnce({ rows: [dossier({ last_known_address: 'Nulle part', latitude: null, longitude: null })] });
+      .mockResolvedValueOnce({ rows: [dossier({ last_known_address: 'Nulle part', latitude: null, longitude: null })] })
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await creer({ first_name: 'Jean', last_name: 'Tremblay', last_known_address: 'Nulle part' });
 
@@ -84,7 +85,8 @@ describe('POST /api/criminals avec une adresse', () => {
   test('sans adresse : aucun appel au géocodage', async () => {
     query
       .mockResolvedValueOnce({ rows: [{ id: 5 }] })
-      .mockResolvedValueOnce({ rows: [dossier({ last_known_address: null, latitude: null })] });
+      .mockResolvedValueOnce({ rows: [dossier({ last_known_address: null, latitude: null })] })
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await creer({ first_name: 'Jean', last_name: 'Tremblay' });
 
@@ -107,17 +109,20 @@ describe('PATCH /api/criminals/:id/address', () => {
   test('un policier change l\'adresse; le dossier mis à jour est diffusé', async () => {
     geocodeOrNull.mockResolvedValue(BERRI);
     const misAJour = { id: 5, last_known_address: 'Berri-UQAM', ...BERRI };
-    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [misAJour] });
+    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [misAJour] }).mockResolvedValueOnce({ rows: [{ id: 99 }] });
 
     const res = await changer({ last_known_address: 'Berri-UQAM' });
 
     expect(res.status).toBe(200);
     expect(query.mock.calls[0][1]).toEqual(['Berri-UQAM', 45.5153, -73.561, 3, '5']);
     expect(emitEvent).toHaveBeenCalledWith('criminal:updated', misAJour);
+    // #100 : le changement d'adresse est inscrit au journal d'audit
+    expect(query.mock.calls[2][1].slice(0, 5))
+      .toEqual([3, 'CRIMINAL_ADDRESS_CHANGED', 'criminal', 5, '{"last_known_address":"Berri-UQAM"}']);
   });
 
   test('adresse vide : l\'adresse et la position sont effacées', async () => {
-    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [{ id: 5, last_known_address: null, latitude: null }] });
+    query.mockResolvedValueOnce({ rows: [{ id: 5 }] }).mockResolvedValueOnce({ rows: [{ id: 5, last_known_address: null, latitude: null }] }).mockResolvedValueOnce({ rows: [{ id: 99 }] });
 
     const res = await changer({ last_known_address: '   ' });
 
@@ -162,6 +167,15 @@ describe('GET /api/geocode', () => {
     geocode.mockRejectedValue(new Error('GEOCODER_UNAVAILABLE'));
     jest.spyOn(console, 'error').mockImplementation(() => {});
     expect((await chercher('Montréal')).status).toBe(503);
+  });
+
+  test('429 si l\'agent a déjà trop d\'adresses en attente (#91)', async () => {
+    geocode.mockRejectedValue(new Error('GEOCODER_BUSY'));
+    const res = await chercher('Montréal');
+
+    expect(res.status).toBe(429);
+    expect(res.headers['retry-after']).toBe('2');
+    expect(geocode).toHaveBeenCalledWith('Montréal', 3);
   });
 
   test('400 si l\'adresse est trop courte ou absente', async () => {
