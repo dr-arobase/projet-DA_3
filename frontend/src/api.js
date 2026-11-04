@@ -165,5 +165,12 @@ export const ajouterMembres = (groupeId, member_ids) =>
   requete(`/api/messages/groups/${groupeId}/members`, { method: 'POST', body: { member_ids } });
 
 // Retirer un membre (créateur), ou se retirer soi-même pour quitter le groupe
+// Photo du groupe (créateur seulement) : image brute JPG, PNG ou WebP, 2 Mo au plus
+export const envoyerPhotoGroupe = (groupeId, fichier) =>
+  requete(`/api/messages/groups/${groupeId}/avatar`, { method: 'PUT', body: fichier });
+
+export const supprimerPhotoGroupe = (groupeId) =>
+  requete(`/api/messages/groups/${groupeId}/avatar`, { method: 'DELETE' });
+
 export const retirerMembre = (groupeId, agentId) =>
   requete(`/api/messages/groups/${groupeId}/members/${agentId}`, { method: 'DELETE' });

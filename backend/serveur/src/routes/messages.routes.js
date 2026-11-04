@@ -6,8 +6,10 @@ import {
 import { readAttachment } from '../middleware/attachment.middleware.js';
 import {
   getGroups, createGroup, getGroupMessages, sendGroupMessage, addGroupMembers, removeGroupMember,
+  uploadGroupAvatar, deleteGroupAvatar,
 } from '../controllers/groups.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
+import { readAvatar } from '../middleware/upload.middleware.js';
 import { validateId } from '../middleware/validateId.middleware.js';
 
 const router = express.Router();
@@ -27,6 +29,9 @@ router.get('/groups/:groupId', getGroupMessages);
 router.post('/groups/:groupId/messages', sendGroupMessage);
 router.post('/groups/:groupId/members', addGroupMembers);
 router.delete('/groups/:groupId/members/:userId', removeGroupMember);
+// Photo du groupe : image brute (2 Mo), créateur du groupe seulement
+router.put('/groups/:groupId/avatar', readAvatar, uploadGroupAvatar);
+router.delete('/groups/:groupId/avatar', deleteGroupAvatar);
 
 // Fichiers, images, GIF et messages vocaux : envoi en corps brut, lecture réservée aux participants
 router.post('/attachments', readAttachment, sendAttachment);

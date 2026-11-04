@@ -322,6 +322,10 @@
 .messagerie-champ { display: grid; gap: 6px; margin: 0; font-size: 13px; font-weight: 600; }
 .messagerie-champ input { padding: 9px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); font: inherit; font-weight: 400; }
 .messagerie-panneau-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+/* Photo du groupe (créateur) : aperçu et actions */
+.messagerie-photo-groupe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
+.messagerie-photo-groupe .messagerie-avatar { width: 48px; height: 48px; }
+.messagerie-photo-groupe label { cursor: pointer; }
 .messagerie-membres { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .messagerie-membres li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--bordure); border-radius: 8px; font-size: 14px; }
 .messagerie-membres small { color: var(--texte-doux); }
