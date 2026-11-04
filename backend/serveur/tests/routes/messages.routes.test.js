@@ -153,6 +153,13 @@ describe('POST /api/messages', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
+  // #94 : trim() ne retirait pas les espaces de largeur nulle : une bulle vide était enregistrée
+  test('400 si le message n\'a que des caractères invisibles', async () => {
+    const res = await envoyer({ recipient_id: 2, body: '\u200B\u200B\u2060' });
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
   test('400 si le message est trop long', async () => {
     const res = await envoyer({ recipient_id: 2, body: 'x'.repeat(2001) });
     expect(res.status).toBe(400);

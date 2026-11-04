@@ -129,6 +129,12 @@ export const createCriminal = async (data, userId) => {
     ...fields, ...address, status: INITIAL_STATUS, photo_url: null, added_by: userId
   });
   const criminal = await criminalModel.findById(created.id);
+  await auditLogModel.record({
+    actor_id: userId,
+    action: 'CRIMINAL_CREATED',
+    target_type: 'criminal',
+    target_id: created.id,
+  });
 
   emitEvent('criminal:added', criminal);
   return { criminal, addressNotLocated: notLocated(criminal) };
@@ -142,14 +148,30 @@ export const updateCriminalAddress = async (id, address, userId) => {
 
   const criminal = await criminalModel.findById(id);
   emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
+  await auditLogModel.record({
+    actor_id: userId,
+    action: 'CRIMINAL_ADDRESS_CHANGED',
+    target_type: 'criminal',
+    target_id: criminal.id,
+    details: { last_known_address: located.last_known_address },
+  });
+  emitEvent('criminal:updated', criminal);
   return { criminal, addressNotLocated: notLocated(criminal) };
 };
 
+// Modification complète (#98) : même verrouillage optimiste que le changement de statut.
+// photo_url: null (ou "") dans la demande efface la photo; absent, la photo est gardée.
 export const updateCriminal = async (id, data, userId) => {
   const fields = checkCriminalFields(data);
+  const expectedVersion = checkVersion(data.version);
+  const effacer_photo = Object.hasOwn(data, 'photo_url');
 
-  const updated = await criminalModel.update(id, { ...fields, photo_url: null, updated_by: userId });
-  if (!updated) throw notFound();
+  const updated = await criminalModel.update(id, { ...fields, effacer_photo, updated_by: userId }, expectedVersion);
+  if (!updated) {
+    const current = await criminalModel.findById(id);
+    if (!current) throw notFound();
+    throw httpError(409, 'Conflit de version : ce dossier a été modifié entre-temps', { criminal: current });
+  }
 
   const criminal = await criminalModel.findById(id);
   emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
@@ -171,6 +193,14 @@ export const updateCriminalStatus = async (id, status, version, userId) => {
 
   const criminal = await criminalModel.findById(id);
   emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
+  await auditLogModel.record({
+    actor_id: userId,
+    action: 'CRIMINAL_STATUS_CHANGED',
+    target_type: 'criminal',
+    target_id: criminal.id,
+    details: { status },
+  });
+  emitEvent('criminal:updated', criminal);
   return criminal;
 };
 

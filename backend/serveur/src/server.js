@@ -1,11 +1,11 @@
+// En premier (#101) : les imports ES s'exécutent avant le code du module, donc un
+// dotenv.config() plus bas arrivait après la lecture de DATABASE_URL par config/db.js.
+import 'dotenv/config';
 import app from './app.js';
-import dotenv from 'dotenv';
 import { initializeDatabase } from './config/db.js';
 import registerSockets, { disconnectUser } from './sockets/index.js';
 import { listenForAccountDeactivations } from './utils/account-status.js';
 import { assertJwtSecret } from './utils/jwt.js';
-
-dotenv.config();
 
 const PORT = process.env.PORT || 3000;
 
