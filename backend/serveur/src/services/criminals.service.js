@@ -147,7 +147,6 @@ export const updateCriminalAddress = async (id, address, userId) => {
   if (!updated) throw notFound();
 
   const criminal = await criminalModel.findById(id);
-  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   await auditLogModel.record({
     actor_id: userId,
     action: 'CRIMINAL_ADDRESS_CHANGED',
@@ -155,7 +154,7 @@ export const updateCriminalAddress = async (id, address, userId) => {
     target_id: criminal.id,
     details: { last_known_address: located.last_known_address },
   });
-  emitEvent('criminal:updated', criminal);
+  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   return { criminal, addressNotLocated: notLocated(criminal) };
 };
 
@@ -192,7 +191,6 @@ export const updateCriminalStatus = async (id, status, version, userId) => {
   }
 
   const criminal = await criminalModel.findById(id);
-  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   await auditLogModel.record({
     actor_id: userId,
     action: 'CRIMINAL_STATUS_CHANGED',
@@ -200,7 +198,7 @@ export const updateCriminalStatus = async (id, status, version, userId) => {
     target_id: criminal.id,
     details: { status },
   });
-  emitEvent('criminal:updated', criminal);
+  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   return criminal;
 };
 
