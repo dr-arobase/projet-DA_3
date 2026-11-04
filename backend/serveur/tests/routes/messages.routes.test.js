@@ -17,10 +17,21 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const emitToUsers = jest.fn();
+const disconnectUser = jest.fn();
 jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   default: jest.fn(),
   emitEvent: jest.fn(),
   emitToUsers,
+  disconnectUser,
+}));
+
+jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
+  isAccountActive: jest.fn(async () => true),
+  getAccountAuthInfo: jest.fn(async (id) => ({
+    id, badge_number: 'PL-003', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
+  })),
+  publishAccountDeactivated: jest.fn(),
+  listenForAccountDeactivations: jest.fn(),
 }));
 
 const { default: app } = await import('../../src/app.js');
@@ -54,6 +65,35 @@ describe('GET /api/messages/contacts', () => {
   });
 });
 
+describe('GET /api/messages/unread', () => {
+  test('401 sans session', async () => {
+    const res = await request(app).get('/api/messages/unread');
+    expect(res.status).toBe(401);
+  });
+
+  test('renvoie le total des non-lus de l\'agent connecté, privés et de groupe', async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: '4' }] }); // COUNT(*) arrive en texte
+
+    const res = await request(app).get('/api/messages/unread').set('Authorization', bearer);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ total: 4 });
+    expect(query.mock.calls[0][1]).toEqual([3]); // seulement les messages de l'agent connecté
+    expect(query.mock.calls[0][0]).toMatch(/m\.recipient_id = \$1 AND m\.read_at IS NULL/);
+    expect(query.mock.calls[0][0]).toMatch(/m\.sender_id <> \$1 AND m\.created_at > gm\.last_read_at/);
+  });
+
+  test('« unread » n\'est pas pris pour un identifiant d\'agent', async () => {
+    query.mockResolvedValueOnce({ rows: [{ total: 0 }] });
+
+    const res = await request(app).get('/api/messages/unread').set('Authorization', bearer);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ total: 0 });
+    expect(query.mock.calls[0][0]).not.toMatch(/UPDATE message SET read_at/);
+  });
+});
+
 describe('GET /api/messages/:userId', () => {
   test('marque les messages reçus comme lus, renvoie la conversation et prévient l\'expéditeur', async () => {
     const messages = [{ id: 1, sender_id: 2, recipient_id: 3, body: 'Bonjour' }];
@@ -68,6 +108,8 @@ describe('GET /api/messages/:userId', () => {
     expect(query.mock.calls[0][0]).toMatch(/UPDATE message SET read_at/);
     expect(query.mock.calls[0][1]).toEqual([3, 2]); // destinataire = moi, expéditeur = l'autre
     expect(emitToUsers).toHaveBeenCalledWith([2], 'message:read', { by: 3 });
+    // La pastille du menu du lecteur baisse dans tous ses onglets
+    expect(emitToUsers).toHaveBeenCalledWith([3], 'messages:lus', {});
   });
 
   test('ne prévient personne s\'il n\'y avait rien à marquer', async () => {
@@ -101,7 +143,7 @@ describe('POST /api/messages', () => {
 
     expect(res.status).toBe(201);
     expect(res.body.data).toEqual(cree);
-    expect(query.mock.calls[1][1]).toEqual([3, 2, 'Bien reçu']); // expéditeur tiré de la session, texte nettoyé
+    expect(query.mock.calls[1][1]).toEqual([3, 2, 'Bien reçu', null, null, null, null, null]); // expéditeur tiré de la session, texte nettoyé
     expect(emitToUsers).toHaveBeenCalledWith([2, 3], 'message:new', cree);
   });
 
@@ -129,6 +171,209 @@ describe('POST /api/messages', () => {
 
     expect(res.status).toBe(404);
     expect(query).toHaveBeenCalledTimes(1); // aucun INSERT
+    expect(emitToUsers).not.toHaveBeenCalled();
+  });
+});
+
+// Un message de l'agent connecté (id 3) à l'agent 2, envoyé il y a `minutes` minutes
+const messageDe = (sender_id, minutes, extra = {}) => ({
+  id: 9, sender_id, recipient_id: sender_id === 3 ? 2 : 3, group_id: null,
+  created_at: new Date(Date.now() - minutes * 60 * 1000).toISOString(), deleted_at: null, ...extra,
+});
+
+describe('PATCH /api/messages/:messageId (modifier, #143)', () => {
+  const modifier = (corps, id = 9) =>
+    request(app).patch(`/api/messages/${id}`).set('Authorization', bearer).send(corps);
+
+  test('200 : l\'expéditeur corrige son message dans les 15 minutes, les deux agents le voient', async () => {
+    const modifie = { ...messageDe(3, 5), body: 'Corrigé', edited_at: new Date().toISOString() };
+    query
+      .mockResolvedValueOnce({ rows: [messageDe(3, 5)] }) // findById
+      .mockResolvedValueOnce({ rows: [modifie] }); // UPDATE
+
+    const res = await modifier({ body: '  Corrigé ' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.body).toBe('Corrigé');
+    const [sql, valeurs] = query.mock.calls[1];
+    expect(sql).toMatch(/SET body = \$3, edited_at = now\(\)/);
+    expect(sql).toMatch(/sender_id = \$2 AND deleted_at IS NULL/);
+    expect(sql).toMatch(/created_at > now\(\) - make_interval\(mins => \$4\)/);
+    expect(valeurs).toEqual([9, 3, 'Corrigé', 15]);
+    expect(emitToUsers).toHaveBeenCalledWith([3, 2], 'message:updated', modifie);
+  });
+
+  test('403 après 15 minutes, même en appelant l\'API à la main', async () => {
+    query.mockResolvedValueOnce({ rows: [messageDe(3, 16)] });
+
+    const res = await modifier({ body: 'Trop tard' });
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/15 minutes/);
+    expect(query).toHaveBeenCalledTimes(1); // aucun UPDATE
+    expect(emitToUsers).not.toHaveBeenCalled();
+  });
+
+  test('403 si la base refuse au moment d\'écrire (délai atteint entre-temps)', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [messageDe(3, 14)] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    const res = await modifier({ body: 'Juste à temps ?' });
+
+    expect(res.status).toBe(403);
+    expect(emitToUsers).not.toHaveBeenCalled();
+  });
+
+  test('403 sur le message d\'un autre agent', async () => {
+    query.mockResolvedValueOnce({ rows: [messageDe(2, 1)] });
+
+    const res = await modifier({ body: 'Pas à moi' });
+
+    expect(res.status).toBe(403);
+    expect(query).toHaveBeenCalledTimes(1);
+  });
+
+  test('400 si le nouveau texte est vide ou trop long', async () => {
+    expect((await modifier({ body: '   ' })).status).toBe(400);
+    expect((await modifier({ body: 'x'.repeat(2001) })).status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('404 si le message n\'existe pas ou est supprimé', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect((await modifier({ body: 'Allô' })).status).toBe(404);
+
+    query.mockResolvedValueOnce({ rows: [messageDe(3, 1, { deleted_at: new Date().toISOString() })] });
+    expect((await modifier({ body: 'Allô' })).status).toBe(404);
+  });
+
+  test('message de groupe : tous les membres reçoivent la modification', async () => {
+    const enGroupe = messageDe(3, 2, { recipient_id: null, group_id: 7 });
+    query
+      .mockResolvedValueOnce({ rows: [enGroupe] })
+      .mockResolvedValueOnce({ rows: [{ ...enGroupe, body: 'Corrigé' }] })
+      .mockResolvedValueOnce({ rows: [{ id: 7, members: [{ id: 3 }, { id: 2 }, { id: 5 }] }] }); // membres
+
+    const res = await modifier({ body: 'Corrigé' });
+
+    expect(res.status).toBe(200);
+    expect(emitToUsers).toHaveBeenCalledWith([3, 2, 5], 'message:updated', expect.objectContaining({ id: 9 }));
+  });
+
+  test('400 si l\'identifiant n\'est pas un nombre', async () => {
+    const res = await modifier({ body: 'Allô' }, 'abc');
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+});
+
+describe('DELETE /api/messages/:messageId (supprimer, #144)', () => {
+  const supprimer = (id = 9) => request(app).delete(`/api/messages/${id}`).set('Authorization', bearer);
+
+  test('200 : l\'expéditeur supprime son message, le texte est effacé chez les deux agents', async () => {
+    const supprime = { ...messageDe(3, 60), body: '', deleted_at: new Date().toISOString() };
+    query
+      .mockResolvedValueOnce({ rows: [messageDe(3, 60)] }) // pas de délai pour supprimer
+      .mockResolvedValueOnce({ rows: [supprime] });
+
+    const res = await supprimer();
+
+    expect(res.status).toBe(200);
+    expect(query.mock.calls[1][0]).toMatch(/SET body = '', deleted_at = now\(\)/);
+    expect(query.mock.calls[1][1]).toEqual([9, 3]);
+    expect(emitToUsers).toHaveBeenCalledWith([3, 2], 'message:deleted', supprime);
+  });
+
+  test('403 sur le message d\'un autre agent, même en appelant l\'API à la main', async () => {
+    query.mockResolvedValueOnce({ rows: [messageDe(2, 1)] });
+
+    const res = await supprimer();
+
+    expect(res.status).toBe(403);
+    expect(query).toHaveBeenCalledTimes(1); // aucun UPDATE
+    expect(emitToUsers).not.toHaveBeenCalled();
+  });
+
+  test('404 si le message n\'existe pas', async () => {
+    query.mockResolvedValueOnce({ rows: [] });
+    expect((await supprimer(42)).status).toBe(404);
+  });
+});
+
+describe('POST /api/messages/:messageId/reactions (réactions emoji)', () => {
+  const prive = { id: 10, sender_id: 2, recipient_id: 3, group_id: null, created_at: new Date().toISOString(), deleted_at: null };
+  const reagir = (id, emoji) => request(app).post(`/api/messages/${id}/reactions`).set('Authorization', bearer).send({ emoji });
+
+  test('ajoute la réaction et la diffuse aux deux agents de la conversation', async () => {
+    const reactions = [{ emoji: '👍', user_ids: [3] }];
+    query
+      .mockResolvedValueOnce({ rows: [prive] })          // findById
+      .mockResolvedValueOnce({ rowCount: 0 })            // pas encore cette réaction : rien à retirer
+      .mockResolvedValueOnce({ rowCount: 1 })            // INSERT … ON CONFLICT
+      .mockResolvedValueOnce({ rows: [{ reactions }] }); // réactions à jour
+
+    const res = await reagir(10, '👍');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toMatchObject({ id: 10, reactions });
+    expect(query.mock.calls[2][0]).toMatch(/ON CONFLICT \(message_id, user_id\) DO UPDATE/);
+    expect(query.mock.calls[2][1]).toEqual([10, 3, '👍']);
+    expect(emitToUsers).toHaveBeenCalledWith([2, 3], 'message:reactions', expect.objectContaining({ id: 10, reactions }));
+  });
+
+  test('la même emoji une deuxième fois retire la réaction', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [prive] })
+      .mockResolvedValueOnce({ rowCount: 1 })              // réaction trouvée et retirée
+      .mockResolvedValueOnce({ rows: [{ reactions: [] }] });
+
+    const res = await reagir(10, '👍');
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.reactions).toEqual([]);
+    expect(query).toHaveBeenCalledTimes(3); // pas d'INSERT
+  });
+
+  test.each(['', 'ok', '<script>', '1', '😀😀😀😀😀😀😀😀😀'])('400 si la réaction n\'est pas une seule emoji : %p', async (emoji) => {
+    const res = await reagir(10, emoji);
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('403 sur un message privé entre deux autres agents', async () => {
+    query.mockResolvedValueOnce({ rows: [{ ...prive, sender_id: 5, recipient_id: 6 }] });
+    const res = await reagir(10, '❤️');
+    expect(res.status).toBe(403);
+    expect(emitToUsers).not.toHaveBeenCalled();
+  });
+
+  test('403 sur un message d\'un groupe dont l\'agent n\'est pas membre', async () => {
+    query
+      .mockResolvedValueOnce({ rows: [{ ...prive, recipient_id: null, group_id: 7 }] })
+      .mockResolvedValueOnce({ rows: [] }); // isMember : pas membre
+    const res = await reagir(10, '❤️');
+    expect(res.status).toBe(403);
+  });
+
+  test('404 sur un message supprimé', async () => {
+    query.mockResolvedValueOnce({ rows: [{ ...prive, deleted_at: new Date().toISOString() }] });
+    const res = await reagir(10, '😂');
+    expect(res.status).toBe(404);
+  });
+});
+
+describe('appel manqué (message-événement)', () => {
+  test('ne se modifie pas, même par son expéditeur et dans les 15 minutes', async () => {
+    query.mockResolvedValueOnce({ rows: [{
+      id: 12, sender_id: 3, recipient_id: 2, group_id: null, kind: 'appel-manque-audio',
+      created_at: new Date().toISOString(), deleted_at: null,
+    }] });
+
+    const res = await request(app).patch('/api/messages/12').set('Authorization', bearer).send({ body: 'autre texte' });
+
+    expect(res.status).toBe(400);
+    expect(query).toHaveBeenCalledTimes(1); // aucune écriture
     expect(emitToUsers).not.toHaveBeenCalled();
   });
 });
