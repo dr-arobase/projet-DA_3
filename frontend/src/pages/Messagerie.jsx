@@ -15,6 +15,7 @@ import SelecteurAgents from '../composants/SelecteurAgents.jsx';
 import { LIBELLES_ROLE, nomAgent } from '../agents.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
+import { messageErreurMedia } from '../erreurMedia.js';
 
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
@@ -240,8 +241,9 @@ export default function Messagerie() {
     let flux;
     try {
       flux = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setErreur('Micro refusé : autorisez le micro pour ce site dans le navigateur, puis réessayez.');
+    } catch (err) {
+      console.error('getUserMedia (vocal) :', err?.name, err?.message);
+      setErreur(messageErreurMedia(err));
       return;
     }
     const recorder = new MediaRecorder(flux, format ? { mimeType: format } : undefined);
