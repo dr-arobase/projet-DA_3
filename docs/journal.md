@@ -236,3 +236,16 @@ Ce qui bloque :
 •   La configuration TURN et la validation d'un appel sur réseau cellulaire nécessitent une infrastructure Azure et des identifiants hors dépôt.
 Décisions prises :
 •   Documenter explicitement les limites non vérifiables localement plutôt que de les présenter comme validées.
+
+**Bloc de finition — mardi 3 novembre 2026**
+Présence : Michael
+Tickets suivis : #88, #104, #112, #114
+Ce qui a avancé :
+•   Le tableau de bord distingue les activités de dossiers des diffusions et affiche le dernier communiqué d'information, sans remplacer celui-ci par une alerte urgente.
+•   Le compteur « Alertes du jour » utilise le total paginé de l'API avec un filtre de date, et les temps relatifs de l'activité sont recalculés toutes les 30 secondes.
+•   Les libellés de rôles, de grades, les abréviations et le formatage des dates sont centralisés dans `frontend/src/agents.js` et `frontend/src/registre.js`.
+•   Le README décrit la bêta, les fonctionnalités reportées et la variable obligatoire `JWT_SECRET`.
+Ce qui bloque :
+•   La configuration d'une approbation obligatoire sur `main` et la revue effective des anciennes PR sont des réglages et actions GitHub à effectuer par un administrateur et un coéquipier; elles ne peuvent pas être produites par une modification du dépôt.
+Décisions prises :
+•   Soumettre ces corrections dans une PR dédiée avec `Closes #88`, `Closes #104`, `Closes #112` et `Closes #114`, puis demander une revue concrète avant la fusion.

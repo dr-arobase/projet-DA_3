@@ -86,7 +86,7 @@ export default function useDashboardData() {
   }, [reconnexions, reconnexionRecuperee, charger]);
 
   useEffect(() => {
-    const minuterie = window.setInterval(() => actualiserHorloge((n) => n + 1), 60000);
+    const minuterie = window.setInterval(() => actualiserHorloge((n) => n + 1), 30000);
     return () => window.clearInterval(minuterie);
   }, []);
 
