@@ -8,6 +8,7 @@ import {
   ATTACHMENTS_DIR, ATTACHMENT_TYPES, baseType, cleanFileName, isAllowedFile,
 } from '../middleware/attachment.middleware.js';
 import { emitToUsers } from '../sockets/index.js';
+import { texte, estVisible } from '../utils/texte.js';
 
 export const MAX_BODY = 2000; // message.body VARCHAR(2000)
 
@@ -63,10 +64,10 @@ export const getConversation = async (req, res) => {
 // POST /api/messages : envoyer un message privé à un agent actif
 export const sendMessage = async (req, res) => {
   const recipientId = lireId(req.body.recipient_id);
-  const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
+  const body = texte(req.body.body);
 
   if (!recipientId) return res.status(400).json({ message: 'recipient_id est obligatoire' });
-  if (!body) return res.status(400).json({ message: 'Le message est vide' });
+  if (!body || !estVisible(body)) return res.status(400).json({ message: 'Le message est vide' });
   if (body.length > MAX_BODY) {
     return res.status(400).json({ message: `Le message dépasse ${MAX_BODY} caractères` });
   }
@@ -113,8 +114,8 @@ async function messageDeLAgent(req, res, action) {
 
 // PATCH /api/messages/:messageId { body } : l'expéditeur corrige son message, pendant 15 minutes (#143)
 export const updateMessage = async (req, res) => {
-  const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
-  if (!body) return res.status(400).json({ message: 'Le message est vide' });
+  const body = texte(req.body.body);
+  if (!body || !estVisible(body)) return res.status(400).json({ message: 'Le message est vide' });
   if (body.length > MAX_BODY) {
     return res.status(400).json({ message: `Le message dépasse ${MAX_BODY} caractères` });
   }
