@@ -6,6 +6,7 @@ import { useEvenement } from '../composants/TempsReelContext.js';
 import {
   STATUTS, LIBELLES_STATUT, peutRetirer, nomComplet, formaterDate, formaterJour,
 } from '../registre.js';
+import { urlApi } from '../config.js';
 import '../styles/registre.css';
 
 // Fiche complète d'un dossier (#5), changement de statut (#8) et retrait par un superviseur (#7)
@@ -161,13 +162,7 @@ export default function FicheDossier() {
           <section className="carte fiche-carte">
             <h2 className="fiche-titre">Identité et signalement</h2>
             <div className="fiche-corps">
-              {dossier.photo_url ? (
-                <img className="fiche-photo" src={dossier.photo_url} alt={`Photo de ${nomComplet(dossier)}`} />
-              ) : (
-                <div className="fiche-photo fiche-photo-vide" aria-hidden="true">
-                  {`${dossier.first_name?.[0] ?? ''}${dossier.last_name?.[0] ?? ''}`.toUpperCase()}
-                </div>
-              )}
+              <PhotoDossier dossier={dossier} peutLaRetirer={peutRetirer(utilisateur)} onMisAJour={afficher} />
               <dl className="fiche-champs">
                 <div><dt>Prénom</dt><dd>{dossier.first_name}</dd></div>
                 <div><dt>Nom</dt><dd>{dossier.last_name}</dd></div>
@@ -273,5 +268,62 @@ export default function FicheDossier() {
         </div>
       </div>
     </>
+  );
+}
+
+const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
+const TAILLE_MAX_PHOTO = 2 * 1024 * 1024;
+
+// Photo du dossier (ou ses initiales) : tout agent l'ajoute ou la change; un superviseur peut la retirer
+function PhotoDossier({ dossier, peutLaRetirer, onMisAJour }) {
+  const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [urlEnErreur, setUrlEnErreur] = useState(null);
+  const url = dossier.photo_url ? urlApi(dossier.photo_url) : null;
+
+  async function agir(action) {
+    setEnCours(true);
+    setErreur('');
+    try {
+      const { criminal } = await action();
+      onMisAJour(criminal);
+    } catch (err) {
+      setErreur(err.message);
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  function choisir(e) {
+    const fichier = e.target.files?.[0];
+    e.target.value = '';
+    if (!fichier) return;
+    if (!TYPES_PHOTO.includes(fichier.type)) { setErreur('Choisissez une image JPG, PNG ou WebP.'); return; }
+    if (fichier.size > TAILLE_MAX_PHOTO) { setErreur('La photo dépasse 2 Mo.'); return; }
+    agir(() => api.envoyerPhotoDossier(dossier.id, fichier));
+  }
+
+  return (
+    <div className="fiche-photo-bloc">
+      {url && url !== urlEnErreur ? (
+        <img className="fiche-photo" src={url} alt={`Photo de ${nomComplet(dossier)}`} onError={() => setUrlEnErreur(url)} />
+      ) : (
+        <div className="fiche-photo fiche-photo-vide" aria-hidden="true">
+          {`${dossier.first_name?.[0] ?? ''}${dossier.last_name?.[0] ?? ''}`.toUpperCase()}
+        </div>
+      )}
+      <div className="fiche-photo-actions">
+        <label className="registre-lien">
+          {dossier.photo_url ? 'Changer la photo' : 'Ajouter une photo'}
+          <input type="file" accept={TYPES_PHOTO.join(',')} hidden disabled={enCours} onChange={choisir} />
+        </label>
+        {dossier.photo_url && peutLaRetirer && (
+          <button type="button" className="registre-lien" disabled={enCours} onClick={() => agir(() => api.supprimerPhotoDossier(dossier.id))}>
+            Retirer la photo
+          </button>
+        )}
+      </div>
+      {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
+    </div>
   );
 }

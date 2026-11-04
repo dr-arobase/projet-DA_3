@@ -4,6 +4,7 @@ import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
 import { useAppel } from '../composants/AppelContext.js';
+import { useAppelGroupe } from '../composants/AppelGroupeContext.js';
 import {
   IconeRecherche, IconeGroupe, IconePlus, IconeQuitter, IconeTelephone, IconeCamera, IconeInfo,
   IconeSourire, IconeMicro, IconeImage, IconeTrombone,
@@ -16,6 +17,7 @@ import { LIBELLES_ROLE, nomAgent } from '../agents.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
 import { messageErreurMedia } from '../erreurMedia.js';
+import { urlApi } from '../config.js';
 
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
@@ -63,9 +65,14 @@ export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
   const { appeler, enAppel } = useAppel();
+  const {
+    rejoindre: rejoindreAppelGroupe, verifierAppel, appelGroupeId, appelsEnCours,
+  } = useAppelGroupe();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
   const groupeId = Number(params.get('groupe')) || null;
+  // En ouvrant un groupe : un appel y a-t-il lieu ? (pour proposer de le rejoindre)
+  useEffect(() => { if (groupeId) verifierAppel(groupeId); }, [groupeId, verifierAppel]);
 
   const [contacts, setContacts] = useState([]); // tous les agents actifs, avec non-lus et dernier échange
   const [groupes, setGroupes] = useState([]);
@@ -480,7 +487,7 @@ export default function Messagerie() {
                         />
                       </span>
                     ) : (
-                      <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                      <PhotoGroupe groupe={g} />
                     )}
                     <span className="messagerie-nom">
                       {agent ? nomAgent(agent) : g.name}
@@ -529,7 +536,7 @@ export default function Messagerie() {
             <>
               <header className="messagerie-entete">
                 {groupeId ? (
-                  <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                  <PhotoGroupe groupe={groupe} />
                 ) : (
                   <Avatar utilisateur={correspondant} className="avatar messagerie-avatar" />
                 )}
@@ -568,6 +575,29 @@ export default function Messagerie() {
                           setErreur('');
                           appeler(correspondant, video);
                         }}
+                      >
+                        <Icone taille={24} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {groupeId && (
+                  // Appel de groupe : audio ou vidéo, 6 participants au plus; un appel en cours se rejoint
+                  <div className="messagerie-appels">
+                    {appelsEnCours.has(groupeId) && appelGroupeId !== groupeId && (
+                      <button type="button" className="messagerie-rejoindre" disabled={enAppel} onClick={() => rejoindreAppelGroupe(groupe, false)}>
+                        Rejoindre l&apos;appel
+                      </button>
+                    )}
+                    {[[false, IconeTelephone, 'Appel audio du groupe'], [true, IconeCamera, 'Appel vidéo du groupe']].map(([video, Icone, libelle]) => (
+                      <button
+                        key={libelle}
+                        type="button"
+                        className="messagerie-icone"
+                        aria-label={`${libelle} « ${groupe.name} »`}
+                        title={libelle}
+                        disabled={enAppel || appelGroupeId !== null}
+                        onClick={() => { setErreur(''); rejoindreAppelGroupe(groupe, video); }}
                       >
                         <Icone taille={24} />
                       </button>
@@ -968,6 +998,19 @@ function NouveauGroupe({ agents, onAnnuler, onCree }) {
 }
 
 // Membres d'un groupe : le créateur ajoute et retire; chacun peut quitter
+// Photo d'un groupe, ou l'icône de groupe s'il n'en a pas (ou si l'image ne charge pas)
+function PhotoGroupe({ groupe }) {
+  const [urlEnErreur, setUrlEnErreur] = useState(null);
+  const url = groupe?.avatar_url ? urlApi(groupe.avatar_url) : null;
+  if (url && url !== urlEnErreur) {
+    return <img className="avatar messagerie-avatar avatar-photo" src={url} alt={`Photo du groupe ${groupe.name}`} onError={() => setUrlEnErreur(url)} />;
+  }
+  return <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>;
+}
+
+const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
+const TAILLE_MAX_PHOTO = 2 * 1024 * 1024;
+
 function MembresGroupe({ groupe, agents, moiId, onFermer, onQuitter }) {
   const [choisis, setChoisis] = useState([]);
   const [erreur, setErreur] = useState('');
@@ -990,6 +1033,33 @@ function MembresGroupe({ groupe, agents, moiId, onFermer, onQuitter }) {
   return (
     <div className="messagerie-panneau">
       <h2>Membres de « {groupe.name} »</h2>
+      {estCreateur && (
+        <div className="messagerie-photo-groupe">
+          <PhotoGroupe groupe={groupe} />
+          <label className="registre-lien">
+            {groupe.avatar_url ? 'Changer la photo du groupe' : 'Ajouter une photo au groupe'}
+            <input
+              type="file"
+              accept={TYPES_PHOTO.join(',')}
+              hidden
+              disabled={enCours}
+              onChange={(e) => {
+                const fichier = e.target.files?.[0];
+                e.target.value = '';
+                if (!fichier) return;
+                if (!TYPES_PHOTO.includes(fichier.type)) { setErreur('Choisissez une image JPG, PNG ou WebP.'); return; }
+                if (fichier.size > TAILLE_MAX_PHOTO) { setErreur('La photo dépasse 2 Mo.'); return; }
+                agir(() => api.envoyerPhotoGroupe(groupe.id, fichier));
+              }}
+            />
+          </label>
+          {groupe.avatar_url && (
+            <button type="button" className="registre-lien" disabled={enCours} onClick={() => agir(() => api.supprimerPhotoGroupe(groupe.id))}>
+              Retirer la photo
+            </button>
+          )}
+        </div>
+      )}
       <ul className="messagerie-membres">
         {groupe.members.map((m) => (
           <li key={m.id}>

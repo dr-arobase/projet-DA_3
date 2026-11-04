@@ -2,6 +2,9 @@ import * as criminalModel from '../models/criminal.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
 import { emitEvent } from '../sockets/index.js';
 import { geocodeOrNull } from './geocoding.service.js';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { AVATAR_TYPES, PHOTOS_DIR, PHOTOS_URL, isImage } from '../middleware/upload.middleware.js';
 
 // Statuts autorisés (alignés sur le type criminal_status du schéma SQL)
 export const VALID_STATUSES = ['recherche', 'capture', 'libere'];
@@ -70,9 +73,9 @@ function checkDateOfBirth(value) {
 
 // Champs communs à la création et à la modification d'un dossier, nettoyés et vérifiés
 function checkCriminalFields(data) {
-  // Pas encore d'envoi de photo : on refuse une adresse d'image fournie à la main
+  // La photo s'envoie par PUT /api/criminals/:id/photo : on refuse une adresse d'image fournie à la main
   if (data.photo_url !== undefined && data.photo_url !== null && data.photo_url !== '') {
-    throw httpError(400, "Le champ photo_url n'est pas encore accepté : l'envoi de photo n'existe pas");
+    throw httpError(400, "Le champ photo_url n'est pas accepté : envoyez la photo par PUT /api/criminals/:id/photo");
   }
   return {
     first_name: requiredText(data.first_name, 'prénom', MAX_NAME),
@@ -216,4 +219,47 @@ export const deleteCriminal = async (id, user) => {
 
   emitEvent('criminal:removed', { id: removed.id });
   return removed;
+};
+
+// Supprime l'ancienne photo du disque (basename : on refuse tout chemin qui sortirait du dossier)
+async function retirerFichierPhoto(photoUrl) {
+  if (!photoUrl?.startsWith(`${PHOTOS_URL}/`)) return;
+  await unlink(path.join(PHOTOS_DIR, path.basename(photoUrl))).catch(() => {});
+}
+
+// Photo d'un dossier : image brute JPG, PNG ou WebP (2 Mo), type vérifié sur le contenu.
+// Tout agent peut l'ajouter ou la changer (comme l'adresse), avec une entrée au journal d'audit.
+export const setCriminalPhoto = async (id, contentType, data, user) => {
+  if (!isImage(contentType, data)) throw httpError(415, "Le fichier n'est pas une image JPG, PNG ou WebP valide");
+  const avant = await criminalModel.findById(id);
+  if (!avant) throw notFound();
+
+  const fichier = `dossier-${avant.id}-${Date.now()}.${AVATAR_TYPES[contentType]}`;
+  await mkdir(PHOTOS_DIR, { recursive: true });
+  await writeFile(path.join(PHOTOS_DIR, fichier), data);
+  await criminalModel.setPhoto(avant.id, `${PHOTOS_URL}/${fichier}`, user.id);
+  await retirerFichierPhoto(avant.photo_url);
+
+  await auditLogModel.record({
+    actor_id: user.id, action: 'CRIMINAL_PHOTO_CHANGED', target_type: 'criminal', target_id: avant.id,
+  });
+  const criminal = await criminalModel.findById(avant.id);
+  emitEvent('criminal:updated', criminal);
+  return criminal;
+};
+
+// Retirer la photo d'un dossier (superviseur ou direction, vérifié par la route)
+export const removeCriminalPhoto = async (id, user) => {
+  const avant = await criminalModel.findById(id);
+  if (!avant) throw notFound();
+
+  await criminalModel.setPhoto(avant.id, null, user.id);
+  await retirerFichierPhoto(avant.photo_url);
+
+  await auditLogModel.record({
+    actor_id: user.id, action: 'CRIMINAL_PHOTO_REMOVED', target_type: 'criminal', target_id: avant.id,
+  });
+  const criminal = await criminalModel.findById(avant.id);
+  emitEvent('criminal:updated', criminal);
+  return criminal;
 };

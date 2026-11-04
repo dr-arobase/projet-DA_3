@@ -20,7 +20,7 @@ import turnRoutes from './routes/turn.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { verifyToken } from './middleware/auth.middleware.js';
 import { verifyCsrf } from './middleware/csrf.middleware.js';
-import { AVATARS_DIR, AVATARS_URL } from './middleware/upload.middleware.js';
+import { AVATARS_DIR, AVATARS_URL, PHOTOS_DIR, PHOTOS_URL } from './middleware/upload.middleware.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -60,6 +60,8 @@ app.use('/api/turn', turnRoutes);
 // Seules les photos de profil sont servies telles quelles ; les pièces jointes de la messagerie
 // (uploads/messages) passent par GET /api/messages/:id/attachment, qui vérifie la conversation
 app.use(AVATARS_URL, verifyToken, express.static(AVATARS_DIR, { fallthrough: false }));
+// Photos des dossiers : réservées aux agents connectés, comme les photos de profil
+app.use(PHOTOS_URL, verifyToken, express.static(PHOTOS_DIR, { fallthrough: false }));
 
 // Route d'accueil / de test
 app.get('/', (req, res) => {
