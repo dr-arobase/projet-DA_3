@@ -5,6 +5,7 @@ import { AppelContext } from './AppelContext.js';
 import { useEvenement, useTempsReel } from './TempsReelContext.js';
 import Avatar from './Avatar.jsx';
 import { messageErreurMedia } from '../erreurMedia.js';
+import { jouerSonnerie } from '../sonnerie.js';
 
 // Appels audio et vidéo à deux (#56), en WebRTC : le son et l'image vont directement d'un navigateur
 // à l'autre. Le serveur ne relaie que la signalisation (Socket.IO : call:invite, call:accept,
@@ -15,6 +16,7 @@ import { messageErreurMedia } from '../erreurMedia.js';
 const SERVEURS_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
 const DELAI_SONNERIE = 30 * 1000;
 const DUREE_AVIS = 6000;
+const DUREE_AVIS_RAPPEL = 15000; // un appel manqué reste affiché plus longtemps, avec « Rappeler »
 
 const dureeLisible = (ms) => {
   // Jamais négatif : l'horloge de l'écran peut retarder d'une seconde au tout début de l'appel
@@ -47,6 +49,7 @@ export default function AppelProvider({ children }) {
   const { socket } = useTempsReel();
   const [appel, setAppel] = useState(null); // { phase, callId, agent, video, debut }
   const [avis, setAvis] = useState('');
+  const [rappel, setRappel] = useState(null); // appel manqué : { agent, video }, pour « Rappeler » depuis l'avis
   const [micro, setMicro] = useState(true);
   const [camera, setCamera] = useState(true);
   const [fluxLocal, setFluxLocal] = useState(null);
@@ -84,6 +87,7 @@ export default function AppelProvider({ children }) {
     setSonBloque(false);
     setFace('user');
     changerAppel(null);
+    setRappel(null);
     setAvis(message);
   }, [changerAppel]);
 
@@ -214,7 +218,9 @@ export default function AppelProvider({ children }) {
     sonnerie.current = window.setTimeout(() => {
       if (appelRef.current?.callId === callId && appelRef.current.phase === 'entrant') {
         signaler('call:refuse', { reason: 'sans-reponse' });
-        terminer(`Appel manqué de ${nomDe(appelRef.current.agent)}.`);
+        const manque = appelRef.current;
+        terminer(`Appel manqué de ${nomDe(manque.agent)}.`);
+        setRappel({ agent: manque.agent, video: manque.video });
       }
     }, DELAI_SONNERIE);
   }, [socket, changerAppel, signaler, terminer]));
@@ -272,6 +278,7 @@ export default function AppelProvider({ children }) {
     const a = appelRef.current;
     if (!a || a.callId !== callId) return;
     terminer(a.phase === 'entrant' ? `Appel manqué de ${nomDe(a.agent)}.` : `${nomDe(a.agent)} a raccroché.`);
+    if (a.phase === 'entrant') setRappel({ agent: a.agent, video: a.video });
   }, [terminer]));
 
   // Décroché ou refusé dans un autre onglet : celui-ci arrête de sonner
@@ -304,9 +311,16 @@ export default function AppelProvider({ children }) {
   // Les messages de fin d'appel disparaissent seuls
   useEffect(() => {
     if (!avis) return undefined;
-    const minuterie = window.setTimeout(() => setAvis(''), DUREE_AVIS);
+    const minuterie = window.setTimeout(() => { setAvis(''); setRappel(null); }, rappel ? DUREE_AVIS_RAPPEL : DUREE_AVIS);
     return () => window.clearTimeout(minuterie);
-  }, [avis]);
+  }, [avis, rappel]);
+
+  // Sonnerie audible pendant qu'un appel entrant sonne; tonalité de retour pour l'appelant
+  const phase = appel?.phase;
+  useEffect(() => {
+    if (phase !== 'entrant' && phase !== 'sortant') return undefined;
+    return jouerSonnerie(phase);
+  }, [phase]);
 
   function basculerMicro() {
     local.current?.getAudioTracks().forEach((piste) => { piste.enabled = !micro; });
@@ -404,7 +418,20 @@ export default function AppelProvider({ children }) {
         </section>
       )}
 
-      {avis && <p className="appel-avis" role="status">{avis}</p>}
+      {avis && (
+        <p className="appel-avis" role="status">
+          {avis}
+          {rappel && (
+            <button
+              type="button"
+              className="appel-avis-rappeler"
+              onClick={() => { const { agent, video } = rappel; setRappel(null); setAvis(''); appeler(agent, video); }}
+            >
+              Rappeler
+            </button>
+          )}
+        </p>
+      )}
     </AppelContext.Provider>
   );
 }
