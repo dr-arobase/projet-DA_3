@@ -96,7 +96,7 @@ export const update = async (id, {
         crimes = $6,
         photo_url = CASE WHEN $7 THEN NULL ELSE photo_url END,
         updated_by = $8
-    WHERE id = $9
+    WHERE id = $9 AND version = $10
     RETURNING criminal.*, (SELECT previous_status FROM before) AS previous_status
   `;
   const values = [
