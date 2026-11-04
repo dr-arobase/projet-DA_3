@@ -1,7 +1,7 @@
 # Backlog produit — CrimeTracker
 
 > Le backlog complet (tickets, priorités, points, sprints) vit dans le **[projet GitHub](../../projects/1)**.  
-> Ce fichier est une photo figée au moment de la remise (`soumission-v1`).
+> Ce fichier est la référence des récits historiques. Les tickets de finition du sprint 3 sont suivis dans la section ci-dessous et dans GitHub.
 
 ---
 
@@ -69,6 +69,16 @@
 ---
 
 ## Démarche d'estimation
+
+## Tickets de finition — sprint 3
+
+| Référence | Sujet | Priorité | État |
+|---|---|---:|---|
+| M16–M18 | README, nettoyage documentaire et scénarios E2E | Moyenne | En cours |
+| M19–M23 | Lisibilité, direction E, accessibilité, performance et maquettes | Faible | En cours |
+| M24–M25 | États de messagerie et recherche en direct | Faible | Implémenté |
+| M26–M30 | Démonstration, équipe, journal, rétrospective et idées | Faible | En cours |
+| M31–M32 | Réponses 403 et appels avec TURN | Élevée / moyenne | 403 implémenté, TURN à configurer |
 
 **Échelle Fibonacci** : 1, 2, 3, 5, 8, 13.
 

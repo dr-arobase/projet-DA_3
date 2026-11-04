@@ -142,7 +142,7 @@ export default function PersonnesRecherchees() {
           </p>
         )}
 
-        <div className="carte registre-tableau-cadre">
+        <div className="carte registre-tableau-cadre registre-cartes-mobile">
           <table className="registre-tableau">
             <thead>
               <tr>
@@ -166,16 +166,16 @@ export default function PersonnesRecherchees() {
                     }
                   }}
                 >
-                  <td>
+                  <td data-label="Nom">
                     <Link to={`/personnes-recherchees/${c.id}`} onClick={(e) => e.stopPropagation()}>
                       {nomComplet(c)}
                     </Link>
                     {c.crimes && <small>{c.crimes}</small>}
                   </td>
-                  <td><span className={`statut statut-${c.status}`}>{LIBELLES_STATUT[c.status] ?? c.status}</span></td>
-                  <td>{formaterJour(c.date_of_birth)}</td>
-                  <td>{c.nationality || '—'}</td>
-                  <td>
+                  <td data-label="Statut"><span className={`statut statut-${c.status}`}>{LIBELLES_STATUT[c.status] ?? c.status}</span></td>
+                  <td data-label="Naissance">{formaterJour(c.date_of_birth)}</td>
+                  <td data-label="Nationalité">{c.nationality || '—'}</td>
+                  <td data-label="Ajouté">
                     {formaterDate(c.added_at)}
                     {c.added_by && <small>par {c.added_by}</small>}
                   </td>

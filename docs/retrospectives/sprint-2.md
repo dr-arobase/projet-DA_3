@@ -49,3 +49,19 @@ Chaque membre rédige sa partie à partir de son propre historique GitHub. Celle
 | Corriger la limite de tentatives de connexion (compter seulement les échecs, par adresse IP et matricule) | 100 connexions simultanées d'un même poste réussissent, test automatisé à l'appui |
 | Étiquette de remise posée avant l'échéance | `git ls-remote --tags origin` montre l'étiquette à la date de la remise |
 | Terminer la direction de design E sur toutes les pages | Aucune page ne défile sur le côté, de 320 px à l'écran d'ordinateur |
+
+## Partie de Michael (testeur)
+
+### Ce qui a bien fonctionné
+
+- Les tests backend et la validation frontend ont permis de vérifier les changements temps réel et mobile avant le push.
+- Les essais à deux navigateurs ont confirmé la réception d'un message et l'état de présence Socket.IO.
+
+### Ce qui a été difficile
+
+- Les permissions du microphone empêchent de valider un appel et un message vocal dans le navigateur intégré.
+- Les fichiers ouverts dans VS Code peuvent devenir obsolètes pendant une modification automatisée, ce qui demande de recharger la version commitée.
+
+### Action pour le sprint 3
+
+- Répéter la démonstration avec deux rôles et noter séparément les résultats vérifiables et les limites d'environnement.

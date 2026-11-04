@@ -155,6 +155,7 @@ export default function Diffusions({ severite }) {
         <ul className="pages-fil">
           {diffusions.map((a) => (
             <li key={a.id} className={`carte pages-diffusion${severite === 'urgent' ? ' urgent' : ''}`}>
+              <span className={`diffusion-gravite ${severite}`}>{severite === 'urgent' ? 'Urgent' : 'Info'}</span>
               <p>{a.message}</p>
               {a.criminal_id && <small>Dossier : {a.criminal_name ?? `n° ${a.criminal_id}`}</small>}
               <small>{a.issued_by ?? '—'} · {formaterDate(a.created_at, true)}</small>

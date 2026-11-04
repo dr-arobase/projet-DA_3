@@ -15,6 +15,12 @@
 
 ## Rituels
 
+## Sprint 3 — ligne de Michael
+
+| Membre | Récits responsables | Réalisé |
+|---|---|---|
+| **Michael** | M2–M3, M5–M15, M16–M32 | Temps réel et mise à jour locale du tableau de bord; cartes mobiles; annuaire et actions de contact; recherche en direct; états d'erreur; documentation et scénarios de revue. |
+
 | Rituel | Quand | Durée | Comment |
 |---|---|---|---|
 | **Mêlée quotidienne** | Chaque jour de cours ensembles (en classe) + Pendant la pause commune le mardi pendant environ 1h, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |

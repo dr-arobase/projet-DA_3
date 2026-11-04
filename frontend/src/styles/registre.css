@@ -13,6 +13,8 @@
 
 .registre-retour {
   display: inline-block;
+  min-height: 40px;
+  padding: 10px 0;
   margin-bottom: 4px;
   color: var(--texte-doux);
   font-size: 13px;
@@ -38,15 +40,19 @@
   cursor: pointer;
   white-space: nowrap;
 }
+.registre-bouton-principal,
+.registre-bouton-danger { min-height: 40px; }
 .registre-bouton-principal { background: var(--marine-700); }
 .registre-bouton-principal:hover:not(:disabled) { background: var(--marine-600); }
 .registre-bouton-danger { background: var(--danger); }
 .registre-bouton-danger:hover:not(:disabled) { background: #a51f1f; }
 .registre-bouton-principal:disabled,
 .registre-bouton-danger:disabled { opacity: 0.55; cursor: not-allowed; }
+.registre-bouton-principal, .registre-bouton-danger { min-height: 40px; }
 
 .registre-lien {
-  padding: 0;
+  min-height: 40px;
+  padding: 10px 0;
   border: 0;
   background: none;
   color: var(--lien);
@@ -98,7 +104,7 @@
   border-bottom: 1px solid var(--bordure);
   background: #f5f7fa;
   color: var(--texte-pale);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-align: left;
@@ -130,6 +136,7 @@
 /* ---------- Pagination ---------- */
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 18px; font-size: 14px; }
 .pagination button {
+  min-height: 40px;
   padding: 7px 12px;
   border: 1px solid var(--bordure);
   border-radius: 8px;
@@ -193,7 +200,7 @@
 .champ-registre label {
   margin-bottom: 4px;
   color: var(--texte-pale);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -207,6 +214,10 @@
 .fiche-formulaire label { display: block; }
 .fiche-danger { border-color: #f0b4b4; }
 .fiche-confirmation { display: flex; align-items: center; gap: 16px; }
+.fiche-signalements { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.fiche-signalements li { display: grid; gap: 3px; padding-bottom: 10px; border-bottom: 1px solid var(--bordure); }
+.fiche-signalements li:last-child { padding-bottom: 0; border-bottom: 0; }
+.fiche-signalements span, .fiche-signalements small { color: var(--texte-doux); font-size: 12px; }
 
 /* ---------- Formulaire d'ajout ---------- */
 .formulaire-dossier { max-width: 820px; }
@@ -243,4 +254,36 @@
   .registre-recherche { max-width: none; }
   .fiche-champs,
   .formulaire-grille { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .registre-tableau-cadre { overflow: visible; }
+  .registre-cartes-mobile .registre-tableau thead { display: none; }
+  .registre-cartes-mobile .registre-tableau,
+  .registre-cartes-mobile .registre-tableau tbody { display: block; }
+  .registre-cartes-mobile .registre-tableau tbody tr:not(.registre-vide) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--bordure);
+  }
+  .registre-cartes-mobile .registre-tableau tbody tr:last-child { border-bottom: 0; }
+  .registre-cartes-mobile .registre-tableau td { display: block; padding: 0; border: 0; }
+  .registre-cartes-mobile .registre-tableau td::before {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--texte-pale);
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+  }
+  .registre-cartes-mobile .registre-tableau td:nth-child(1) { grid-column: 1 / -1; }
+  .registre-cartes-mobile .registre-tableau td:nth-child(2),
+  .registre-cartes-mobile .registre-tableau td:nth-child(3),
+  .registre-cartes-mobile .registre-tableau td:nth-child(4),
+  .registre-cartes-mobile .registre-tableau td:nth-child(5) { grid-column: span 1; }
+  .registre-cartes-mobile .registre-tableau td:nth-child(5) { grid-column: 2; }
 }

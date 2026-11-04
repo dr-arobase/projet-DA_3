@@ -88,15 +88,15 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine. L
 
 ---
 
-## Ce qui est simulé dans la bêta
+## Bêta actuelle et sprint 3
 
-Ces éléments sont visibles dans l'interface mais ne sont pas encore réels. Chacun est aussi signalé **à l'écran** : étiquette « Chiffres de démonstration » ou mention « reporté au sprint 3 ».
+La bêta actuelle fonctionne avec une API Express, PostgreSQL, Socket.IO et une interface React servie par nginx. Les parcours principaux sont réels et couverts par les tests backend et la validation frontend.
 
 | Élément | Où | Ce qui le remplacera | Sprint |
 |---|---|---|---|
-| Chiffres « 128 fiches actives, 58 agents connectés, 6 alertes » (étiquette « Chiffres de démonstration ») | Page de connexion | Les vrais compteurs, lus dans l'API | 3 (statistiques) |
-| « Mot de passe oublié ? (reporté) » | Page de connexion | Réinitialisation par un superviseur | 3 |
-| « Authentification à deux facteurs : reporté » | Page de connexion | Authentification externe (OAuth 2 / OIDC) | 3 |
+| Mot de passe oublié | Page de connexion | Réinitialisation administrée | 3 |
+| Authentification à deux facteurs | Authentification | OIDC/2FA après choix du fournisseur | 3 |
+| TURN pour les appels sur réseau cellulaire | Appels audio/vidéo | Coturn configuré hors dépôt | 3 |
 
 Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 
@@ -108,6 +108,9 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 - la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction);
 - la messagerie privée entre agents (reçue en direct, avec les non-lus et l'accusé « Lu »);
 - la carte des signalements terrain (OpenStreetMap; un clic sur la carte place un nouveau signalement).
+- la recherche de dossier au fil de la frappe et les états d'erreur/chargement visibles.
+
+Le sprint 3 porte sur la finition de la documentation, l'accessibilité (contraste, focus et textes lisibles), la performance mobile, les scénarios de démonstration et la fiabilisation des appels réseau. Les fonctionnalités non disponibles sont annoncées explicitement dans l'interface plutôt que présentées comme réussies.
 
 ---
 
@@ -133,6 +136,9 @@ Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps ré
 - [Risques](docs/06-risques.md)
 - [Journal](docs/journal.md)
 - [Maquettes](docs/maquettes/README.md)
+- [Scénarios E2E](docs/scenarios-e2e-sprint-3.md)
+- [Script de démonstration](docs/demo-sprint-3.md)
+- [Boîte à idées](docs/boite-a-idees.md)
 
 ---
 
