@@ -220,6 +220,14 @@ Le parcours #11 a été finalisé dans une branche dédiée, puis vérifié avan
 
 La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr-arobase/projet-DA_3/pull/136), qui a été revue et fusionnée. L'historique Git constitue la trace vérifiable des poussées et des intégrations; Git ne conserve pas un registre séparé de chaque commande `git push`.
 
+### Bilan du sprint 2
+
+1. **Points engagés** : 20 (#50 connexion GitHub 5, #11 tableau de bord temps réel 8, #12 alerte urgente 5, #16 désactivation 2).
+2. **Points livrés** : 20, les quatre récits étant fermés entre le 16 et le 30 octobre et en ligne sur Azure. Selon notre définition de « terminé », seul #11 (8 points) l'est entièrement : sa [PR #136](https://github.com/dr-arobase/projet-DA_3/pull/136) est la seule approuvée par un coéquipier.
+3. **Vélocité réelle** : **20 points**, valeur retenue pour planifier le sprint 3.
+4. **Récits abandonnés** : aucun récit engagé. Les deux retirés de l'engagement (#10 créer un compte, #13 signaler une observation) ont été livrés en plus, hors vélocité.
+5. **Écarts** : planification écrite le 15 octobre au lieu du 9; étiquette `beta-v1` posée le 31 octobre à 1 h 24, environ 25 heures après l'échéance; PR fusionnées sans revue.
+
 ---
 
 ## Sprint 3 — Version finale (~5 semaines)
@@ -243,6 +251,42 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 ### Notions disponibles
 
 Socket.IO (présence, état partagé), gestion de la concurrence, déploiement.
+
+### Engagement réel du sprint 3
+
+> Écrit le 3 novembre par Massyle (Product Owner), au début du sprint, à valider en équipe au bloc du mercredi 4 novembre. Notre groupe a ses cours le mercredi et le vendredi : les dates de l'énoncé (lundi et jeudi) sont décalées d'autant, à confirmer avec l'enseignant.
+
+Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence (#14), concurrence sur le statut (#15), historique des signalements (#17), journal d'audit (#18) et statistiques (#20). L'énoncé de la version finale demande autre chose : un site en ligne sans bogue visible, un temps réel complet, une présence fiable et une concurrence **prouvée par un test**. L'engagement suit donc l'énoncé.
+
+- **Objectif en une phrase** : CrimeTracker est en ligne en version finale; tout ce que l'interface offre fonctionne, le temps réel et la présence tiennent entre plusieurs navigateurs, et deux agents qui modifient le même dossier en même temps obtiennent un résultat correct.
+- **Capacité** : moyenne des vélocités des sprints 1 (19 points) et 2 (20 points) = 19,5 points pour trois semaines, soit 19,5 × 4/3 = **26 points** pour quatre semaines. Une part du temps reste réservée au déploiement, aux essais sur le site en ligne et à la correction de bogues.
+- **Responsable de la mêlée** : Eric.
+
+| Récit | Description et critère d'acceptation | Points | Responsable |
+|---|---|---|---|
+| R1 | **Reconnexion temps réel robuste** (#120) : l'interface signale la coupure, le client se reconnecte seul et rattrape les alertes, messages et changements manqués, sans doublon | 8 | Michael |
+| R2 | **Concurrence prouvée** : un test automatisé envoie deux modifications simultanées du même dossier; une réussit, l'autre reçoit 409 avec l'état actuel et le voit à l'écran | 5 | Chrysler |
+| R3 | **Site final en ligne** : `finale-v1` sur Azure, HTTPS avec HSTS (#180), sauvegarde quotidienne testée (#184), mémoire suffisante (#185), relais TURN (#188), connexion GitHub avec un compte de test | 5 | Massyle |
+| R5 | **Test de bout en bout** (#181) : Playwright ouvre deux navigateurs dans la CI; une alerte arrive en direct chez l'autre, une action interdite est refusée | 5 | Eric |
+| R6 | **Présence fiable** : un agent qui ferme son dernier onglet disparaît en moins de 30 secondes; plusieurs onglets comptent pour une seule présence; un test automatisé le vérifie | 3 | Chrysler |
+| **Total** | | **26** | |
+
+**Hors engagement** (ne compte pas dans la vélocité) : R4, expérience mobile et bureau (#174 à #177), Michael.
+
+**Ordre d'abandon du sprint 3** :
+1. R4, qui est hors engagement.
+2. Le rattrapage de R1 : on garde le bandeau de coupure et la reconnexion automatique, on retire le rattrapage.
+3. R5, le test Playwright, qui vise le niveau « Avancé ».
+
+On ne coupe jamais R3 (en ligne), R2 (concurrence), R6 (présence) ni la correction des bogues visibles : ce sont des exigences de la version finale.
+
+### Avancement du sprint 3
+
+Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi notée dans `journal.md`.
+
+| Date | Points restants | Récits terminés | Décision |
+|---|---|---|---|
+| Mar. 3 novembre | 26 | — | Engagement écrit; les PR #161 à #170 du plan de corrections sont fusionnées |
 
 ---
 
