@@ -499,6 +499,19 @@ button.menu-titre:hover { color: #c3ccd8; }
   color: #fff;
   font-size: 14px;
 }
+/* Appel manqué : rappeler d'un geste, depuis n'importe quelle page */
+.appel-avis-rappeler {
+  min-height: 40px;
+  margin-left: 12px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--succes);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
 
 /* Téléphone : appel vidéo en plein écran, appel audio en carte au-dessus de la barre du bas */
 @media (max-width: 600px) {
