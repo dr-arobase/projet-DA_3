@@ -200,7 +200,8 @@ describe('POST /api/criminals', () => {
   test('201 : crée le dossier au nom de l\'agent et diffuse criminal:added', async () => {
     query
       .mockResolvedValueOnce({ rows: [{ id: 1 }] }) // INSERT
-      .mockResolvedValueOnce({ rows: [dossier] }); // findById
+      .mockResolvedValueOnce({ rows: [dossier] }) // findById
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await request(app)
       .post('/api/criminals')
@@ -214,6 +215,10 @@ describe('POST /api/criminals', () => {
     expect(params[6]).toBe('recherche'); // statut par défaut
     expect(params[8]).toBe(7); // added_by = agent du jeton
     expect(emitEvent).toHaveBeenCalledWith('criminal:added', dossier);
+    // #100 : la création est inscrite au journal d'audit
+    const [sqlAudit, audit] = query.mock.calls[2];
+    expect(sqlAudit).toMatch(/INSERT INTO audit_log/);
+    expect(audit.slice(0, 4)).toEqual([7, 'CRIMINAL_CREATED', 'criminal', 1]);
   });
 
   test('400 si le prénom ou le nom manque', async () => {
@@ -237,7 +242,7 @@ describe('POST /api/criminals', () => {
 });
 
 describe('PUT /api/criminals/:id', () => {
-  const body = { first_name: 'Jean', last_name: 'Dupont', description: 'Modifié' };
+  const body = { first_name: 'Jean', last_name: 'Dupont', description: 'Modifié', version: 1 };
 
   test('403 pour un policier', async () => {
     const res = await request(app).put('/api/criminals/1').set('Authorization', bearer()).send(body);
@@ -264,6 +269,43 @@ describe('PUT /api/criminals/:id', () => {
     const res = await request(app).put('/api/criminals/999').set('Authorization', bearer('direction')).send(body);
 
     expect(res.status).toBe(404);
+  });
+
+  // #98 : avant, le PUT écrasait le dossier sans regarder la version
+  test('400 sans version : le verrouillage optimiste est obligatoire', async () => {
+    const { version, ...sansVersion } = body;
+    const res = await request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(sansVersion);
+
+    expect(version).toBe(1);
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('409 si quelqu\'un a modifié le dossier entre-temps : rien n\'est écrasé', async () => {
+    const actuel = { ...dossier, version: 2 };
+    query
+      .mockResolvedValueOnce({ rows: [] }) // UPDATE … WHERE version = 1 : aucune ligne
+      .mockResolvedValueOnce({ rows: [actuel] });
+
+    const res = await request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(body);
+
+    expect(res.status).toBe(409);
+    expect(res.body.criminal).toEqual(actuel);
+    expect(query.mock.calls[0][0]).toMatch(/version = \$10/);
+    expect(query.mock.calls[0][1][9]).toBe(1);
+    expect(emitEvent).not.toHaveBeenCalled();
+  });
+
+  test('photo_url: null efface la photo; absent, la photo est gardée', async () => {
+    query.mockResolvedValue({ rows: [dossier] });
+    const envoyer = (corps) => request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(corps);
+
+    await envoyer({ ...body, photo_url: null });
+    expect(query.mock.calls[0][1][6]).toBe(true);
+
+    query.mockClear();
+    await envoyer(body);
+    expect(query.mock.calls[0][1][6]).toBe(false);
   });
 });
 
@@ -294,7 +336,8 @@ describe('PATCH /api/criminals/:id/status', () => {
     const capture = { ...dossier, status: 'capture', version: 2 };
     query
       .mockResolvedValueOnce({ rows: [{ id: 1 }] })
-      .mockResolvedValueOnce({ rows: [capture] });
+      .mockResolvedValueOnce({ rows: [capture] })
+      .mockResolvedValueOnce({ rows: [{ id: 99 }] }); // journal d'audit
 
     const res = await request(app).patch(url).set('Authorization', bearer()).send({ status: 'capture', version: 1 });
 
@@ -304,6 +347,8 @@ describe('PATCH /api/criminals/:id/status', () => {
     expect(sql).toMatch(/WHERE id = \$3 AND version = \$4/);
     expect(params).toEqual(['capture', 7, '1', 1]);
     expect(emitEvent).toHaveBeenCalledWith('criminal:updated', capture);
+    // #100 : le changement de statut est inscrit au journal d'audit
+    expect(query.mock.calls[2][1].slice(0, 5)).toEqual([7, 'CRIMINAL_STATUS_CHANGED', 'criminal', 1, '{"status":"capture"}']);
   });
 
   test('409 avec l\'état courant si la version est périmée', async () => {
