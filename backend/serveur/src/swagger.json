@@ -1653,6 +1653,100 @@
         }
       }
     },
+    "/api/criminals/{id}/photo": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "Identifiant du dossier",
+          "schema": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      ],
+      "put": {
+        "tags": [
+          "Criminals"
+        ],
+        "summary": "Ajouter ou changer la photo du dossier",
+        "description": "**Rôle requis :** tout agent connecté. Le corps est l'image brute (pas de multipart) : JPG, PNG ou WebP, 2 Mo maximum, type vérifié sur le contenu. L'ancienne photo est supprimée; l'action est inscrite au journal d'audit (CRIMINAL_PHOTO_CHANGED) et diffusée (criminal:updated). La photo est servie sous photo_url, réservée aux agents connectés.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/png": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            },
+            "image/webp": {
+              "schema": {
+                "type": "string",
+                "format": "binary"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Photo enregistrée : le dossier, avec photo_url"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "413": {
+            "description": "Image de plus de 2 Mo"
+          },
+          "415": {
+            "description": "Le fichier n'est pas une image JPG, PNG ou WebP valide"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Criminals"
+        ],
+        "summary": "Retirer la photo du dossier",
+        "description": "**Rôle requis :** superviseur. Inscrit au journal d'audit (CRIMINAL_PHOTO_REMOVED).",
+        "responses": {
+          "200": {
+            "description": "Photo retirée : le dossier, avec photo_url à null"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
     "/api/geocode": {
       "get": {
         "tags": [
