@@ -1,5 +1,19 @@
 # Risques — CrimeTracker
 
+## Risques du sprint 3 (mis à jour le 3 novembre)
+
+La version finale est jugée **en ligne**, sur la machine Azure, jusqu'au 23 décembre. Les risques nouveaux viennent surtout du serveur.
+
+| # | Risque | Probabilité | Impact | Signal d'alerte | Parade | Responsable |
+|---|---|---|---|---|---|---|
+| 12 | **Le site en ligne tombe faute de mémoire** : la machine Azure a 887 Mo, presque tous utilisés par PostgreSQL, l'API, nginx et Caddy | Moyenne | Élevé | `free -m` sous 100 Mo libres; un conteneur redémarre seul (`docker ps` montre « Restarting ») | Machine à 2 Go, ou limite de mémoire par conteneur avec redémarrage automatique (#185); plan B : démonstration sur Docker local | Massyle |
+| 13 | **Perte des données en ligne** : aucune sauvegarde de la base Azure | Faible | Élevé | Aucun fichier de sauvegarde de moins de 24 h sur le serveur | `pg_dump` quotidien gardé 7 jours, et une restauration essayée une fois (#184) | Massyle |
+| 14 | **Les appels échouent hors du même réseau** : sans relais TURN, un appel entre un téléphone en 4G/5G et un ordinateur reste muet | Élevée | Moyen | Un appel sonne et décroche, mais personne ne s'entend | Relais TURN fusionné (#162); reste à le configurer sur Azure (variables et ports) et à essayer un vrai appel en 4G (#188) | Massyle, Chrysler |
+| 15 | **Une ancienne clé JWT reste visible dans l'historique Git** : une vraie clé a été publiée dans `.env.example` | Faible | Élevé | La clé publiée est celle du serveur | Vérifier que le serveur Azure utilise une autre clé (vérifié le 2 novembre); `.env.example` sans vraie clé (#193). Si la clé du serveur fuit, la changer : toutes les sessions sont alors fermées | Eric |
+| 16 | **Le compte de test de l'enseignant ne peut pas se connecter** : une nouvelle règle d'accès GitHub (#131) pourrait bloquer un compte jamais vu | Moyenne | Élevé | Une connexion GitHub avec un compte neuf échoue | Essayer avec un compte GitHub neuf avant chaque point de contrôle; prévoir l'activation rapide par un superviseur | Massyle |
+| 17 | **Une mise à jour cassée arrive seule en ligne** : Azure installe l'image `latest` toutes les 5 minutes | Moyenne | Élevé | Le site ne répond plus juste après une fusion | Publier l'image seulement après le test complet de la CI (#191); retour à une image `sha-…` précédente | Eric |
+| 18 | **Données de démonstration abîmées** : accents remplacés par des losanges dans une base | Faible | Faible | « � » visible dans un nom ou un message | Bases vérifiées le 2 et le 3 novembre; fichiers SQL lus en UTF-8 (#62) | Massyle |
+
 ## Bilan du sprint 2
 
 Le sprint 2 a confirmé la nécessité d'un discipline de revue et de documentation plus stricte. La livraison fonctionnelle n'a pas été remise en cause au niveau technique, mais la visibilité des contributions et la qualité des tâches de documentation ont été moins régulières que prévu, en particulier sur le journal, les tickets et les contrôles de cohérence du dépôt.
