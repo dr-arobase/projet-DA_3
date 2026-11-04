@@ -559,6 +559,16 @@ Appeler un agent **hors ligne** : l'invitation attend 30 secondes; s'il se conne
 
 **Prix de ce choix** : chaque page doit être reprise pour suivre la direction E; ce travail continue au sprint 3.
 
+### Décision 18 — Compte rapide de l'équipe : gardé pour la démonstration, jamais créé en production
+
+**Question** : le compte « matricule `1`, mot de passe `2` » a le rôle Direction. Il était recréé à chaque démarrage de l'API, y compris sur le serveur en ligne (#73, #86). Le garder ou le retirer ?
+
+**Choix retenu** (Massyle, Product Owner, 3 novembre) : le garder pour la démonstration et les tests en local, et ne plus jamais le créer en production. Le réglage `COMPTE_EQUIPE` en décide : absent ou `true` en local (`compose.yml`), `false` dans `deploy/compose.yml`. En production, l'API ne l'ajoute plus au démarrage, et dans une base neuve elle le désactive juste après les données de départ.
+
+**Raison** : un compte de direction au mot de passe public donne tous les droits à n'importe qui sur un site en ligne. En local, il fait gagner du temps à toute l'équipe et sert aux démonstrations.
+
+**Prix de ce choix** : sur la machine Azure, le compte existe déjà dans la base (créé avant cette décision). Il reste actif tant qu'il sert à la démonstration, puis il est désactivé depuis la page Utilisateurs après la remise du 3 décembre. Les comptes de démonstration par rôle (`Alpha2026!`) ne changent pas.
+
 
 ## Traçabilité des décisions mises en œuvre par Michael — sprint 2
 
