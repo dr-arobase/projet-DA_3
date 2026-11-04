@@ -4,6 +4,8 @@ import { tokenFrom } from '../utils/session.js';
 import { getAccountAuthInfo } from '../utils/account-status.js';
 import { getAllowedOrigins } from '../utils/allowed-origins.js';
 import { registerCallHandlers, livrerAppelsEnAttente } from './appels.js';
+import { registerGroupCallHandlers } from './appels-groupe.js';
+import * as groupModel from '../models/group.model.js';
 import * as messageModel from '../models/message.model.js';
 import * as userModel from '../models/user.model.js';
 
@@ -70,6 +72,8 @@ export default function registerSockets(server) {
         emitToUsers([toId, fromId], 'message:new', message);
       },
     });
+    // Appels de groupe : seulement entre membres du groupe, 6 participants au plus
+    registerGroupCallHandlers(socket, { estMembre: groupModel.isMember, groupe: groupModel.findById, envoyerA });
     // Un appel qui lui est destiné sonne encore (il était hors ligne) : il le reçoit maintenant
     livrerAppelsEnAttente(id, envoyerA);
 

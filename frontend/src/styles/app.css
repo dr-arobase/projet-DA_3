@@ -472,6 +472,13 @@ button.menu-titre:hover { color: #c3ccd8; }
 .appel-local.miroir { transform: scaleX(-1); }
 .appel-son { padding: 10px 14px; border: 0; border-radius: 10px; background: #fff; color: var(--marine-900); font: inherit; font-weight: 700; cursor: pointer; }
 .appel-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Appel de groupe : une tuile par participant (vidéo, ou photo et nom) */
+.appel-groupe { width: min(420px, calc(100vw - 32px)); }
+.appel-groupe.video { width: min(640px, calc(100vw - 32px)); }
+.appel-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; max-height: 60vh; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
+.appel-tuile { display: grid; justify-items: center; align-content: center; gap: 6px; min-height: 96px; padding: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.08); font-size: 13px; text-align: center; }
+.appel-tuile-video { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #000; }
+.appel-tuile-video.miroir { transform: scaleX(-1); }
 .appel-boutons button {
   flex: 1 1 auto;
   padding: 8px 12px;

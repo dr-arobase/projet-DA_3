@@ -4,6 +4,7 @@ import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
 import { useAppel } from '../composants/AppelContext.js';
+import { useAppelGroupe } from '../composants/AppelGroupeContext.js';
 import {
   IconeRecherche, IconeGroupe, IconePlus, IconeQuitter, IconeTelephone, IconeCamera, IconeInfo,
   IconeSourire, IconeMicro, IconeImage, IconeTrombone,
@@ -64,9 +65,14 @@ export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
   const { appeler, enAppel } = useAppel();
+  const {
+    rejoindre: rejoindreAppelGroupe, verifierAppel, appelGroupeId, appelsEnCours,
+  } = useAppelGroupe();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
   const groupeId = Number(params.get('groupe')) || null;
+  // En ouvrant un groupe : un appel y a-t-il lieu ? (pour proposer de le rejoindre)
+  useEffect(() => { if (groupeId) verifierAppel(groupeId); }, [groupeId, verifierAppel]);
 
   const [contacts, setContacts] = useState([]); // tous les agents actifs, avec non-lus et dernier échange
   const [groupes, setGroupes] = useState([]);
@@ -569,6 +575,29 @@ export default function Messagerie() {
                           setErreur('');
                           appeler(correspondant, video);
                         }}
+                      >
+                        <Icone taille={24} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {groupeId && (
+                  // Appel de groupe : audio ou vidéo, 6 participants au plus; un appel en cours se rejoint
+                  <div className="messagerie-appels">
+                    {appelsEnCours.has(groupeId) && appelGroupeId !== groupeId && (
+                      <button type="button" className="messagerie-rejoindre" disabled={enAppel} onClick={() => rejoindreAppelGroupe(groupe, false)}>
+                        Rejoindre l&apos;appel
+                      </button>
+                    )}
+                    {[[false, IconeTelephone, 'Appel audio du groupe'], [true, IconeCamera, 'Appel vidéo du groupe']].map(([video, Icone, libelle]) => (
+                      <button
+                        key={libelle}
+                        type="button"
+                        className="messagerie-icone"
+                        aria-label={`${libelle} « ${groupe.name} »`}
+                        title={libelle}
+                        disabled={enAppel || appelGroupeId !== null}
+                        onClick={() => { setErreur(''); rejoindreAppelGroupe(groupe, video); }}
                       >
                         <Icone taille={24} />
                       </button>
