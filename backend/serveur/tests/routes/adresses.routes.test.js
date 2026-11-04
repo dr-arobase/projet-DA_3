@@ -164,6 +164,15 @@ describe('GET /api/geocode', () => {
     expect((await chercher('Montréal')).status).toBe(503);
   });
 
+  test('429 si l\'agent a déjà trop d\'adresses en attente (#91)', async () => {
+    geocode.mockRejectedValue(new Error('GEOCODER_BUSY'));
+    const res = await chercher('Montréal');
+
+    expect(res.status).toBe(429);
+    expect(res.headers['retry-after']).toBe('2');
+    expect(geocode).toHaveBeenCalledWith('Montréal', 3);
+  });
+
   test('400 si l\'adresse est trop courte ou absente', async () => {
     expect((await chercher('ab')).status).toBe(400);
     expect((await chercher(undefined)).status).toBe(400);
