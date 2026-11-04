@@ -33,12 +33,23 @@
 .pages-diffusion.urgent { border-left-color: var(--danger); }
 .pages-diffusion p { white-space: pre-line; overflow-wrap: anywhere; }
 .pages-diffusion small { color: var(--texte-doux); font-size: 12px; }
+.pages-sur-titre { color: var(--texte-doux); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
+.diffusion-gravite { justify-self: start; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.diffusion-gravite.urgent { background: var(--danger-fond); color: var(--danger); }
+.diffusion-gravite.info { background: #e6e9f0; color: var(--marine-700); }
 .pages-vide { padding: 18px; color: var(--texte-doux); text-align: center; }
+.pages-introuvable { display: grid; justify-items: start; align-content: center; gap: 12px; min-height: 60vh; }
+.pages-code { color: var(--marine-700); font-family: var(--titre); font-size: 72px; line-height: 1; }
+.pages-introuvable h1 { font-family: var(--titre); font-size: 32px; }
+.pages-introuvable code { padding: 2px 6px; border-radius: 4px; background: #e6e9f0; }
+.pages-liens { display: flex; flex-wrap: wrap; gap: 16px; }
 
 /* ---------- Tableaux d'agents ---------- */
 .pages-tableau-fixe td { vertical-align: middle; }
 .pages-tableau-fixe tr { cursor: default; }
 .pages-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 14px; }
+.pages-actions button,
+.pages-actions a { min-height: 40px; }
 .pages-promotion { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .pages-promotion .registre-bouton-principal { padding: 7px 12px; font-size: 13px; }
 
@@ -46,6 +57,9 @@
 .annuaire-tableau td strong { display: block; font-size: 15px; font-weight: 700; }
 .annuaire-tableau .annuaire-matricule { font-family: var(--mono); }
 .annuaire-tableau td a { color: var(--lien); font-weight: 400; overflow-wrap: anywhere; }
+.annuaire-actions { display: flex !important; flex-wrap: wrap; gap: 10px; align-items: center; }
+.annuaire-actions button { border: 0; background: none; font: inherit; cursor: pointer; }
+.annuaire-actions button:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ---------- Utilisateurs (direction E) ---------- */
 .utilisateurs-compte { margin-left: auto; color: var(--texte-doux); font-size: 13px; font-variant-numeric: tabular-nums; }
@@ -121,6 +135,14 @@
 .pages-barre.statut-capture { background: var(--succes); }
 .pages-barre.statut-libere { background: var(--marine-600); }
 .pages-barre-valeur { color: var(--texte-doux); text-align: right; }
+.evolution { display: flex; align-items: end; justify-content: space-around; gap: 12px; min-height: 150px; padding: 18px 8px 0; border-bottom: 1px solid var(--bordure); }
+.evolution-semaine { display: grid; justify-items: center; gap: 6px; min-width: 0; }
+.evolution-barres { display: flex; align-items: end; gap: 3px; height: 115px; }
+.evolution-barre { display: block; width: 10px; min-height: 4px; border-radius: 3px 3px 0 0; }
+.evolution-barre.ajoutes { background: var(--marine-600); }
+.evolution-barre.captures { background: var(--succes); }
+.evolution-barre.alertes { background: var(--danger); }
+.evolution-semaine small { color: var(--texte-doux); font-size: 12px; }
 
 /* ---------- Carte ---------- */
 .carte-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
@@ -132,7 +154,7 @@
 .carte-legende .carte-legende-signalement { background: #8a93a0; }
 .carte-legende .carte-legende-dossier { border-radius: 3px; background: #8a93a0; }
 /* Repère d'un dossier (divIcon Leaflet) : un carré, distinct des ronds des signalements */
-.carte-repere-dossier span { display: block; width: 18px; height: 18px; border: 3px solid #fff; border-radius: 4px; box-shadow: 0 1px 4px rgba(12, 26, 48, 0.45); }
+.carte-repere-dossier span { display: block; width: 32px; height: 32px; border: 3px solid #fff; border-radius: 6px; box-shadow: 0 1px 4px rgba(12, 26, 48, 0.45); }
 .carte-adresse { display: grid; gap: 6px; }
 .carte-adresse .registre-lien { justify-self: start; }
 .recherche-dossier { position: relative; }
@@ -154,6 +176,7 @@
 .recherche-dossier-liste li[role='option'] { padding: 8px 10px; border-radius: 7px; font-size: 14px; cursor: pointer; }
 .recherche-dossier-liste li.actif { background: var(--fond); }
 .recherche-dossier-choisi { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); font-size: 14px; }
+.carte-cadre .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 38px; font-size: 22px; }
 .carte-liste { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
 .carte-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
 .carte-liste li > :first-child { justify-self: start; }
@@ -180,7 +203,7 @@
 .messagerie-bouton-icone:hover { background: var(--fond); }
 .messagerie-pastille { position: relative; flex-shrink: 0; }
 .messagerie-pastille .messagerie-presence { position: absolute; right: -2px; bottom: -2px; border: 2px solid var(--surface); }
-.messagerie-avatar { width: 30px; height: 30px; border-radius: 50%; font-size: 11px; }
+.messagerie-avatar { width: 30px; height: 30px; border-radius: 50%; font-size: 12px; }
 .messagerie-avatar-groupe { background: #dfe6f1; color: var(--marine-700); }
 .messagerie-avatar-vide { flex-shrink: 0; width: 30px; }
 .messagerie-contacts ul { display: grid; align-content: start; gap: 4px; margin: 0; padding: 0; overflow-y: auto; list-style: none; }
@@ -240,14 +263,14 @@
 .messagerie-menu-liste button:hover { background: var(--fond); color: var(--texte); }
 .messagerie-entete small { color: var(--texte-doux); font-size: 12px; }
 .messagerie-messages { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 16px 18px; overflow-y: auto; list-style: none; }
-.messagerie-jour { align-self: center; margin: 8px 0 2px; color: var(--texte-pale); font-size: 11px; font-weight: 700; }
+.messagerie-jour { align-self: center; margin: 8px 0 2px; color: var(--texte-pale); font-size: 12px; font-weight: 700; }
 .messagerie-ligne { display: flex; align-items: flex-end; gap: 8px; }
 .messagerie-ligne.moi { justify-content: flex-end; }
 .messagerie-auteur { color: var(--marine-700); font-size: 12px; }
 .messagerie-bulle { display: grid; gap: 4px; max-width: 70%; padding: 9px 13px; border-radius: 14px 14px 14px 4px; background: #e6e9f0; }
 .messagerie-bulle.moi { border-radius: 14px 14px 4px 14px; background: var(--marine-700); color: #fff; }
 .messagerie-bulle p { white-space: pre-line; overflow-wrap: anywhere; }
-.messagerie-bulle small { font-size: 11px; opacity: 0.75; }
+.messagerie-bulle small { font-size: 12px; opacity: 0.75; }
 .messagerie-bulle.supprime { background: transparent; border: 1px dashed var(--bordure); color: var(--texte-doux); }
 .messagerie-bulle.en-edition { outline: 2px solid var(--danger); outline-offset: 2px; }
 .messagerie-supprime { font-style: italic; }
@@ -271,7 +294,7 @@
 .messagerie-actions { display: flex; justify-content: flex-end; gap: 10px; opacity: 0; transition: opacity 0.15s; }
 .messagerie-bulle:hover .messagerie-actions,
 .messagerie-bulle:focus-within .messagerie-actions { opacity: 1; }
-.messagerie-actions button { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 11px; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.messagerie-actions button { padding: 0; border: 0; background: none; color: inherit; font: inherit; font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; }
 @media (hover: none) { .messagerie-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .messagerie-actions { transition: none; } }
 .messagerie-edition { display: flex; align-items: center; gap: 10px; margin: 0 18px; padding: 6px 10px; border-radius: 8px; background: var(--danger-fond); font-size: 13px; }
@@ -376,13 +399,13 @@
 .messagerie-fil .messagerie-auteur { padding-left: 12px; color: var(--fil-doux); font-size: 12px; font-weight: 600; }
 .messagerie-fil .messagerie-bulle { gap: 4px; max-width: 100%; padding: 9px 14px; border-radius: 20px; background: var(--bulle-autre); color: var(--fil-texte); font-size: 15px; }
 .messagerie-fil .messagerie-bulle.moi { border-radius: 20px; background: var(--bulle-moi); color: #fff; }
-.messagerie-fil .messagerie-bulle small { font-size: 11px; opacity: 0.7; }
+.messagerie-fil .messagerie-bulle small { font-size: 12px; opacity: 0.7; }
 .messagerie-fil .messagerie-bulle.media { padding: 0; overflow: hidden; background: none; }
 .messagerie-fil .messagerie-bulle.media .messagerie-image img { max-width: min(320px, 100%); max-height: 380px; border-radius: 20px; }
 .messagerie-fil .messagerie-bulle.vocal { padding: 8px 14px 8px 8px; }
 .messagerie-fil .messagerie-bulle.supprime { border: 1px solid var(--fil-trait); background: none; color: var(--fil-doux); }
 .messagerie-fil .messagerie-bulle.en-edition { outline-color: var(--fil-accent); }
-.messagerie-meta { display: flex; align-items: center; gap: 10px; padding: 0 6px; color: var(--fil-doux); font-size: 11px; }
+.messagerie-meta { display: flex; align-items: center; gap: 10px; padding: 0 6px; color: var(--fil-doux); font-size: 12px; }
 .messagerie-statut { font-weight: 600; }
 .messagerie-fil .messagerie-actions { opacity: 0; }
 .messagerie-colonne:hover .messagerie-actions,
