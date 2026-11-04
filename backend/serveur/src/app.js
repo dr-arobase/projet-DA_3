@@ -1,13 +1,9 @@
 import express from 'express';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import swaggerUi from 'swagger-ui-express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-// Charger les variables d'environnement (.env)
-dotenv.config();
 
 // Import des routes
 import authRoutes from './routes/auth.routes.js';
@@ -18,6 +14,7 @@ import alertsRoutes from './routes/alerts.routes.js';
 import auditLogsRoutes from './routes/auditLogs.routes.js';
 import messagesRoutes from './routes/messages.routes.js';
 import geocodeRoutes from './routes/geocode.routes.js';
+import turnRoutes from './routes/turn.routes.js';
 
 // Import des middlewares globaux
 import { errorHandler } from './middleware/error.middleware.js';
@@ -56,6 +53,7 @@ app.use('/api/alerts', alertsRoutes);
 app.use('/api/audit-logs', auditLogsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/geocode', geocodeRoutes);
+app.use('/api/turn', turnRoutes);
 
 // Fichiers envoyés (photos de profil) : réservés aux agents connectés.
 // Le navigateur envoie le cookie de session tout seul pour les <img> de même origine.
@@ -69,6 +67,12 @@ app.get('/', (req, res) => {
     message: 'API CrimeTracker opérationnelle',
     documentation: '/api-docs'
   });
+});
+
+// Route inconnue (#97) : une réponse JSON en français, comme le reste de l'API,
+// au lieu de la page HTML « Cannot GET » d'Express (qui révèle aussi le framework)
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route introuvable' });
 });
 
 // Middleware global de gestion des erreurs

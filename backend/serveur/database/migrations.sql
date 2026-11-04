@@ -110,3 +110,8 @@ ALTER TABLE message ADD COLUMN IF NOT EXISTS kind VARCHAR(30);
 -- Appels manqués créés avant la colonne kind (texte avec une emoji) : on les convertit.
 UPDATE message SET kind = 'appel-manque-audio', body = 'Appel audio manqué' WHERE kind IS NULL AND body = '📞 Appel audio manqué';
 UPDATE message SET kind = 'appel-manque-video', body = 'Appel vidéo manqué' WHERE kind IS NULL AND body = '📞 Appel vidéo manqué';
+
+-- Journal d'audit (#100) : une connexion ratée n'a pas d'auteur connu (matricule faux ou inconnu),
+-- ni toujours de compte visé. DROP NOT NULL est sans effet si c'est déjà fait.
+ALTER TABLE audit_log ALTER COLUMN actor_id DROP NOT NULL;
+ALTER TABLE audit_log ALTER COLUMN target_id DROP NOT NULL;

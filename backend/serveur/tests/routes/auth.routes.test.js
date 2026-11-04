@@ -86,6 +86,21 @@ describe('POST /api/auth/login', () => {
 
     expect(res.status).toBe(401);
     expect(res.body.message).toMatch(/Identifiants invalides/);
+    // #100 : la connexion ratée est inscrite au journal d'audit, sans auteur connu
+    const audit = query.mock.calls.find(([sql]) => sql.includes('INSERT INTO audit_log'))?.[1];
+    expect(audit.slice(0, 4)).toEqual([null, 'LOGIN_FAILED', 'user', null]);
+    expect(JSON.parse(audit[4]).badge_number).toBe('XX-000');
+  });
+
+  test('une panne du journal d\'audit ne change pas la réponse d\'une connexion ratée', async () => {
+    query.mockImplementation(async (sql) => {
+      if (sql.includes('INSERT INTO audit_log')) throw new Error('base indisponible');
+      return { rows: [] };
+    });
+
+    const res = await request(app).post('/api/auth/login').send({ badge_number: 'XX-000', password: 'secret123' });
+
+    expect(res.status).toBe(401);
   });
 
   test('401 si le mot de passe est incorrect', async () => {
