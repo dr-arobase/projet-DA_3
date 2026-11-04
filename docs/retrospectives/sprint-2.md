@@ -43,9 +43,11 @@ Chaque membre rédige sa partie à partir de son propre historique GitHub. Celle
 
 ### Actions pour le sprint 3
 
-| Action | Comment on saura qu'elle est faite |
-|---|---|
-| Une revue par PR, avec un commentaire concret | Chaque PR de Massyle au sprint 3 a au moins une revue enregistrée sur GitHub |
-| Corriger la limite de tentatives de connexion (compter seulement les échecs, par adresse IP et matricule) | 100 connexions simultanées d'un même poste réussissent, test automatisé à l'appui |
-| Étiquette de remise posée avant l'échéance | `git ls-remote --tags origin` montre l'étiquette à la date de la remise |
-| Terminer la direction de design E sur toutes les pages | Aucune page ne défile sur le côté, de 320 px à l'écran d'ordinateur |
+| Action | Responsable | Échéance | Comment on saura qu'elle est faite |
+|---|---|---|---|
+| Une revue par PR, avec un commentaire concret | Massyle | À chaque PR, dès le 4 novembre | Chaque PR de Massyle au sprint 3 a au moins une revue enregistrée sur GitHub |
+| Corriger la limite de tentatives de connexion (compter seulement les échecs, par adresse IP et matricule) | Eric (tâche E2, #89) | Vendredi 6 novembre | 100 connexions simultanées d'un même poste réussissent, test automatisé à l'appui |
+| Étiquette de remise posée avant l'échéance | Massyle | Mardi 1er décembre (remise le 3 décembre) | `git ls-remote --tags origin` montre l'étiquette `finale-v1` avant la date de la remise |
+| Terminer la direction de design E sur toutes les pages | Michael (récit R4) | Mercredi 25 novembre | Aucune page ne défile sur le côté, de 320 px à l'écran d'ordinateur |
+
+> Responsables et échéances ajoutés le 3 novembre, à la planification du sprint 3 (voir `04-sprints.md`).
