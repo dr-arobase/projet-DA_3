@@ -83,7 +83,7 @@ export const loginWithGithub = async ({ id, login, name, email }) => {
   return { token, user: publicProfile(user) };
 };
 
-export const logoutUser = async (userId) => {
+export const logoutUser = async () => {
   // Les tokens JWT sont stateless (sans état côté serveur).
   // La déconnexion valide que l'agent est authentifié et lui indique de supprimer le token.
   return {

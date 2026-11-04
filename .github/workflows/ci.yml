@@ -1,5 +1,5 @@
 # Intégration continue : mêmes vérifications que le hook .githooks/pre-push
-# (tests du backend, démarrage réel du serveur, build du frontend).
+# (lint, audit des dépendances, tests, démarrage réel du serveur et build frontend).
 # Si une étape échoue, le commit est marqué en rouge sur GitHub.
 name: Intégration Continue
 

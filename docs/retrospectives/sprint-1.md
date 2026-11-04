@@ -2,7 +2,11 @@
 
 ## Date
 
+<<<<<<< HEAD
+Mercredi 07 Octocbre 2026
+=======
 Mardi 6 octobre 2026, avant la pose de l'étiquette `alpha-v1`.
+>>>>>>> de6c6382429caa554a278e36dba2b83916b65338
 
 ## Participants
 
@@ -35,12 +39,18 @@ Mardi 6 octobre 2026, avant la pose de l'étiquette `alpha-v1`.
 
 ## Actions décidées
 
+<<<<<<< HEAD
+| Action        | Responsable   | Échéance    |
+| ------------- | ------------- | ------------- |
+| À compléter | À compléter | À compléter |
+=======
 | Action | Responsable | Échéance |
 |---|---|---|
 | Écrire et commettre l'entrée du journal à la fin de chaque bloc de cours | Michael | Chaque bloc du sprint 2, dès le 8 octobre |
 | À la planification du sprint 2, chaque membre est responsable d'au moins un récit, découpé en tâche backend et tâche frontend | Eric | Planification du sprint 2 (8 octobre) |
 | Revoir chaque PR dans les 24 h avec au moins un commentaire concret; une PR par ticket | Chrysler | Toute la durée du sprint 2 |
 | Mettre à jour l'état des tickets du Project à chaque mêlée | Massyle | Chaque bloc du sprint 2 |
+>>>>>>> de6c6382429caa554a278e36dba2b83916b65338
 
 ## Bilan du sprint
 
