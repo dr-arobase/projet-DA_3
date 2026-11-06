@@ -157,7 +157,7 @@ export const updateCriminalAddress = async (id, address, userId) => {
     target_id: criminal.id,
     details: { last_known_address: located.last_known_address },
   });
-  emitEvent('criminal:updated', criminal);
+  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   return { criminal, addressNotLocated: notLocated(criminal) };
 };
 
@@ -176,7 +176,7 @@ export const updateCriminal = async (id, data, userId) => {
   }
 
   const criminal = await criminalModel.findById(id);
-  emitEvent('criminal:updated', criminal);
+  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   return criminal;
 };
 
@@ -201,7 +201,7 @@ export const updateCriminalStatus = async (id, status, version, userId) => {
     target_id: criminal.id,
     details: { status },
   });
-  emitEvent('criminal:updated', criminal);
+  emitEvent('criminal:updated', { ...criminal, previous_status: updated.previous_status });
   return criminal;
 };
 
@@ -217,7 +217,7 @@ export const deleteCriminal = async (id, user) => {
     details: { removed_by: user.badge_number }
   });
 
-  emitEvent('criminal:removed', { id: removed.id });
+  emitEvent('criminal:removed', { id: removed.id, status: removed.status });
   return removed;
 };
 

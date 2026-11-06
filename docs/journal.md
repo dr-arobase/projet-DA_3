@@ -230,3 +230,14 @@ Décisions prises : Apposer le tag `alpha-v1` sur le dernier commit validé par 
 **Note — mardi 6 octobre 2026 (soir, avant la remise)**
 Fusion de la PR #38 (bilan du sprint, contributions et risques) **sans approbation d'un coéquipier** : aucun coéquipier n'était disponible pour la revoir avant l'échéance de minuit. La protection de `main` a été désactivée le temps de cette fusion seulement, puis réactivée aussitôt. C'est l'exception prévue par nos règles (« sauf urgence documentée dans le journal »); la PR reste ouverte aux commentaires de l'équipe après coup.
 Même chose pour la PR #41 (modèles d'issues et de PR, `CONTRIBUTING.md`, `.editorconfig`, ticket #24), reprise de la PR #34 sans ses suppressions devenues obsolètes : fusionnée sans revue pour la même raison, protection réactivée aussitôt.
+
+**Bloc de finition — lundi 2 novembre 2026**
+Présence : Michael
+Ce qui a avancé :
+•   Correction du comportement client des réponses 403 : seules les sessions absentes, invalides ou expirées renvoient à la connexion.
+•   Ajout des états de chargement et d'erreur de la messagerie et de la recherche de dossiers au fil de la frappe.
+•   Préparation des scénarios E2E, du script de démonstration et de la documentation du sprint 3.
+Ce qui bloque :
+•   La configuration TURN et la validation d'un appel sur réseau cellulaire nécessitent une infrastructure Azure et des identifiants hors dépôt.
+Décisions prises :
+•   Documenter explicitement les limites non vérifiables localement plutôt que de les présenter comme validées.

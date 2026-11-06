@@ -123,7 +123,7 @@
 
 .auth-options { display: flex; align-items: center; margin: -4px 0 22px; font-size: 14px; }
 
-.case { display: flex; align-items: center; gap: 8px; color: var(--texte); cursor: pointer; }
+.case { display: flex; align-items: center; gap: 8px; min-height: 44px; color: var(--texte); cursor: pointer; }
 .case input { width: 18px; height: 18px; margin: 0; accent-color: var(--marine-700); }
 
 .bouton-principal {

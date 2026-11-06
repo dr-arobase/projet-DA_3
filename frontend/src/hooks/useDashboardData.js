@@ -1,7 +1,7 @@
 // Données du tableau de bord, lues dans l'API puis tenues à jour en temps réel :
 // chaque événement Socket.IO (dossier ajouté / modifié / retiré, alerte diffusée)
 // ajoute une ligne d'activité et relance le calcul des compteurs.
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '../api.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
 
@@ -41,13 +41,15 @@ function fusionner(...listes) {
 }
 
 export default function useDashboardData() {
-  const { agentsConnectes, reconnexions } = useTempsReel();
+  const { agentsConnectes, reconnexions, reconnexionRecuperee } = useTempsReel();
   const [compteurs, setCompteurs] = useState({ recherches: 0, captures: 0 });
   const [alertes, setAlertes] = useState([]);
   const [nombreAlertesDuJour, setNombreAlertesDuJour] = useState(0);
   const [activites, setActivites] = useState([]);
   const [erreur, setErreur] = useState('');
   const [, actualiserHorloge] = useState(0);
+  const alertesConnues = useRef(new Set());
+  const evenementsCriminelsRecus = useRef(new Set());
 
   const charger = useCallback(async () => {
     try {
@@ -61,6 +63,7 @@ export default function useDashboardData() {
         api.listerAlertes({ severity: 'urgent', since: aujourdHui.toISOString(), limit: 1 }),
       ]);
       setCompteurs({ recherches: recherches.total, captures: captures.total });
+      alertesConnues.current = new Set(listeAlertes.data.map((a) => a.id));
       setAlertes(listeAlertes.data);
       setNombreAlertesDuJour(urgentesDuJour.total ?? 0);
       setActivites((enCours) => fusionner(
@@ -79,8 +82,8 @@ export default function useDashboardData() {
   }, [charger]);
 
   useEffect(() => {
-    if (reconnexions > 1) charger();
-  }, [reconnexions, charger]);
+    if (reconnexions > 0 && !reconnexionRecuperee) charger();
+  }, [reconnexions, reconnexionRecuperee, charger]);
 
   useEffect(() => {
     const minuterie = window.setInterval(() => actualiserHorloge((n) => n + 1), 60000);
@@ -89,41 +92,59 @@ export default function useDashboardData() {
 
   const ajouter = (activite) => setActivites((enCours) => fusionner([activite], enCours));
 
-  const actualiserApresEvenement = useCallback(() => {
-    window.clearTimeout(actualiserApresEvenement.timer);
-    actualiserApresEvenement.timer = window.setTimeout(charger, 150);
-  }, [charger]);
+  const ajusterCompteurs = useCallback((ancienStatut, nouveauStatut) => {
+    setCompteurs((anciens) => ({
+      recherches: anciens.recherches
+        + (nouveauStatut === 'recherche' ? 1 : 0)
+        - (ancienStatut === 'recherche' ? 1 : 0),
+      captures: anciens.captures
+        + (nouveauStatut === 'capture' ? 1 : 0)
+        - (ancienStatut === 'capture' ? 1 : 0),
+    }));
+  }, []);
 
   useEvenement('criminal:added', useCallback((c) => {
+    const cle = `ajout:${c.id}`;
+    if (evenementsCriminelsRecus.current.has(cle)) return;
+    evenementsCriminelsRecus.current.add(cle);
     ajouter(activiteAjout(c));
-    actualiserApresEvenement();
-  }, [actualiserApresEvenement]));
+    ajusterCompteurs(null, c.status);
+  }, [ajusterCompteurs]));
 
   useEvenement('criminal:updated', useCallback((c) => {
+    const cle = `modification:${c.id}:${c.version}`;
+    if (evenementsCriminelsRecus.current.has(cle)) return;
+    evenementsCriminelsRecus.current.add(cle);
+    ajusterCompteurs(c.previous_status, c.status);
     ajouter({
       id: `maj-${c.id}-${c.version}`, type: c.status === 'recherche' ? 'ajout' : 'classee',
       date: c.updated_at ?? new Date().toISOString(),
       titre: `${LIBELLES_STATUT[c.status] ?? 'Fiche modifiée'} — ${nomComplet(c)}`,
       auteur: c.updated_by ?? '—',
     });
-    actualiserApresEvenement();
-  }, [actualiserApresEvenement]));
+  }, [ajusterCompteurs]));
 
-  useEvenement('criminal:removed', useCallback(({ id }) => {
+  useEvenement('criminal:removed', useCallback(({ id, status }) => {
+    const cle = `retrait:${id}`;
+    if (evenementsCriminelsRecus.current.has(cle)) return;
+    evenementsCriminelsRecus.current.add(cle);
+    ajusterCompteurs(status, null);
     ajouter({
       id: `retrait-${id}`, type: 'classee', date: new Date().toISOString(),
       titre: `Fiche n° ${id} retirée du registre`, auteur: '—',
     });
-    actualiserApresEvenement();
-  }, [actualiserApresEvenement]));
+  }, [ajusterCompteurs]));
 
   useEvenement('alert:broadcast', useCallback((a) => {
-    setAlertes((enCours) => [a, ...enCours.filter((x) => x.id !== a.id)]);
+    if (alertesConnues.current.has(a.id)) return;
+    alertesConnues.current.add(a.id);
+    setAlertes((enCours) => [a, ...enCours]);
     if (a.severity === 'urgent' && estAujourdhui(a.created_at)) setNombreAlertesDuJour((n) => n + 1);
     ajouter(activiteAlerte(a));
   }, []));
 
   const derniere = alertes.find((a) => a.severity === 'info');
+  const urgente = alertes.find((a) => a.severity === 'urgent');
 
   return {
     erreur,
@@ -139,6 +160,10 @@ export default function useDashboardData() {
       titre: derniere.message,
       auteur: derniere.issued_by ?? '—',
       heure: new Date(derniere.created_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
+    },
+    alerteUrgente: urgente && {
+      message: urgente.message,
+      heure: new Date(urgente.created_at).toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' }),
     },
     notifications: nombreAlertesDuJour,
   };

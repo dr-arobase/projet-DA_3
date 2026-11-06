@@ -6,7 +6,7 @@ import {
   IconeUtilisateur, IconeCourriel, IconeCalendrier, IconeCadenas, IconeEnregistrer, IconeAppareilPhoto,
 } from '../composants/Icones.jsx';
 import '../styles/profil.css';
-import { LIBELLES_ROLE, LIBELLES_GRADE } from '../agents.js';
+import { LIBELLES_ROLE, LIBELLES_GRADE, nomAgentCourt } from '../agents.js';
 import { formaterDate } from '../registre.js';
 
 // Valeurs de app_user.role et app_user.grade (voir database/schema.sql)
@@ -16,18 +16,6 @@ const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
 const TAILLE_MAX_PHOTO = 2 * 1024 * 1024;
 
 const MOTS_DE_PASSE_VIDES = { actuel: '', nouveau: '', confirmation: '' };
-
-const ABREVIATIONS_GRADE = {
-  sergent_autres_fonctions: 'Sgt.',
-  sergent_gestionnaire: 'Sgt. gest.',
-  sergent_responsable_de_poste: 'Sgt. resp.',
-  lieutenant: 'Lt.',
-  capitaine: 'Cap.',
-  inspecteur: 'Insp.',
-  inspecteur_chef: 'Insp.-chef',
-  directeur_general_adjoint: 'DGA',
-  directeur_general: 'Dir.',
-};
 
 export default function Profil() {
   const { utilisateur, mettreAJourUtilisateur } = useAuth();
@@ -50,8 +38,6 @@ export default function Profil() {
 
   if (!utilisateur) return null;
 
-  const prenom = utilisateur.first_name ?? '';
-  const nom = utilisateur.last_name ?? '';
   const role = utilisateur.role?.toLowerCase();
 
   async function changerPhoto(e) {
@@ -145,7 +131,7 @@ export default function Profil() {
               <div className="profil-identite">
                 <Avatar utilisateur={utilisateur} className="profil-avatar" />
                 <div className="profil-identite-texte">
-                  <strong>{[ABREVIATIONS_GRADE[utilisateur.grade], prenom, nom].filter(Boolean).join(' ')}</strong>
+                  <strong>{nomAgentCourt(utilisateur)}</strong>
                   <span>{LIBELLES_GRADE[utilisateur.grade] ?? utilisateur.grade}</span>
                   <div className="profil-photo-actions">
                     <input
