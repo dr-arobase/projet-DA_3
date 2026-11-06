@@ -43,7 +43,11 @@ Un compte par rôle. Le mot de passe est le même pour tous : **`Alpha2026!`**
 | `PL-003` | Chrysler Jean  | Policier    | Sergent (autres fonctions) |
 | `PL-004` | Michael Fortin | Policier    | Sergent (autres fonctions) |
 
-**Compte rapide de l'équipe** (tests en local) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve. Pour l'ajouter à une base déjà créée, sans rien effacer :
+**Rôle par défaut (policier)** : connectez-vous avec **votre propre compte GitHub**. Un compte jamais vu devient policier à sa première connexion (voir plus haut).
+
+**Avant une démonstration** : la veille, essayer chaque compte ci-dessus, en local et sur le site en ligne, ainsi qu'un compte GitHub jamais utilisé. Voir aussi la liste de remise ([#198](https://github.com/dr-arobase/projet-DA_3/issues/198)).
+
+**Compte rapide de l'équipe** (tests en local seulement) : matricule **`1`**, mot de passe **`2`**, rôle Direction. Il est créé avec les autres dans une base neuve, mais **jamais en production** (`COMPTE_EQUIPE=false` dans `deploy/compose.yml`, décision 18 de `docs/03-conception.md`). Pour l'ajouter à une base déjà créée, sans rien effacer :
 
 ```bash
 docker compose exec api node scripts/compte-equipe.js     # avec Docker

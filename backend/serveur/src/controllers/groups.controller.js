@@ -3,6 +3,9 @@ import { withTransaction } from '../config/db.js';
 import { emitToUsers } from '../sockets/index.js';
 import { MAX_BODY } from './messages.controller.js';
 import { texte, estVisible } from '../utils/texte.js';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { AVATARS_DIR, AVATARS_URL, AVATAR_TYPES, isImage } from '../middleware/upload.middleware.js';
 
 // Groupes de discussion (#55) : tout agent en crée un; seul le créateur ajoute ou retire
 // des membres; chaque membre peut quitter. Un non-membre ne lit ni n'écrit rien (403).
@@ -187,6 +190,67 @@ export const removeGroupMember = async (req, res) => {
     return res.json({ message: quitter ? 'Vous avez quitté le groupe' : 'Membre retiré', created_by: gestionnaire });
   } catch (error) {
     console.error("Erreur lors du retrait d'un membre:", error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// Supprime l'ancienne photo du disque (basename : on refuse tout chemin qui sortirait du dossier)
+async function retirerFichierPhoto(avatarUrl) {
+  if (!avatarUrl?.startsWith(`${AVATARS_URL}/`)) return;
+  await unlink(path.join(AVATARS_DIR, path.basename(avatarUrl))).catch(() => {});
+}
+
+// Le groupe de l'URL, si l'agent en est le créateur; sinon répond (400, 404, 403) et renvoie null
+async function groupeDuCreateur(req, res) {
+  const groupe = await groupeDuMembre(req, res);
+  if (!groupe) return null;
+  if (groupe.created_by !== req.user.id) {
+    res.status(403).json({ message: 'Seul le créateur du groupe peut changer sa photo' });
+    return null;
+  }
+  return groupe;
+}
+
+// PUT /api/messages/groups/:groupId/avatar : image brute (JPG, PNG ou WebP, 2 Mo), créateur seulement
+export const uploadGroupAvatar = async (req, res) => {
+  const type = req.get('Content-Type');
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0 || !isImage(type, req.body)) {
+    return res.status(415).json({ message: 'Envoyez une image JPG, PNG ou WebP valide' });
+  }
+
+  try {
+    const groupe = await groupeDuCreateur(req, res);
+    if (!groupe) return undefined;
+
+    const fichier = `groupe-${groupe.id}-${Date.now()}.${AVATAR_TYPES[type]}`;
+    await mkdir(AVATARS_DIR, { recursive: true });
+    await writeFile(path.join(AVATARS_DIR, fichier), req.body);
+    await groupModel.setAvatar(groupe.id, `${AVATARS_URL}/${fichier}`);
+    await retirerFichierPhoto(groupe.avatar_url);
+
+    const misAJour = await groupModel.findById(groupe.id);
+    emitToUsers(idsMembres(misAJour), 'group:updated', { group_id: groupe.id });
+    return res.json(misAJour);
+  } catch (error) {
+    console.error('Erreur lors du changement de la photo du groupe:', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// DELETE /api/messages/groups/:groupId/avatar : retour à l'icône, créateur seulement
+export const deleteGroupAvatar = async (req, res) => {
+  try {
+    const groupe = await groupeDuCreateur(req, res);
+    if (!groupe) return undefined;
+
+    await groupModel.setAvatar(groupe.id, null);
+    await retirerFichierPhoto(groupe.avatar_url);
+
+    const misAJour = await groupModel.findById(groupe.id);
+    emitToUsers(idsMembres(misAJour), 'group:updated', { group_id: groupe.id });
+    return res.json(misAJour);
+  } catch (error) {
+    console.error('Erreur lors du retrait de la photo du groupe:', error);
     return res.status(500).json({ message: 'Erreur serveur' });
   }
 };

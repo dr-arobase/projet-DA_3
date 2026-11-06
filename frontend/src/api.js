@@ -84,6 +84,11 @@ export const creerCriminel = (dossier) => requete('/api/criminals', { method: 'P
 export const changerStatut = (id, status, version) =>
   requete(`/api/criminals/${id}/status`, { method: 'PATCH', body: { status, version } });
 
+// Photo du dossier : image brute JPG, PNG ou WebP (2 Mo). La retirer : superviseur ou direction
+export const envoyerPhotoDossier = (id, fichier) => requete(`/api/criminals/${id}/photo`, { method: 'PUT', body: fichier });
+
+export const supprimerPhotoDossier = (id) => requete(`/api/criminals/${id}/photo`, { method: 'DELETE' });
+
 export const retirerCriminel = (id) => requete(`/api/criminals/${id}`, { method: 'DELETE' });
 
 // Dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte s'il la trouve
@@ -166,5 +171,12 @@ export const ajouterMembres = (groupeId, member_ids) =>
   requete(`/api/messages/groups/${groupeId}/members`, { method: 'POST', body: { member_ids } });
 
 // Retirer un membre (créateur), ou se retirer soi-même pour quitter le groupe
+// Photo du groupe (créateur seulement) : image brute JPG, PNG ou WebP, 2 Mo au plus
+export const envoyerPhotoGroupe = (groupeId, fichier) =>
+  requete(`/api/messages/groups/${groupeId}/avatar`, { method: 'PUT', body: fichier });
+
+export const supprimerPhotoGroupe = (groupeId) =>
+  requete(`/api/messages/groups/${groupeId}/avatar`, { method: 'DELETE' });
+
 export const retirerMembre = (groupeId, agentId) =>
   requete(`/api/messages/groups/${groupeId}/members/${agentId}`, { method: 'DELETE' });
