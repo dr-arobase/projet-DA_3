@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import useDashboardData from '../hooks/useDashboardData.js';
 import { estAuMoins } from '../agents.js';
@@ -15,8 +17,30 @@ const ICONES_ACTIVITE = {
 
 export default function Home() {
   const { utilisateur } = useAuth();
-  const { erreur, stats, activites, dernierCommunique, notifications } = useDashboardData();
+  const { erreur, stats, activites, dernierCommunique, alerteUrgente, notifications } = useDashboardData();
   const navigate = useNavigate();
+  const [recherche, setRecherche] = useState('');
+  const [resultats, setResultats] = useState([]);
+  const [rechercheErreur, setRechercheErreur] = useState('');
+
+  useEffect(() => {
+    const terme = recherche.trim();
+    if (!terme) {
+      setResultats([]);
+      setRechercheErreur('');
+      return undefined;
+    }
+    let actif = true;
+    const minuterie = window.setTimeout(() => {
+      api.listerCriminels({ q: terme, limit: 5 })
+        .then((resultat) => actif && setResultats(resultat.data))
+        .catch((err) => actif && setRechercheErreur(err.message));
+    }, 250);
+    return () => {
+      actif = false;
+      window.clearTimeout(minuterie);
+    };
+  }, [recherche]);
 
   // La recherche ouvre le registre filtré sur ce nom
   function rechercher(e) {
@@ -35,9 +59,23 @@ export default function Home() {
           </p>
         </div>
         <div className="entete-actions">
-          <form className="recherche" role="search" onSubmit={rechercher}>
+          <form className="recherche recherche-accueil" role="search" onSubmit={rechercher}>
             <IconeRecherche taille={15} />
-            <input name="q" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" />
+            <input name="q" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
+            {recherche && (
+              <ul className="recherche-resultats" role="listbox">
+                {resultats.map((dossier) => (
+                  <li key={dossier.id}>
+                    <button type="button" onClick={() => navigate(`/personnes-recherchees/${dossier.id}`)}>
+                      <strong>{dossier.first_name} {dossier.last_name}</strong>
+                      <small>{dossier.status}</small>
+                    </button>
+                  </li>
+                ))}
+                {!rechercheErreur && resultats.length === 0 && <li className="recherche-aucun">Aucun dossier trouvé.</li>}
+                {rechercheErreur && <li className="recherche-aucun erreur-texte">{rechercheErreur}</li>}
+              </ul>
+            )}
           </form>
           <Link to="/alertes" className="cloche" aria-label={`${notifications} alertes urgentes aujourd'hui`}>
             <IconeCloche taille={17} />
@@ -48,6 +86,13 @@ export default function Home() {
 
       <div className="page">
         {erreur && <p className="erreur" role="alert">{erreur}</p>}
+        {alerteUrgente && (
+          <Link to="/alertes" className="accueil-alerte" role="alert">
+            <IconeSirene taille={18} />
+            <span><strong>Urgent</strong> {alerteUrgente.message}</span>
+            <small>{alerteUrgente.heure}</small>
+          </Link>
+        )}
 
         <section className="cartes-stats">
           {stats.map((s) => (

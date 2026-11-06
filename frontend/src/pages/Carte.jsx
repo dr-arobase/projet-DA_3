@@ -21,8 +21,8 @@ const aUnePosition = (x) => x.latitude !== null && x.latitude !== undefined && x
 const iconeDossier = (statut) => L.divIcon({
   className: 'carte-repere-dossier',
   html: `<span style="background:${COULEURS[statut] ?? '#5b6573'}"></span>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9],
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
   popupAnchor: [0, -8],
 });
 
@@ -104,7 +104,7 @@ export default function Carte() {
     for (const s of signalements) {
       if (!aUnePosition(s)) continue;
       L.circleMarker([s.latitude, s.longitude], {
-        radius: 9, weight: 2, color: '#fff', fillColor: COULEURS[s.criminal_status] ?? '#5b6573', fillOpacity: 0.9,
+        radius: 14, weight: 2, color: '#fff', fillColor: COULEURS[s.criminal_status] ?? '#5b6573', fillOpacity: 0.9,
       })
         .bindPopup(
           `<strong>${echapper(s.criminal_name)}</strong><br>${echapper(s.location)}`
