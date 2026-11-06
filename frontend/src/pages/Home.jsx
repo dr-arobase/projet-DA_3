@@ -15,7 +15,7 @@ const ICONES_ACTIVITE = {
 
 export default function Home() {
   const { utilisateur } = useAuth();
-  const { erreur, stats, activites, dernierCommunique, notifications } = useDashboardData();
+  const { erreur, stats, activites, dernierCommunique, alerteUrgente, notifications } = useDashboardData();
   const navigate = useNavigate();
 
   // La recherche ouvre le registre filtré sur ce nom
@@ -48,6 +48,13 @@ export default function Home() {
 
       <div className="page">
         {erreur && <p className="erreur" role="alert">{erreur}</p>}
+        {alerteUrgente && (
+          <Link to="/alertes" className="accueil-alerte" role="alert">
+            <IconeSirene taille={18} />
+            <span><strong>Urgent</strong> {alerteUrgente.message}</span>
+            <small>{alerteUrgente.heure}</small>
+          </Link>
+        )}
 
         <section className="cartes-stats">
           {stats.map((s) => (
