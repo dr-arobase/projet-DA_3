@@ -115,3 +115,6 @@ UPDATE message SET kind = 'appel-manque-video', body = 'Appel vidéo manqué' WH
 -- ni toujours de compte visé. DROP NOT NULL est sans effet si c'est déjà fait.
 ALTER TABLE audit_log ALTER COLUMN actor_id DROP NOT NULL;
 ALTER TABLE audit_log ALTER COLUMN target_id DROP NOT NULL;
+
+-- Photo d'un groupe de discussion : changée par le créateur du groupe (même règles que la photo d'un agent)
+ALTER TABLE message_group ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);

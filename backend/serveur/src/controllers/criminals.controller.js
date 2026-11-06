@@ -89,6 +89,29 @@ export const updateStatus = async (req, res) => {
   }
 };
 
+// PUT /api/criminals/:id/photo : image brute (JPG, PNG ou WebP, 2 Mo), tout agent connecté
+export const updatePhoto = async (req, res) => {
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) {
+    return res.status(415).json({ message: 'Envoyez une image JPG, PNG ou WebP' });
+  }
+  try {
+    const criminal = await criminalService.setCriminalPhoto(req.params.id, req.get('Content-Type'), req.body, req.user);
+    return res.json({ message: 'Photo du dossier mise à jour', criminal });
+  } catch (error) {
+    return handleError(res, error, 'du changement de la photo du dossier');
+  }
+};
+
+// DELETE /api/criminals/:id/photo : superviseur ou direction
+export const removePhoto = async (req, res) => {
+  try {
+    const criminal = await criminalService.removeCriminalPhoto(req.params.id, req.user);
+    return res.json({ message: 'Photo du dossier retirée', criminal });
+  } catch (error) {
+    return handleError(res, error, 'du retrait de la photo du dossier');
+  }
+};
+
 export const remove = async (req, res) => {
   try {
     const removed = await criminalService.deleteCriminal(req.params.id, req.user);

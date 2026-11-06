@@ -4,6 +4,7 @@ import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement, useTempsReel } from '../composants/TempsReelContext.js';
 import { useAppel } from '../composants/AppelContext.js';
+import { useAppelGroupe } from '../composants/AppelGroupeContext.js';
 import {
   IconeRecherche, IconeGroupe, IconePlus, IconeQuitter, IconeTelephone, IconeCamera, IconeInfo,
   IconeSourire, IconeMicro, IconeImage, IconeTrombone,
@@ -16,6 +17,7 @@ import { LIBELLES_ROLE, nomAgent } from '../agents.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
 import { messageErreurMedia } from '../erreurMedia.js';
+import { urlApi } from '../config.js';
 
 const MAX_MESSAGE = 2000; // message.body VARCHAR(2000)
 const MAX_NOM_GROUPE = 100; // message_group.name VARCHAR(100)
@@ -42,15 +44,35 @@ const heureDe = (iso) => new Date(iso).toLocaleTimeString('fr-CA', { hour: '2-di
 
 const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
 
+// Met en évidence chaque occurrence du terme cherché (sans tenir compte des majuscules) avec <mark>
+function surligner(texte, terme) {
+  if (!terme) return texte;
+  const morceaux = [];
+  const bas = texte.toLowerCase();
+  let debut = 0;
+  for (let i = bas.indexOf(terme); i !== -1; i = bas.indexOf(terme, debut)) {
+    if (i > debut) morceaux.push(texte.slice(debut, i));
+    morceaux.push(<mark key={i}>{texte.slice(i, i + terme.length)}</mark>);
+    debut = i + terme.length;
+  }
+  if (debut < texte.length) morceaux.push(texte.slice(debut));
+  return morceaux;
+}
+
 // Messagerie : conversations à deux (?avec=<id agent>) et groupes (?groupe=<id groupe>).
 // La liste ne montre que les conversations existantes; la recherche trouve tous les agents.
 export default function Messagerie() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
   const { appeler, enAppel } = useAppel();
+  const {
+    rejoindre: rejoindreAppelGroupe, verifierAppel, appelGroupeId, appelsEnCours,
+  } = useAppelGroupe();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
   const groupeId = Number(params.get('groupe')) || null;
+  // En ouvrant un groupe : un appel y a-t-il lieu ? (pour proposer de le rejoindre)
+  useEffect(() => { if (groupeId) verifierAppel(groupeId); }, [groupeId, verifierAppel]);
 
   const [contacts, setContacts] = useState([]); // tous les agents actifs, avec non-lus et dernier échange
   const [groupes, setGroupes] = useState([]);
@@ -58,6 +80,9 @@ export default function Messagerie() {
   const [messages, setMessages] = useState([]);
   const [groupe, setGroupe] = useState(null); // groupe ouvert, avec ses membres
   const [texte, setTexte] = useState('');
+  // Recherche d'un mot dans la conversation ouverte : les messages trouvés sont mis en évidence
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
+  const [rechercheFil, setRechercheFil] = useState('');
   const [erreur, setErreur] = useState('');
   const [chargementConversation, setChargementConversation] = useState(false);
   const [enCours, setEnCours] = useState(false);
@@ -130,6 +155,38 @@ export default function Messagerie() {
       .finally(() => actif && setChargementConversation(false));
     return () => { actif = false; };
   }, [avecId, groupeId, ouvrir]);
+
+  // Brouillon de chaque conversation : gardé quand on en change, rendu quand on y revient.
+  // Un message en cours de modification n'est pas un brouillon : il n'est pas gardé.
+  const brouillons = useRef(new Map());
+  const conversationActive = useRef('');
+  const texteActuel = useRef('');
+  const enEditionActuelle = useRef(false);
+  useEffect(() => { texteActuel.current = texte; }, [texte]);
+  useEffect(() => { enEditionActuelle.current = Boolean(enEdition); }, [enEdition]);
+  const cleConversation = groupeId ? `groupe-${groupeId}` : avecId ? `agent-${avecId}` : '';
+  useEffect(() => {
+    const ancienne = conversationActive.current;
+    if (ancienne === cleConversation) return;
+    if (ancienne && texteActuel.current.trim() && !enEditionActuelle.current) {
+      brouillons.current.set(ancienne, texteActuel.current);
+    } else if (ancienne) {
+      brouillons.current.delete(ancienne);
+    }
+    conversationActive.current = cleConversation;
+    setTexte(brouillons.current.get(cleConversation) ?? '');
+    setRechercheOuverte(false);
+    setRechercheFil('');
+  }, [cleConversation]);
+
+  const termeFil = rechercheFil.trim().toLowerCase();
+  const nombreTrouves = termeFil
+    ? messages.filter((m) => !m.deleted_at && m.body?.toLowerCase().includes(termeFil)).length
+    : 0;
+  // Le premier message trouvé est amené à l'écran
+  useEffect(() => {
+    if (termeFil) document.querySelector('.messagerie-messages .trouve')?.scrollIntoView({ block: 'center' });
+  }, [termeFil]);
 
   useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 
@@ -434,7 +491,7 @@ export default function Messagerie() {
                         />
                       </span>
                     ) : (
-                      <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                      <PhotoGroupe groupe={g} />
                     )}
                     <span className="messagerie-nom">
                       {agent ? nomAgent(agent) : g.name}
@@ -487,7 +544,7 @@ export default function Messagerie() {
             <>
               <header className="messagerie-entete">
                 {groupeId ? (
-                  <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>
+                  <PhotoGroupe groupe={groupe} />
                 ) : (
                   <Avatar utilisateur={correspondant} className="avatar messagerie-avatar" />
                 )}
@@ -499,6 +556,16 @@ export default function Messagerie() {
                       : `${correspondant.badge_number} · ${enLigne.has(correspondant.id) ? 'En ligne' : 'Hors ligne'}`}
                   </small>
                 </div>
+                <button
+                  type="button"
+                  className="messagerie-icone"
+                  aria-label="Rechercher dans la conversation"
+                  title="Rechercher dans la conversation"
+                  aria-expanded={rechercheOuverte}
+                  onClick={() => { setRechercheOuverte((o) => !o); setRechercheFil(''); }}
+                >
+                  <IconeRecherche taille={22} />
+                </button>
                 {!groupeId && (
                   // Appels à deux seulement, vers un agent connecté (#56)
                   <div className="messagerie-appels">
@@ -516,6 +583,29 @@ export default function Messagerie() {
                           setErreur('');
                           appeler(correspondant, video);
                         }}
+                      >
+                        <Icone taille={24} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {groupeId && (
+                  // Appel de groupe : audio ou vidéo, 6 participants au plus; un appel en cours se rejoint
+                  <div className="messagerie-appels">
+                    {appelsEnCours.has(groupeId) && appelGroupeId !== groupeId && (
+                      <button type="button" className="messagerie-rejoindre" disabled={enAppel} onClick={() => rejoindreAppelGroupe(groupe, false)}>
+                        Rejoindre l&apos;appel
+                      </button>
+                    )}
+                    {[[false, IconeTelephone, 'Appel audio du groupe'], [true, IconeCamera, 'Appel vidéo du groupe']].map(([video, Icone, libelle]) => (
+                      <button
+                        key={libelle}
+                        type="button"
+                        className="messagerie-icone"
+                        aria-label={`${libelle} « ${groupe.name} »`}
+                        title={libelle}
+                        disabled={enAppel || appelGroupeId !== null}
+                        onClick={() => { setErreur(''); rejoindreAppelGroupe(groupe, video); }}
                       >
                         <Icone taille={24} />
                       </button>
@@ -552,6 +642,32 @@ export default function Messagerie() {
                   </div>
                 )}
               </header>
+
+              {rechercheOuverte && (
+                <div className="messagerie-recherche-fil" role="search">
+                  <label className="registre-recherche">
+                    <IconeRecherche taille={15} />
+                    <input
+                      type="search"
+                      autoFocus
+                      placeholder="Rechercher un mot dans la conversation…"
+                      aria-label="Rechercher un mot dans la conversation"
+                      value={rechercheFil}
+                      onChange={(e) => setRechercheFil(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Escape') return;
+                        setRechercheOuverte(false);
+                        setRechercheFil('');
+                      }}
+                    />
+                  </label>
+                  <small aria-live="polite">
+                    {termeFil && (nombreTrouves === 0
+                      ? 'Aucun message trouvé'
+                      : `${nombreTrouves} message${nombreTrouves > 1 ? 's' : ''} trouvé${nombreTrouves > 1 ? 's' : ''}`)}
+                  </small>
+                </div>
+              )}
 
               <ol className="messagerie-messages">
                 {messages.map((m, i) => {
@@ -619,7 +735,7 @@ export default function Messagerie() {
                   return (
                     <Fragment key={m.id}>
                       {dateAuCentre}
-                      <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}`}>
+                      <li className={`messagerie-ligne${moi ? ' moi' : ''}${suite ? ' suite' : ''}${termeFil && !supprime && m.body?.toLowerCase().includes(termeFil) ? ' trouve' : ''}`}>
                         {!moi && (finDeSerie
                           ? <Avatar utilisateur={auteur} className="avatar messagerie-avatar" />
                           : <span className="messagerie-avatar-vide" aria-hidden="true" />)}
@@ -629,7 +745,7 @@ export default function Messagerie() {
                             <div className={classes} title={heureDe(m.created_at)}>
                               {supprime && <p className="messagerie-supprime">Message supprimé</p>}
                               {!supprime && m.attachment_kind && <PieceJointe message={m} />}
-                              {!supprime && m.body && <p>{m.body}</p>}
+                              {!supprime && m.body && <p>{surligner(m.body, termeFil)}</p>}
                               {m.edited_at && !supprime && <small>modifié</small>}
                             </div>
                             {!supprime && (
@@ -890,6 +1006,19 @@ function NouveauGroupe({ agents, onAnnuler, onCree }) {
 }
 
 // Membres d'un groupe : le créateur ajoute et retire; chacun peut quitter
+// Photo d'un groupe, ou l'icône de groupe s'il n'en a pas (ou si l'image ne charge pas)
+function PhotoGroupe({ groupe }) {
+  const [urlEnErreur, setUrlEnErreur] = useState(null);
+  const url = groupe?.avatar_url ? urlApi(groupe.avatar_url) : null;
+  if (url && url !== urlEnErreur) {
+    return <img className="avatar messagerie-avatar avatar-photo" src={url} alt={`Photo du groupe ${groupe.name}`} onError={() => setUrlEnErreur(url)} />;
+  }
+  return <span className="avatar messagerie-avatar messagerie-avatar-groupe" aria-hidden="true"><IconeGroupe taille={16} /></span>;
+}
+
+const TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp'];
+const TAILLE_MAX_PHOTO = 2 * 1024 * 1024;
+
 function MembresGroupe({ groupe, agents, moiId, onFermer, onQuitter }) {
   const [choisis, setChoisis] = useState([]);
   const [erreur, setErreur] = useState('');
@@ -912,6 +1041,33 @@ function MembresGroupe({ groupe, agents, moiId, onFermer, onQuitter }) {
   return (
     <div className="messagerie-panneau">
       <h2>Membres de « {groupe.name} »</h2>
+      {estCreateur && (
+        <div className="messagerie-photo-groupe">
+          <PhotoGroupe groupe={groupe} />
+          <label className="registre-lien">
+            {groupe.avatar_url ? 'Changer la photo du groupe' : 'Ajouter une photo au groupe'}
+            <input
+              type="file"
+              accept={TYPES_PHOTO.join(',')}
+              hidden
+              disabled={enCours}
+              onChange={(e) => {
+                const fichier = e.target.files?.[0];
+                e.target.value = '';
+                if (!fichier) return;
+                if (!TYPES_PHOTO.includes(fichier.type)) { setErreur('Choisissez une image JPG, PNG ou WebP.'); return; }
+                if (fichier.size > TAILLE_MAX_PHOTO) { setErreur('La photo dépasse 2 Mo.'); return; }
+                agir(() => api.envoyerPhotoGroupe(groupe.id, fichier));
+              }}
+            />
+          </label>
+          {groupe.avatar_url && (
+            <button type="button" className="registre-lien" disabled={enCours} onClick={() => agir(() => api.supprimerPhotoGroupe(groupe.id))}>
+              Retirer la photo
+            </button>
+          )}
+        </div>
+      )}
       <ul className="messagerie-membres">
         {groupe.members.map((m) => (
           <li key={m.id}>

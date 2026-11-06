@@ -26,7 +26,7 @@ const SELECT_GROUP_MESSAGE = `
 export const findForUser = async (userId) => {
   const query = `
     SELECT * FROM (
-      SELECT g.id, g.name, g.created_by, g.created_at, ${MEMBERS},
+      SELECT g.id, g.name, g.created_by, g.created_at, g.avatar_url, ${MEMBERS},
         (SELECT COUNT(*) FROM message m
           WHERE m.group_id = g.id AND m.sender_id <> $1 AND m.created_at > gm.last_read_at
             AND m.deleted_at IS NULL) AS unread,
@@ -42,8 +42,17 @@ export const findForUser = async (userId) => {
 
 export const findById = async (groupId, db = pool) => {
   const result = await db.query(
-    `SELECT g.id, g.name, g.created_by, g.created_at, ${MEMBERS} FROM message_group g WHERE g.id = $1`,
+    `SELECT g.id, g.name, g.created_by, g.created_at, g.avatar_url, ${MEMBERS} FROM message_group g WHERE g.id = $1`,
     [groupId]
+  );
+  return result.rows[0] || null;
+};
+
+// Photo du groupe : chemin de l'image, ou null pour revenir à l'icône
+export const setAvatar = async (groupId, avatarUrl) => {
+  const result = await pool.query(
+    'UPDATE message_group SET avatar_url = $1 WHERE id = $2 RETURNING id',
+    [avatarUrl, groupId]
   );
   return result.rows[0] || null;
 };

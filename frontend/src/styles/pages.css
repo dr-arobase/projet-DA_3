@@ -232,6 +232,15 @@
 .messagerie-entete { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--bordure); }
 .messagerie-entete-titre { display: grid; flex: 1; min-width: 0; }
 .messagerie-entete-titre small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Recherche d'un mot dans la conversation ouverte */
+.messagerie-fil:has(> .messagerie-recherche-fil) { grid-template-rows: auto auto 1fr auto auto; }
+.messagerie-rejoindre { min-height: 36px; padding: 6px 14px; border: 0; border-radius: 999px; background: var(--succes); color: #fff; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.messagerie-rejoindre:disabled { opacity: 0.55; cursor: not-allowed; }
+.messagerie-recherche-fil { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 10px 18px; border-bottom: 1px solid var(--bordure); }
+.messagerie-recherche-fil .registre-recherche { flex: 1; min-width: 200px; max-width: none; }
+.messagerie-recherche-fil small { color: var(--texte-doux); font-size: 13px; }
+.messagerie-ligne.trouve .messagerie-bulle { outline: 2px solid #e0a800; outline-offset: 2px; }
+.messagerie-bulle mark { padding: 0 2px; border-radius: 3px; background: #ffe08a; color: #1a1a1a; }
 .messagerie-menu { position: relative; }
 .messagerie-menu-liste {
   position: absolute;
@@ -338,6 +347,10 @@
 .messagerie-champ { display: grid; gap: 6px; margin: 0; font-size: 13px; font-weight: 600; }
 .messagerie-champ input { padding: 9px 12px; border: 1px solid var(--bordure); border-radius: var(--rayon); font: inherit; font-weight: 400; }
 .messagerie-panneau-actions { display: flex; align-items: center; justify-content: flex-end; gap: 16px; }
+/* Photo du groupe (créateur) : aperçu et actions */
+.messagerie-photo-groupe { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
+.messagerie-photo-groupe .messagerie-avatar { width: 48px; height: 48px; }
+.messagerie-photo-groupe label { cursor: pointer; }
 .messagerie-membres { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
 .messagerie-membres li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 1px solid var(--bordure); border-radius: 8px; font-size: 14px; }
 .messagerie-membres small { color: var(--texte-doux); }

@@ -1,0 +1,30 @@
+# Relecteurs demandés automatiquement à chaque PR, selon les fichiers touchés.
+
+# La dernière règle qui correspond l'emporte. L'auteur d'une PR n'est jamais son propre relecteur :
+
+# GitHub demande alors la revue aux autres personnes de la ligne.
+
+# Par défaut : le Product Owner et le responsable de la mêlée
+
+*               @dr-arobase @Lenrics-01
+
+# API, base de données et tests du backend
+
+/backend/ @nleukeu76 @Lenrics-01 @dr-arobase
+
+# Interface React
+
+/frontend/ @MichaelLaurore @dr-arobase
+
+# Intégration continue, modèles de tickets et de PR
+
+/.github/ @Lenrics-01 @dr-arobase
+
+# Mise en ligne (Azure)
+
+/deploy/ @dr-arobase @Lenrics-01
+/compose.yml @dr-arobase @Lenrics-01
+
+# Documentation du cours
+
+/docs/ @dr-arobase @MichaelLaurore

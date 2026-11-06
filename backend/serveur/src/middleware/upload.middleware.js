@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url';
 export const UPLOADS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'uploads');
 export const AVATARS_DIR = path.join(UPLOADS_DIR, 'avatars');
 export const AVATARS_URL = '/api/uploads/avatars';
+// Photos des dossiers de personnes recherchées (mêmes règles : JPG, PNG ou WebP, 2 Mo, type vérifié)
+export const PHOTOS_DIR = path.join(UPLOADS_DIR, 'photos');
+export const PHOTOS_URL = '/api/uploads/photos';
 
 export const MAX_AVATAR_SIZE = 2 * 1024 * 1024; // 2 Mo
 

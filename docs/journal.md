@@ -73,6 +73,7 @@ Ce qui a avancé :
 •   Cadrage du sprint 2 et vérification des tickets à traiter pour la bêta.
 •   Répartition des tâches documentaires et fonctionnelles entre les membres.
 •   Vérification du backlog et de la cohérence avec le journal et les tickets.
+•   Massyle a fusionné le nettoyage du dépôt (PR #44 à #47 : routeur `dossier.js` jamais branché, `yamljs`, dossier `idée/`, dossier des photos de profil) et les écrans manquants : Alertes, Communiqués, Annuaire, Statistiques, Utilisateurs et 404 (PR #48), messagerie privée et carte des signalements (PR #49).
 Ce qui bloque :
 •   La documentation et les tickets ont été tenus à jour avec un léger retard après le sprint 1.
 Décisions prises :
@@ -98,7 +99,7 @@ Décisions prises :
 Présences : Massyle, Eric, Chrysler, Michael
 Tickets suivis : #10, #12, #16, #53, #54, #55, #62, #63, #64, #65, #66
 Ce qui a avancé :
-•   Massyle a poursuivi les fonctionnalités de l'annuaire, de la messagerie, des notifications et de la carte (tickets #53 à #66).
+•   Massyle : les tickets #50 et #53 à #66 avaient été livrés les 15 et 16 octobre (PR #51 à #72 : connexion GitHub, annuaire, messagerie et groupes, accents, notifications, carte), avec la vérification de bout en bout et l'audit du 15 octobre (#67, 61 tickets #73 à #133). Aucun commit de Massyle n'a été fait pendant ce bloc.
 •   Eric a repris la révocation des sessions lors de la désactivation d'un compte (ticket #16).
 •   Chrysler a travaillé sur la validation des alertes et des dossiers liés (ticket #12) ainsi que sur la création de comptes (ticket #10).
 •   Michael a vérifié la cohérence des parcours du sprint et préparé les corrections de l'interface et du temps réel.
@@ -116,7 +117,7 @@ Ce qui a avancé :
 •   Les correctifs de pagination, de validation des identifiants, des champs du registre et des erreurs exposées ont été intégrés.
 •   Eric a terminé le partage PostgreSQL des révocations de compte du ticket #16.
 •   Chrysler a finalisé les validations des alertes et des dossiers liés du ticket #12 et les contrôles de création de compte du ticket #10.
-•   Massyle a poursuivi la refactorisation des services de comptes et d'alertes et la stabilisation de la carte.
+•   Massyle : aucun commit pendant ce bloc d'après l'historique GitHub. L'intégration des services de comptes et d'alertes de Chrysler a été faite plus tard, le 29 octobre (PR #139).
 •   Michael a recensé les régressions restantes et préparé le lot de corrections de la PR #136.
 Ce qui bloque :
 •   Les corrections de sécurité, de validation et de pagination doivent encore être rejouées ensemble sur une installation propre.
@@ -133,6 +134,7 @@ Ce qui a avancé :
 •   Michael a corrigé les parcours temps réel et carte, le rafraîchissement du tableau de bord, les notifications, les profils et les accès de l'interface (PR #136).
 •   Les tickets #12 et #16 ont été vérifiés avec leurs corrections d'API et de révocation de session.
 •   La documentation de remise et les risques ont été révisés avant la dernière revue.
+•   Massyle a publié le frontend sur GitHub Pages (PR #134), puis l'a redirigé vers l'application en ligne (PR #135); il a déployé l'application sur une machine virtuelle Azure, en HTTPS, mise à jour automatiquement depuis les images de `main`.
 Ce qui bloque :
 •   La PR #136 doit encore passer la revue et la CI; le récit #11 doit être relié explicitement à la PR qui le livre.
 Décisions prises :
@@ -148,8 +150,11 @@ Ce qui a avancé :
 •   Les corrections du temps réel et de la carte, les parcours d'alertes, les profils, les pages de gestion et la documentation ont été remis.
 •   Le récit #11 a été fermé après vérification de la mise à jour temps réel du tableau de bord.
 •   L'équipe a préparé la remise et la rétrospective, avec un suivi des correctifs de sécurité de la PR #137.
+•   Massyle, le 29 octobre : intégration du travail de Chrysler (PR #139 : validations, permissions, services), clé JWT réelle retirée des `.env.example`, puis messagerie : non-lus sur le menu (PR #142), modifier pendant 15 minutes et supprimer (PR #145), fichiers, images, GIF et messages vocaux (PR #146), appels audio et vidéo (PR #147), nouvel affichage du fil et émojis (PR #148, #149, #152).
+•   Massyle, le 30 octobre : boutons d'appel (PR #153), fondations de la direction de design E (PR #155), puis réactions emoji, appels sur téléphone et vers un agent hors ligne, page Utilisateurs avec recherche et pagination, nouvelle page de connexion (PR #158). Il a aussi approuvé la PR #156 de Michael.
 Ce qui bloque :
 •   La PR #137 de sécurité reste à finaliser et à faire passer dans la CI avant sa remise définitive.
+•   Aucune des PR de Massyle du sprint 2 n'a été revue par un coéquipier, et l'étiquette `beta-v1` n'a pas été posée à l'échéance du 29 octobre.
 Décisions prises :
 •   La version remise est celle de `main` après fusion de la PR #136; toute correction supplémentaire passe par une PR dédiée.
 •   La rétrospective retient comme actions l'écriture du journal au fil des blocs, la traçabilité systématique des tickets et une vérification navigateur avant chaque fusion.
