@@ -136,6 +136,15 @@ export const setAddress = async (id, { last_known_address, latitude, longitude, 
   return result.rows[0] || null;
 };
 
+// Photo du dossier : chemin de l'image, ou null pour l'effacer
+export const setPhoto = async (id, photo_url, updated_by) => {
+  const result = await pool.query(
+    'UPDATE criminal SET photo_url = $1, updated_by = $2 WHERE id = $3 RETURNING id',
+    [photo_url, updated_by, id]
+  );
+  return result.rows[0] || null;
+};
+
 export const remove = async (id) => {
   const result = await pool.query('DELETE FROM criminal WHERE id = $1 RETURNING id, status', [id]);
   return result.rows[0] || null;

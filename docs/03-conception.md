@@ -132,6 +132,10 @@ erDiagram
 - `MESSAGE_GROUP` et `MESSAGE_GROUP_MEMBER` (sprint 2, #55) : groupes de discussion. Un message va **soit** à un agent (`recipient_id`), **soit** à un groupe (`group_id`); la contrainte `message_destination` l'impose. Pour un groupe, « lu » se suit par membre : les messages arrivés après son `last_read_at` sont non lus. `created_by` est celui qui gère les membres; s'il quitte, le membre le plus ancien prend la relève, et un groupe sans membre est supprimé avec ses messages.
 - `USER.github_id` (sprint 2) : identifiant numérique du compte GitHub lié, `null` pour un compte à mot de passe. `password_hash` devient facultatif : un compte créé par GitHub n'a pas de mot de passe, ne peut pas se connecter par matricule et ne peut pas changer de mot de passe. Son matricule est `GH-<github_id>` (voir décision 10).
 - `CRIMINAL.last_known_address`, `latitude` et `longitude` (sprint 2, #64) : dernière adresse connue, convertie en position par le serveur pour la placer sur la carte (décision 11). Une adresse introuvable est gardée sans position.
+- `MESSAGE.edited_at` et `deleted_at` (sprint 2, #143, #144) : un message modifié garde sa date de modification; un message supprimé garde sa ligne (l'ordre du fil ne change pas) mais perd son texte et sa pièce jointe.
+- `MESSAGE.attachment_path`, `attachment_name`, `attachment_type`, `attachment_size`, `attachment_kind` (sprint 2, #57, #59) : pièce jointe d'un message (`image`, `audio` ou `file`). Le fichier est sur le disque de l'API (`uploads/messages`, nom tiré au hasard); `attachment_path` n'est jamais renvoyé au navigateur (décision 12).
+- `MESSAGE.kind` (sprint 2) : `null` pour un message écrit par un agent; `appel-manque-audio` ou `appel-manque-video` pour un appel manqué laissé par le serveur (décision 14). Un tel message se supprime mais ne se modifie pas.
+- `MESSAGE_REACTION` (sprint 2) : réaction emoji d'un agent à un message. Clé primaire `(message_id, user_id)` : une seule réaction par agent et par message (décision 15).
 - Les colonnes et tables ajoutées après la création de la base sont dans `database/migrations.sql`, exécuté à chaque démarrage (voir décision 7).
 - `AUDIT_LOG` : y sont enregistrées, avec leur auteur, leur cible et la date, les actions `USER_CREATED`, `USER_DEACTIVATED`, `USER_REACTIVATED`, `USER_PROMOTED`, `CRIMINAL_CREATED`, `CRIMINAL_STATUS_CHANGED`, `CRIMINAL_ADDRESS_CHANGED`, `CRIMINAL_REMOVED`, `ALERT_ISSUED` et `LOGIN_FAILED` (#100). Une connexion ratée n'a pas d'auteur connu : `actor_id` et `target_id` peuvent donc être vides; le matricule tenté et l'adresse IP sont dans `details`. La route de consultation existe (`direction`); l'écran n'est pas encore fait.
 - Contraintes de rôle : `policier` est associé au grade « sergent autres fonctions », `superviseur` aux grades de sergent gestionnaire à inspecteur-chef et `direction` aux grades de directeur général adjoint ou directeur général. Une promotion valide le grade avant de modifier le rôle.
@@ -204,6 +208,12 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `POST` | `/api/messages/groups/:groupId/messages` | Écrire dans le groupe | Membre du groupe |
 | `POST` | `/api/messages/groups/:groupId/members` | Ajouter des membres | Créateur du groupe |
 | `DELETE` | `/api/messages/groups/:groupId/members/:userId` | Retirer un membre (créateur), ou quitter (soi-même) | Créateur, ou soi-même |
+| `GET` | `/api/messages/unread` | Nombre de messages non lus, privés et de groupe `{ total }` (#141) | `policier` |
+| `PATCH` | `/api/messages/:messageId` | Modifier son message `{ body }`, pendant 15 minutes; refusé pour un appel manqué (#143) | Expéditeur |
+| `DELETE` | `/api/messages/:messageId` | Supprimer son message (#144) | Expéditeur |
+| `POST` | `/api/messages/attachments?recipient_id=` ou `?group_id=` | Envoyer un fichier, une image, un GIF ou un message vocal, en corps brut (10 Mo au plus) (#57, #59) | Participant |
+| `GET` | `/api/messages/:messageId/attachment` | Lire la pièce jointe d'un message | Participant de la conversation ou membre du groupe |
+| `POST` | `/api/messages/:messageId/reactions` | Réagir avec une emoji `{ emoji }`; la même emoji retire la réaction, une autre la remplace | Participant de la conversation ou membre du groupe |
 | `GET` | `/api/uploads/avatars/:fichier` | Photos de profil (réservées aux agents connectés) | Connecté |
 
 La recherche **par nom** du récit #9 a été ajoutée à la fin du sprint (`q`). Les caractères `%` et `_` tapés par l'agent sont cherchés tels quels, pas comme des jokers SQL.
@@ -233,6 +243,12 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → **membres d'un groupe** | `group:message` | le message, avec le nom de l'expéditeur | `POST /api/messages/groups/:groupId/messages` |
 | Serveur → **membres d'un groupe** | `group:updated` | `{ group_id }` | Création, ajout ou retrait de membres (anciens membres compris) |
 | Serveur → **un agent** | `message:read` | `{ by }` : l'agent qui vient de lire | `GET /api/messages/:userId` (à l'expéditeur des messages lus) |
+| Serveur → **un agent** | `messages:lus` | `{}` | Lecture d'une conversation ou d'un groupe : ses autres onglets remettent la pastille de non-lus à jour (#141) |
+| Serveur → **participants** | `message:updated`, `message:deleted` | le message modifié ou supprimé | `PATCH` et `DELETE /api/messages/:messageId` |
+| Serveur → **participants** | `message:reactions` | `{ id, reactions: [{ emoji, user_ids }] }` | `POST /api/messages/:messageId/reactions` |
+| Client → serveur → **un agent** | `call:invite` → `call:incoming` | `{ to, callId, video }` ; réponse `{ ok, horsLigne }` | Un agent en appelle un autre (#56) ; hors ligne, l'appel lui parvient s'il se connecte pendant la sonnerie |
+| Client → serveur → **un agent** | `call:accept`, `call:refuse`, `call:end`, `call:signal` | `{ to, callId }`, et pour `call:signal` l'offre, la réponse ou un candidat ICE | Signalisation WebRTC, relayée telle quelle entre les deux agents (décision 14) |
+| Serveur → **un agent** | `call:handled` | `{ callId }` | L'appel a été pris ou refusé dans un autre onglet du même agent |
 
 Chaque agent rejoint à la connexion une salle privée (`agent:<id>`), commune à tous ses onglets : les messages privés passent par cette salle et ne sont jamais diffusés aux autres agents.
 
@@ -364,7 +380,7 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 
 **Raison** : le navigateur ne voit qu'une seule origine (`localhost:8080`) en production. L'API n'autorise pas les connexions Socket.IO venant de sites inconnus; seul le port de nginx est publié et la base n'est pas joignable directement depuis l'extérieur.
 
-**En-têtes HTTP** : Express applique les en-têtes Helmet (dont `nosniff`, `frameguard` et `Referrer-Policy`); nginx ajoute également `nosniff`, `X-Frame-Options`, `Referrer-Policy` et `Permissions-Policy` aux pages et ressources statiques. HSTS n'est pas activé tant que le serveur ne termine pas lui-même le HTTPS.
+**En-têtes HTTP** : Express applique les en-têtes Helmet (dont `nosniff`, `frameguard` et `Referrer-Policy`); nginx ajoute également `nosniff`, `X-Frame-Options`, `Referrer-Policy` et `Permissions-Policy` aux pages et ressources statiques. `Permissions-Policy` permet la caméra, le micro et la position **au site lui-même seulement** (`camera=(self), microphone=(self), geolocation=(self)`) : la valeur `()` les interdisait aussi à CrimeTracker et bloquait les appels et les messages vocaux. HSTS n'est pas activé tant que le serveur ne termine pas lui-même le HTTPS.
 
 **Prix de ce choix** : un conteneur de plus, et une configuration nginx à maintenir (notamment les en-têtes `Upgrade` pour les WebSockets).
 
@@ -468,3 +484,99 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 - L'API doit pouvoir joindre Internet.
 - Si Nominatim ne répond pas, le dossier est enregistré **sans** position. Le formulaire de signalement propose alors de cliquer sur la carte.
 - Une requête par seconde suffit pour une équipe, mais pas pour un import massif de dossiers.
+
+---
+
+### Décision 12 — Pièces jointes en corps brut, type vérifié par le contenu, lecture réservée aux participants
+
+**Question** : comment envoyer une image, un GIF, un PDF ou un message vocal dans la messagerie (#57, #59) sans ouvrir une faille ?
+
+**Options envisagées** : un formulaire `multipart/form-data` (bibliothèque multer); le fichier en corps brut, comme la photo de profil (décision 9); un service de stockage externe.
+
+**Choix retenu** : le fichier est envoyé en corps brut (`POST /api/messages/attachments`, 10 Mo au plus). Le serveur vérifie sa **signature** (les premiers octets), pas seulement le type annoncé : JPEG, PNG, WebP, GIF, PDF, WebM, Ogg, MP4 audio et MP3. Il l'enregistre sous un nom tiré au hasard dans `uploads/messages`, hors du dossier public. `GET /api/messages/:messageId/attachment` ne le sert qu'aux deux agents de la conversation ou aux membres du groupe.
+
+**Raison** : même méthode que la photo de profil, déjà testée; un fichier renommé en `.png` mais qui est un exécutable est refusé (`415`); une adresse de fichier copiée ne donne rien à un autre agent (`403`).
+
+**Prix de ce choix** : un fichier par envoi; nginx doit accepter 11 Mo sur `/api/` (`client_max_body_size`); les fichiers restent sur le disque de l'API (volume Docker), sans copie de sauvegarde.
+
+### Décision 13 — Modifier un message pendant 15 minutes, le supprimer sans le faire disparaître du fil
+
+**Question** : comment permettre de corriger ou de retirer un message (#143, #144) sans qu'un agent réécrive l'historique ?
+
+**Choix retenu** : seul l'expéditeur modifie son message, pendant 15 minutes; la condition est **dans la requête SQL** (`created_at > now() - 15 minutes`), pas seulement dans le contrôleur. La suppression est « douce » : la ligne reste, son texte et sa pièce jointe sont effacés, le fil affiche « Message supprimé ». Les autres participants reçoivent `message:updated` ou `message:deleted`.
+
+**Raison** : le délai vérifié au moment d'écrire évite une course entre la vérification et l'écriture; garder la ligne garde l'ordre du fil et les réponses compréhensibles.
+
+**Prix de ce choix** : l'ancien texte n'est pas conservé (pas d'historique des versions); une pièce jointe ne se modifie pas, elle se supprime et se renvoie.
+
+### Décision 14 — Appels audio et vidéo en WebRTC, le serveur ne relaie que la signalisation
+
+**Question** : comment permettre à deux agents de se parler ou de se voir (#56) ?
+
+**Options envisagées** : un service d'appel externe (Twilio, Jitsi); faire passer le son et l'image par le serveur; WebRTC pair à pair, avec Socket.IO pour la signalisation.
+
+**Choix retenu** : WebRTC pair à pair. Le serveur relaie seulement `call:invite`, `call:accept`, `call:refuse`, `call:end` et `call:signal` entre les deux agents, après avoir validé chaque message (taille de l'offre, format du candidat ICE). Un serveur STUN public trouve l'adresse de chaque navigateur. Sur téléphone, l'appel vidéo passe en plein écran, avec le choix entre la caméra avant et la caméra arrière.
+
+Appeler un agent **hors ligne** : l'invitation attend 30 secondes; s'il se connecte pendant ce temps, l'appel sonne chez lui. Un appel qui finit sans réponse laisse un message « Appel manqué » (`message.kind`) dans la conversation privée, compté dans les non-lus. Un agent ne peut avoir qu'une invitation à la fois vers le même collègue, pour éviter une rafale d'appels manqués.
+
+**Raison** : aucun compte ni clé externe; le son et l'image ne passent pas par le serveur et ne sont pas enregistrés; la signalisation réutilise la connexion Socket.IO authentifiée.
+
+**Prix de ce choix** :
+- Le navigateur n'accorde le micro et la caméra qu'en **HTTPS** (ou sur `localhost`) : sur un téléphone ouvert par `http://192.168.x.x`, l'appel est impossible et l'application le dit.
+- L'en-tête `Permissions-Policy` doit permettre le micro et la caméra au site (décision 6).
+- Sans serveur TURN, deux réseaux très fermés (pare-feu d'entreprise, certains réseaux mobiles) peuvent empêcher l'appel.
+- Les invitations en attente sont gardées en mémoire : un redémarrage du serveur les oublie.
+
+### Décision 15 — Réactions emoji : une par agent et par message
+
+**Question** : comment réagir à un message sans écrire de réponse ?
+
+**Choix retenu** : une table `message_reaction` dont la clé primaire est `(message_id, user_id)`. Comme dans Messenger, toucher une autre emoji remplace la sienne, retoucher la même la retire. Le serveur n'accepte qu'une emoji (pas de texte), et seulement d'un participant de la conversation ou d'un membre du groupe. Les réactions arrivent avec chaque message (`reactions: [{ emoji, user_ids }]`) et en direct (`message:reactions`).
+
+**Raison** : la clé primaire garantit la règle « une par agent » sans code de vérification; les réactions se relisent avec le fil, sans requête de plus.
+
+**Prix de ce choix** : on ne peut pas mettre deux emoji différentes sur le même message.
+
+### Décision 16 — Mise en ligne : machine virtuelle Azure mise à jour depuis les images de la CI
+
+**Question** : comment rendre la bêta accessible en ligne, avec la même version que `main` ?
+
+**Options envisagées** : GitHub Pages seul (frontend sans serveur, donc sans API ni temps réel); un hébergeur de conteneurs payant; une machine virtuelle Azure.
+
+**Choix retenu** : une machine virtuelle Azure (Ubuntu) fait tourner `deploy/compose.yml` avec les images publiées par la CI sur GHCR. Caddy fournit le HTTPS (certificat automatique) devant nginx. Toutes les 5 minutes, une tâche `cron` récupère les nouvelles images et redémarre les conteneurs qui ont changé. GitHub Pages redirige vers cette adresse.
+
+**Raison** : la même image que celle testée par la CI; le HTTPS est nécessaire pour la connexion GitHub et pour les appels (décision 14); rien à faire à la main après une fusion dans `main`.
+
+**Prix de ce choix** : la base de données en ligne est distincte de la base locale de chaque membre; une mise à jour coupe le service quelques secondes pendant le redémarrage; les secrets (`.env`) sont copiés sur la machine à la main.
+
+### Décision 17 — Direction de design E : menu par usage, barre du bas sur téléphone
+
+**Question** : comment rendre l'interface plus claire sur ordinateur et utilisable sur téléphone, sur le terrain ?
+
+**Choix retenu** : parmi les directions proposées, l'équipe a choisi la direction E. Le menu latéral range les pages par usage (Terrain, Communication, Gestion), se réduit à une colonne d'icônes et montre l'état du temps réel. Sous 860 px, il est remplacé par une barre de 5 boutons en bas de l'écran (Accueil, Registre, Carte, Messages, Plus). Les titres utilisent Barlow Condensed, le texte Inter, les matricules JetBrains Mono. Les animations sont courtes et coupées si le système demande moins de mouvement.
+
+**Raison** : sur le terrain, un agent utilise surtout son téléphone d'une main; les quatre destinations les plus utilisées restent à portée du pouce. La simulation de 100 agents a montré que le contenu dépassait de l'écran sur téléphone.
+
+**Prix de ce choix** : chaque page doit être reprise pour suivre la direction E; ce travail continue au sprint 3.
+
+### Décision 18 — Compte rapide de l'équipe : gardé pour la démonstration, jamais créé en production
+
+**Question** : le compte « matricule `1`, mot de passe `2` » a le rôle Direction. Il était recréé à chaque démarrage de l'API, y compris sur le serveur en ligne (#73, #86). Le garder ou le retirer ?
+
+**Choix retenu** (Massyle, Product Owner, 3 novembre) : le garder pour la démonstration et les tests en local, et ne plus jamais le créer en production. Le réglage `COMPTE_EQUIPE` en décide : absent ou `true` en local (`compose.yml`), `false` dans `deploy/compose.yml`. En production, l'API ne l'ajoute plus au démarrage, et dans une base neuve elle le désactive juste après les données de départ.
+
+**Raison** : un compte de direction au mot de passe public donne tous les droits à n'importe qui sur un site en ligne. En local, il fait gagner du temps à toute l'équipe et sert aux démonstrations.
+
+**Prix de ce choix** : sur la machine Azure, le compte existe déjà dans la base (créé avant cette décision). Il reste actif tant qu'il sert à la démonstration, puis il est désactivé depuis la page Utilisateurs après la remise du 3 décembre. Les comptes de démonstration par rôle (`Alpha2026!`) ne changent pas.
+
+
+## Traçabilité des décisions mises en œuvre par Michael — sprint 2
+
+Les choix techniques liés au temps réel et à la carte ont été corrigés et validés dans les commits suivants :
+
+| Commit | Date | Mise en œuvre documentée |
+|---|---|---|
+| [`74f6955`](https://github.com/dr-arobase/projet-DA_3/commit/74f6955) | 28 octobre 2026 | Correction de la propagation des événements temps réel, du rafraîchissement, des notifications et du parcours de carte |
+| [`3126b96`](https://github.com/dr-arobase/projet-DA_3/commit/3126b96) | 28 octobre 2026 | Intégration des corrections du sprint 2 et rattachement au récit #11 |
+
+Ces changements appliquent les décisions 3, 4, 6 et 11 : Socket.IO pour les événements, React + Vite côté client, une origine nginx en production et géocodage côté serveur. La fonctionnalité est livrée par la [PR #136](https://github.com/dr-arobase/projet-DA_3/pull/136), ensuite revue et fusionnée.

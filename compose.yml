@@ -50,6 +50,9 @@ services:
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-http://localhost:8080/api/auth/github/callback}
+      # Relais TURN des appels : vide = STUN seulement (voir .env.example)
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_SECRET: ${TURN_SECRET:-}
     volumes:
       # Les photos de profil survivent à la reconstruction de l'image
       - crimetracker-uploads:/app/serveur/src/uploads

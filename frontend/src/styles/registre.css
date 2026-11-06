@@ -175,6 +175,10 @@
 .fiche-corps { display: flex; flex-direction: column; gap: 16px; padding: 20px; }
 .fiche-corps > p { color: var(--texte-doux); font-size: 13px; }
 
+/* Photo du dossier et ses actions (ajouter, changer, retirer) */
+.fiche-photo-bloc { display: grid; justify-items: start; gap: 8px; }
+.fiche-photo-actions { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.fiche-photo-actions label { cursor: pointer; }
 .fiche-photo {
   width: 120px;
   height: 150px;

@@ -25,6 +25,10 @@ export async function initializeDatabase() {
   // Colonnes et tables ajoutées après la création de la base : schema.sql ne s'applique pas à une base existante
   await pool.query(await readSql('migrations.sql'));
 
+  // Compte rapide de l'équipe (matricule 1, mot de passe 2) : gardé pour la démonstration et les
+  // tests en local, jamais créé en production (COMPTE_EQUIPE=false dans deploy/compose.yml, décision 18)
+  const compteEquipe = process.env.COMPTE_EQUIPE !== 'false';
+
   const { rows } = await pool.query('SELECT COUNT(*) AS n FROM app_user');
   if (rows[0].n === 0) {
     await pool.query(await readSql('seed.sql'));
@@ -36,10 +40,17 @@ export async function initializeDatabase() {
       SELECT setval(pg_get_serial_sequence('sighting', 'id'), (SELECT MAX(id) FROM sighting));
       SELECT setval(pg_get_serial_sequence('alert', 'id'), (SELECT MAX(id) FROM alert));
     `);
+
+    // seed.sql crée aussi le compte rapide : en production, il est désactivé aussitôt
+    // (désactivé plutôt que supprimé, car des données de départ peuvent y être liées)
+    if (!compteEquipe) {
+      await pool.query("UPDATE app_user SET is_active = FALSE WHERE badge_number = '1'");
+    }
   }
 
-  // Compte rapide de l'équipe (matricule 1, mot de passe 2) : seed.sql ne s'applique
-  // pas à une base déjà remplie, on l'ajoute donc ici s'il manque (ex. sur le serveur)
+  if (!compteEquipe) return;
+
+  // seed.sql ne s'applique pas à une base déjà remplie : on ajoute ici le compte rapide s'il manque
   await pool.query(`
     INSERT INTO app_user (first_name, last_name, badge_number, email, password_hash, role, grade, is_active)
     VALUES ('Test', 'Équipe', '1', 'equipe@crimetracker.local',
