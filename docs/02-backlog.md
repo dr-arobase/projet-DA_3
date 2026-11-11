@@ -1,6 +1,6 @@
 # Backlog produit — CrimeTracker
 
-> Le backlog complet (tickets, priorités, points, sprints) vit dans le **[projet GitHub](../../projects/1)**.  
+> Le backlog complet (tickets, priorités, points, sprints) vit dans le **[projet GitHub](https://github.com/users/dr-arobase/projects/2)**.  
 > Ce fichier est la référence des récits historiques. Les tickets de finition du sprint 3 sont suivis dans la section ci-dessous et dans GitHub.
 
 ---
@@ -70,7 +70,18 @@
 
 ---
 
-## Démarche d'estimation
+## Récits du sprint 3 (version finale)
+
+Engagés le 3 novembre dans `04-sprints.md` (capacité 26 points). Les récits 12, 13, 15, 16 et 18, prévus au départ pour le sprint 3, ont été livrés au sprint 2 (voir `04-sprints.md`).
+
+| # | Ticket | Récit | Épique | Points | Sprint | Responsable |
+|---|---|---|---|---|---|---|
+| R1 | [#120](https://github.com/dr-arobase/projet-DA_3/issues/120) | En tant que policier, je veux que l'application signale une coupure du temps réel, se reconnecte seule et rattrape ce que j'ai manqué, sans doublon, afin de ne rater aucune alerte | REALTIME | 8 | 3 | Michael |
+| R2 | [#205](https://github.com/dr-arobase/projet-DA_3/issues/205) | En tant que policier, je veux que deux modifications simultanées du même dossier donnent un résultat correct et que celui qui perd voie l'état actuel, afin qu'aucun changement ne soit perdu en silence | REGISTRE | 5 | 3 | Chrysler |
+| R3 | [#207](https://github.com/dr-arobase/projet-DA_3/issues/207) | En tant qu'agent, je veux utiliser CrimeTracker en ligne, depuis n'importe quel réseau, afin de m'en servir sur le terrain | — | 5 | 3 | Massyle |
+| R4 | [#174](https://github.com/dr-arobase/projet-DA_3/issues/174) à [#177](https://github.com/dr-arobase/projet-DA_3/issues/177) | En tant que policier, je veux une application lisible et utilisable sur téléphone comme sur ordinateur, afin de m'en servir sur le terrain | — | hors engagement | 3 | Michael |
+| R5 | [#181](https://github.com/dr-arobase/projet-DA_3/issues/181) | En tant qu'équipe, nous voulons un test de bout en bout à deux navigateurs dans la CI, afin de savoir tout de suite si le temps réel casse | REALTIME | 5 | 3 | Eric |
+| R6 | [#206](https://github.com/dr-arobase/projet-DA_3/issues/206) | En tant que superviseur, je veux voir qui est connecté et qu'un agent qui ferme son dernier onglet disparaisse, afin de connaître les effectifs disponibles | ADMIN | 3 | 3 | Chrysler |
 
 ## Tickets de finition — sprint 3
 
@@ -81,6 +92,8 @@
 | M24–M25 | États de messagerie et recherche en direct | Faible | Implémenté |
 | M26–M30 | Démonstration, équipe, journal, rétrospective et idées | Faible | En cours |
 | M31–M32 | Réponses 403 et appels avec TURN | Élevée / moyenne | 403 implémenté, TURN à configurer |
+
+## Démarche d'estimation
 
 **Échelle Fibonacci** : 1, 2, 3, 5, 8, 13.
 
