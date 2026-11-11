@@ -63,7 +63,7 @@ function surligner(texte, terme) {
 // La liste ne montre que les conversations existantes; la recherche trouve tous les agents.
 export default function Messagerie() {
   const { utilisateur } = useAuth();
-  const { presence } = useTempsReel();
+  const { presence, reconnexions } = useTempsReel();
   const { appeler, enAppel } = useAppel();
   const {
     rejoindre: rejoindreAppelGroupe, verifierAppel, appelGroupeId, appelsEnCours,
@@ -154,7 +154,7 @@ export default function Messagerie() {
       .catch((err) => actif && setErreur(err.message))
       .finally(() => actif && setChargementConversation(false));
     return () => { actif = false; };
-  }, [avecId, groupeId, ouvrir]);
+  }, [avecId, groupeId, ouvrir, reconnexions]);
 
   // Brouillon de chaque conversation : gardé quand on en change, rendu quand on y revient.
   // Un message en cours de modification n'est pas un brouillon : il n'est pas gardé.
