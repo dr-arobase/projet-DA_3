@@ -15,8 +15,11 @@ server {
     # (self) : caméra, micro et position permis à CrimeTracker seulement (appels, messages vocaux, carte).
     # Avec (), le site se les interdisait à lui-même et les appels échouaient en ligne.
     add_header Permissions-Policy "camera=(self), microphone=(self), geolocation=(self)" always;
+    # Politique de sécurité du contenu : le navigateur ne charge que ce que CrimeTracker utilise
+    # (polices Google, tuiles OpenStreetMap, WebSocket du site). Un script injecté ne s'exécute pas.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
 
-    # API REST et documentation Swagger
+    # API REST
     location /api/ {
         # Pièces jointes de la messagerie : 10 Mo (l'API refuse au-delà). Par défaut, nginx s'arrête à 1 Mo.
         client_max_body_size 11m;
@@ -27,9 +30,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
+    # Documentation Swagger (locale seulement : API_DOCS=false la ferme en production).
+    # Ses propres en-têtes, sans la politique de contenu : Swagger UI a besoin de scripts en ligne.
     location /api-docs {
         proxy_pass ${API_URL};
         proxy_set_header Host $host;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "DENY" always;
     }
 
     # Socket.IO : la connexion passe de HTTP à WebSocket (en-têtes Upgrade)
@@ -50,6 +57,7 @@ server {
         add_header X-Frame-Options "DENY" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
         add_header Permissions-Policy "camera=(self), microphone=(self), geolocation=(self)" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.tile.openstreetmap.org; media-src 'self' blob: data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
     }
 
     # Application React : toute autre URL (ex. /connexion) renvoie index.html

@@ -570,6 +570,22 @@ Appeler un agent **hors ligne** : l'invitation attend 30 secondes; s'il se conne
 **Prix de ce choix** : sur la machine Azure, le compte existe déjà dans la base (créé avant cette décision). Il reste actif tant qu'il sert à la démonstration, puis il est désactivé depuis la page Utilisateurs après la remise du 3 décembre. Les comptes de démonstration par rôle (`Alpha2026!`) ne changent pas.
 
 
+### Décision 19 — Double authentification par application, facultative pour tous les comptes
+
+**Question** : protéger la connexion par un deuxième facteur ? Pour quels comptes, et l'imposer ou non ?
+
+**Choix retenu** (Massyle, Product Owner, 11 novembre) : une double authentification par application (TOTP, RFC 6238), comme Google Authenticator ou Microsoft Authenticator, **proposée à tous les comptes**, ceux avec mot de passe comme ceux qui se connectent par GitHub. Elle reste **facultative** : chacun l'active dans « Mon profil ».
+
+- **Activation** : un code QR (adresse `otpauth://`) et une clé manuelle, puis un premier code à 6 chiffres. L'agent reçoit 10 codes de secours, montrés une seule fois.
+- **Connexion** : quand elle est active, le mot de passe (ou GitHub) ne crée pas de session. Le serveur pose un cookie httpOnly de deuxième étape, valable 5 minutes et signé avec une autre clé que les sessions; la session n'est posée qu'après un bon code (`POST /api/auth/login/code`).
+- **Stockage** : le secret est chiffré en base (AES-256-GCM, clé dérivée de `TOTP_KEY` ou, à défaut, de `JWT_SECRET`); les codes de secours sont hachés (bcrypt). Rien n'est lisible en clair dans la base.
+- **Protections** : un code ne sert qu'une fois (dernier pas de 30 secondes gardé en base); 5 mauvais codes bloquent le compte 15 minutes; la limite de 5 échecs par adresse IP (#89) s'applique aussi aux codes.
+- **Perte du téléphone** : un code de secours, ou la direction réinitialise la double authentification de l'agent (`POST /api/users/:id/2fa/reinitialiser`), jamais la sienne. Activation, désactivation, réinitialisation, code de secours utilisé et code raté sont inscrits au journal d'audit.
+
+**Raison** : un compte de policier donne accès au registre des personnes recherchées; un mot de passe volé ne doit pas suffire. L'algorithme est écrit avec le module `crypto` de Node, sans dépendance, et vérifié sur les valeurs de référence de la RFC 6238.
+
+**Prix de ce choix** : facultative, elle ne protège que les comptes qui l'activent. L'imposer à la direction rendrait inutilisables les comptes de démonstration que l'enseignant doit pouvoir parcourir. Changer `JWT_SECRET` sans définir `TOTP_KEY` rend les secrets illisibles : il faut alors réinitialiser la double authentification des comptes concernés.
+
 ## Traçabilité des décisions mises en œuvre par Michael — sprint 2
 
 Les choix techniques liés au temps réel et à la carte ont été corrigés et validés dans les commits suivants :

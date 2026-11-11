@@ -5,6 +5,44 @@ import {
 } from '../utils/session.js';
 import { createCsrfToken } from '../utils/csrf.js';
 import * as auditLogModel from '../models/auditLog.model.js';
+import * as deuxFacteurs from '../services/deuxFacteurs.service.js';
+import { signToken, signDeuxiemeEtape, verifyDeuxiemeEtape } from '../utils/jwt.js';
+import * as userModel from '../models/user.model.js';
+
+// Deuxième étape de connexion (double authentification) : un cookie httpOnly de 5 minutes, limité aux
+// routes /api/auth, prouve que le mot de passe (ou GitHub) est vérifié. La session n'est posée qu'après le code.
+const COOKIE_DEUXIEME_ETAPE = 'crimetracker_deuxieme_etape';
+const CINQ_MINUTES = 5 * 60 * 1000;
+const optionsDeuxiemeEtape = () => ({ ...cookieOptions(), path: '/api/auth' });
+
+const poserDeuxiemeEtape = (res, id, seSouvenir) => res.cookie(
+  COOKIE_DEUXIEME_ETAPE, signDeuxiemeEtape({ id, seSouvenir }), { ...optionsDeuxiemeEtape(), maxAge: CINQ_MINUTES }
+);
+
+const poserSession = (res, token, seSouvenir) => {
+  res.cookie(COOKIE_NAME, token, cookieOptions(seSouvenir));
+  res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), csrfCookieOptions(seSouvenir));
+};
+
+const DEUXIEME_ETAPE_REQUISE = {
+  deuxFacteurs: true,
+  message: 'Entrez le code à 6 chiffres de votre application d\'authentification.',
+};
+
+const minutesRestantes = (jusqua) => Math.max(1, Math.ceil((new Date(jusqua) - Date.now()) / 60000));
+
+// Réponse commune aux erreurs de code
+function erreurCode(res, error) {
+  if (error.message === 'CODE_INVALIDE') {
+    return res.status(401).json({ message: 'Code incorrect ou déjà utilisé.' });
+  }
+  if (error.message === 'TOTP_BLOQUE') {
+    return res.status(429).json({
+      message: `Trop de codes incorrects. Réessayez dans ${minutesRestantes(error.jusqua)} minute(s).`,
+    });
+  }
+  return null;
+}
 
 export const login = async (req, res) => {
   const { badge_number, password, se_souvenir } = req.body || {};
@@ -16,11 +54,15 @@ export const login = async (req, res) => {
 
   try {
     const data = await authService.loginUser(badge_number, password);
+    const seSouvenir = se_souvenir === true || se_souvenir === 'true';
+    // Double authentification active : pas encore de session, on demande le code
+    if (data.user.totp_active) {
+      poserDeuxiemeEtape(res, data.user.id, seSouvenir);
+      return res.json(DEUXIEME_ETAPE_REQUISE);
+    }
     // Le navigateur garde le jeton dans un cookie httpOnly ; il reste aussi dans
     // la réponse pour les clients sans cookie (Swagger, scripts, Socket.IO en Node).
-    const seSouvenir = se_souvenir === true || se_souvenir === 'true';
-    res.cookie(COOKIE_NAME, data.token, cookieOptions(seSouvenir));
-    res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), csrfCookieOptions(seSouvenir));
+    poserSession(res, data.token, seSouvenir);
     return res.json(data);
   } catch (error) {
     // Gestion des erreurs métiers renvoyées par le service
@@ -81,8 +123,12 @@ export const githubCallback = async (req, res) => {
   try {
     const profile = await githubService.fetchProfile(code);
     const data = await authService.loginWithGithub(profile);
-    res.cookie(COOKIE_NAME, data.token, cookieOptions());
-    res.cookie(CSRF_COOKIE_NAME, createCsrfToken(), csrfCookieOptions());
+    // Double authentification active : la page de connexion demande le code
+    if (data.user.totp_active) {
+      poserDeuxiemeEtape(res, data.user.id, false);
+      return versConnexion(res, 'etape=code');
+    }
+    poserSession(res, data.token, false);
     return versConnexion(res, 'github=ok');
   } catch (err) {
     if (err.message === 'INVALID_CREDENTIALS') {
@@ -90,6 +136,113 @@ export const githubCallback = async (req, res) => {
     }
     console.error('Erreur lors de la connexion GitHub:', err);
     return versConnexion(res, 'erreur=github');
+  }
+};
+
+// POST /api/auth/login/code : deuxième étape, le code à 6 chiffres ou un code de secours
+export const loginCode = async (req, res) => {
+  const jeton = readCookie(req.headers.cookie, COOKIE_DEUXIEME_ETAPE);
+  let etape;
+  try {
+    etape = verifyDeuxiemeEtape(jeton);
+  } catch {
+    return res.status(401).json({ message: 'Étape de connexion expirée. Reconnectez-vous.' });
+  }
+  const { code } = req.body || {};
+  if (typeof code !== 'string' || !code.trim() || code.length > 20) {
+    return res.status(400).json({ message: 'Le code est requis.' });
+  }
+
+  try {
+    await deuxFacteurs.verifier(etape.id, code);
+    const user = await userModel.findById(etape.id);
+    if (!user || !user.is_active) throw new Error('INVALID_CREDENTIALS');
+    const token = signToken({ id: user.id, badge_number: user.badge_number, role: user.role, grade: user.grade });
+    res.clearCookie(COOKIE_DEUXIEME_ETAPE, optionsDeuxiemeEtape());
+    poserSession(res, token, etape.seSouvenir === true);
+    return res.json({ message: 'Connexion réussie', user: await authService.getCurrentUser(user.id) });
+  } catch (error) {
+    const reponse = erreurCode(res, error);
+    if (reponse) return reponse;
+    if (error.message === 'INVALID_CREDENTIALS' || error.message === 'TOTP_INACTIVE') {
+      res.clearCookie(COOKIE_DEUXIEME_ETAPE, optionsDeuxiemeEtape());
+      return res.status(401).json({ message: 'Identifiants invalides ou compte inactif' });
+    }
+    console.error('Erreur lors de la vérification du code :', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// POST /api/auth/2fa/preparer : nouveau secret, montré une seule fois (code QR et clé manuelle)
+export const preparerDeuxFacteurs = async (req, res) => {
+  try {
+    return res.json(await deuxFacteurs.preparer(req.user.id));
+  } catch (error) {
+    if (error.message === 'TOTP_DEJA_ACTIVE') {
+      return res.status(409).json({ message: 'La double authentification est déjà active.' });
+    }
+    if (error.message === 'INVALID_CREDENTIALS') {
+      return res.status(401).json({ message: 'Session expirée ou compte inactif' });
+    }
+    console.error('Erreur lors de la préparation de la double authentification :', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// POST /api/auth/2fa/activer : premier code; renvoie les 10 codes de secours, une seule fois
+export const activerDeuxFacteurs = async (req, res) => {
+  const { code } = req.body || {};
+  if (typeof code !== 'string' || !/^\d{6}$/.test(code.trim())) {
+    return res.status(400).json({ message: 'Entrez le code à 6 chiffres affiché par l\'application.' });
+  }
+  try {
+    const { codesSecours } = await deuxFacteurs.activer(req.user.id, code);
+    return res.json({
+      message: 'Double authentification activée.',
+      codesSecours,
+      user: await authService.getCurrentUser(req.user.id),
+    });
+  } catch (error) {
+    if (error.message === 'CODE_INVALIDE') {
+      return res.status(400).json({ message: 'Code incorrect. Vérifiez que le code QR a bien été scanné, puis réessayez.' });
+    }
+    if (error.message === 'TOTP_NON_PREPARE') {
+      return res.status(400).json({ message: 'Commencez par afficher le code QR.' });
+    }
+    if (error.message === 'TOTP_DEJA_ACTIVE') {
+      return res.status(409).json({ message: 'La double authentification est déjà active.' });
+    }
+    if (error.message === 'INVALID_CREDENTIALS') {
+      return res.status(401).json({ message: 'Session expirée ou compte inactif' });
+    }
+    console.error('Erreur lors de l\'activation de la double authentification :', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// POST /api/auth/2fa/desactiver : mot de passe (si le compte en a un) et un code valide
+export const desactiverDeuxFacteurs = async (req, res) => {
+  const { mot_de_passe, code } = req.body || {};
+  if (typeof code !== 'string' || !code.trim() || code.length > 20) {
+    return res.status(400).json({ message: 'Le code est requis.' });
+  }
+  try {
+    await deuxFacteurs.desactiver(req.user.id, { motDePasse: mot_de_passe, code });
+    return res.json({ message: 'Double authentification désactivée.', user: await authService.getCurrentUser(req.user.id) });
+  } catch (error) {
+    const reponse = erreurCode(res, error);
+    if (reponse) return reponse;
+    if (error.message === 'WRONG_PASSWORD') {
+      return res.status(400).json({ message: 'Mot de passe actuel incorrect' });
+    }
+    if (error.message === 'TOTP_INACTIVE') {
+      return res.status(409).json({ message: 'La double authentification n\'est pas active.' });
+    }
+    if (error.message === 'INVALID_CREDENTIALS') {
+      return res.status(401).json({ message: 'Session expirée ou compte inactif' });
+    }
+    console.error('Erreur lors de la désactivation de la double authentification :', error);
+    return res.status(500).json({ message: 'Erreur serveur' });
   }
 };
 

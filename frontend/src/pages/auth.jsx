@@ -23,7 +23,7 @@ const ERREURS_GITHUB = {
 };
 
 export default function Auth() {
-  const { estConnecte, seConnecter, terminerConnexionGithub } = useAuth();
+  const { estConnecte, seConnecter, verifierCode, terminerConnexionGithub } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [parametres, setParametres] = useSearchParams();
@@ -33,6 +33,9 @@ export default function Auth() {
   const [seSouvenir, setSeSouvenir] = useState(false);
   const [erreur, setErreur] = useState(() => ERREURS_GITHUB[parametres.get('erreur')] ?? '');
   const [enCours, setEnCours] = useState(false);
+  // Deuxième étape (double authentification) : après le mot de passe, ou au retour de GitHub (?etape=code)
+  const [etapeCode, setEtapeCode] = useState(() => parametres.get('etape') === 'code');
+  const [code, setCode] = useState('');
 
   // Retour de GitHub réussi : le cookie de session est posé, on charge le profil
   const retourGithub = parametres.get('github') === 'ok';
@@ -55,13 +58,46 @@ export default function Auth() {
     }
     setEnCours(true);
     try {
-      await seConnecter(matricule.trim(), motDePasse, seSouvenir);
+      const resultat = await seConnecter(matricule.trim(), motDePasse, seSouvenir);
+      if (resultat?.deuxFacteurs) {
+        setMotDePasse('');
+        setEtapeCode(true);
+        return;
+      }
       navigate(location.state?.depuis ?? '/', { replace: true });
     } catch (err) {
       setErreur(err.message);
     } finally {
       setEnCours(false);
     }
+  }
+
+  async function soumettreCode(e) {
+    e.preventDefault();
+    setErreur('');
+    if (!code.trim()) {
+      setErreur('Entrez le code à 6 chiffres de votre application.');
+      return;
+    }
+    setEnCours(true);
+    try {
+      await verifierCode(code.trim(), seSouvenir);
+      navigate(location.state?.depuis ?? '/', { replace: true });
+    } catch (err) {
+      setErreur(err.message);
+      setCode('');
+      // Étape expirée (plus de 5 minutes) : on recommence avec le mot de passe
+      if (err.status === 401 && /expirée/.test(err.message)) setEtapeCode(false);
+    } finally {
+      setEnCours(false);
+    }
+  }
+
+  function revenirAuMotDePasse() {
+    setEtapeCode(false);
+    setCode('');
+    setErreur('');
+    setParametres({}, { replace: true });
   }
 
   return (
@@ -80,13 +116,44 @@ export default function Auth() {
             ))}
           </ul>
         </div>
-
-        <p className="auth-pied">
-          <IconeCadenas taille={14} /> Accès réservé au personnel autorisé. Chaque action est inscrite au journal d'audit.
-        </p>
       </section>
 
       <section className="auth-panneau">
+        {etapeCode ? (
+          <form className="auth-formulaire" onSubmit={soumettreCode} noValidate>
+            <h2>Double authentification</h2>
+            <p className="auth-sous-titre">
+              Ouvrez Google Authenticator (ou votre application d'authentification) et entrez le code à 6 chiffres de CrimeTracker.
+            </p>
+
+            <label htmlFor="code-double">Code de vérification</label>
+            <div className="champ">
+              <IconeCadenas taille={16} />
+              <input
+                id="code-double"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="000000"
+                maxLength={20}
+                autoFocus
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </div>
+            <p className="auth-indice">Téléphone perdu ? Entrez un de vos codes de secours (ABCD-EFGH).</p>
+
+            {erreur && <p className="auth-erreur" role="alert">{erreur}</p>}
+
+            <button type="submit" className="bouton-principal" disabled={enCours}>
+              {enCours ? 'Vérification…' : 'Vérifier'}
+              {!enCours && <IconeChevron taille={16} />}
+            </button>
+            <button type="button" className="bouton-lien" onClick={revenirAuMotDePasse}>
+              Revenir à la connexion
+            </button>
+          </form>
+        ) : (
         <form className="auth-formulaire" onSubmit={soumettre} noValidate>
           <h2>Connexion</h2>
           <p className="auth-sous-titre">Identifiez-vous avec vos accès professionnels</p>
@@ -152,6 +219,7 @@ export default function Auth() {
 
           <p className="auth-mention">Mot de passe oublié ? Adressez-vous à votre superviseur.</p>
         </form>
+        )}
       </section>
     </div>
   );

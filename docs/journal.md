@@ -277,3 +277,21 @@ Ce qui bloque :
 •   Le parcours complet sur le site en ligne et la coupure réseau réelle de 30 secondes nécessitent l'environnement déployé.
 Décisions prises :
 •   Conserver la récupération native de Socket.IO lorsqu'elle réussit et utiliser la relecture API comme filet de sécurité lorsqu'elle échoue ou dépasse sa fenêtre de 30 secondes.
+
+**Bloc du mercredi 11 novembre 2026 — Massyle (Product Owner)**
+Présence : Massyle (À COMPLÉTER : les autres présents)
+Tickets suivis : #17, #120, #193, #195, #196, #197, #202, #204, #205 à #223
+Ce qui a avancé :
+•   Vérification de chaque tâche du plan contre `main`, les PR et les tickets : les cases cochées sans que le travail soit dans `main` ont été décochées, celles qui étaient faites ont été cochées.
+•   PR #197 de Michael (expérience mobile, signalements sur la fiche, refus 403) : les trois corrections demandées à la revue du 4 novembre sont faites, la PR est revue par Eric et fusionnée; #195 et #196, incluses dans #197, sont fermées. Vérifié sur le site en ligne : registre et annuaire en cartes à 375 px, plus de texte sous 12 px.
+•   PR #204 de Michael (reconnexion temps réel, R1) fusionnée; #120 fermé.
+•   Tickets : 19 créés pour les tâches importantes qui n'en avaient pas, dont les récits R2 (#205), R6 (#206) et R3 (#207); #17, #112, #114, #174, #175, #177, #186 et #193 fermés, chacun avec sa preuve. Tous les tickets ouverts sont dans le Project avec un responsable et un état.
+•   Boîte à idées triée : chaque idée devient un ticket, attend « plus tard » ou est refusée avec sa raison.
+Ce qui bloque :
+•   Le compte 1 / 2 se connecte encore sur le site en ligne (#208) : à désactiver depuis la page Utilisateurs en ligne.
+•   Aucune sauvegarde de la base Azure (#184) ni relais TURN configuré (#188) : il faut une session sur le serveur.
+•   Le journal n'avait pas d'entrée d'Eric, de Chrysler ni de Massyle depuis le 30 octobre.
+Décisions prises :
+•   Une tâche n'est cochée que si son critère est vrai dans `main` : le travail dans une PR non fusionnée ne compte pas encore. Raison : c'est ce que l'enseignant regarde à l'étiquette.
+•   Chrysler commence par R2 et R6, qui ne se coupent jamais; les demandes du PO passent après les récits engagés (ordre écrit dans `04-sprints.md`).
+•   Chacun écrit son entrée de journal à la fin de chaque bloc, le jour même; Massyle vérifie chaque vendredi.

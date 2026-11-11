@@ -117,6 +117,7 @@ Chaque PR doit aussi être revue par un coéquipier avant la fusion.
 - **Objectif en une phrase** : l'application sait qui est connecté (mot de passe ou GitHub), ce que chacun a le droit de faire (vérifié par le serveur), et elle réagit en temps réel entre agents.
 - **Capacité** : la vélocité réelle du sprint 1, soit **19 points**.
 - **Responsable de la mêlée** : Eric.
+- **Chaque membre est responsable d'au moins un récit** (vérifié le 11 novembre) : Michael R1, Chrysler R2 et R6, Massyle R3, Eric R5. Les mêmes responsables sont assignés aux tickets dans le Project.
 
 Les numéros sont ceux des tickets GitHub. Le tableau « Récits prévus » ci-dessus utilise les numéros du backlog (`02-backlog.md`).
 
@@ -230,7 +231,7 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 
 ---
 
-## Sprint 3 — Version finale (~5 semaines)
+## Sprint 3 — Version finale (4 semaines, du 4 novembre au 3 décembre)
 
 **Objectif** : Le temps réel est complet (présence, resynchronisation après déconnexion), la concurrence est gérée correctement, et l'application est déployée sur un serveur public.
 
@@ -244,13 +245,56 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 | 13              | Gestion de la concurrence (verrouillage optimiste) | 8                 |
 | 15              | Historique des signalements sur un dossier         | 3                 |
 | 16              | Journal d'audit des actions sensibles              | 5                 |
-| 17              | Statistiques globales (Could)                      | 5                 |
+| 18              | Statistiques globales (Could)                      | 5                 |
 | +               | Déploiement, peaufinage, tests e2e                | —                |
 | **Total** |                                                    | **~24 pts** |
 
 ### Notions disponibles
 
 Socket.IO (présence, état partagé), gestion de la concurrence, déploiement.
+
+### Ce que l'énoncé exige pour la version finale
+
+Source : [énoncé du sprint 3](https://archambaultv.github.io/2026A-420-5D1-MA-Gr2/docs/evaluations/sprint_3/). Pondération : 25 % de la note du cours.
+
+**Dates.** L'énoncé donne des jeudis; notre groupe a ses cours le mercredi et le vendredi. Les dates de notre groupe sont à confirmer avec l'enseignant (tâche FS1 du plan) :
+
+| Étape | Date de l'énoncé | Pour notre groupe |
+|---|---|---|
+| Planification commise dans ce fichier | Jeudi 5 novembre | Commise le mardi 3 novembre |
+| Points de contrôle (notés, toute l'équipe présente) | Jeudis 12, 19 et 26 novembre et 3 décembre | Vendredis 13, 20 et 27 novembre, puis le dernier avant la remise |
+| Gel des fonctionnalités (décision de l'équipe) | — | Vendredi 27 novembre |
+| Remise : étiquette `finale-v1` sur `main` | Jeudi 3 décembre, 23 h 59 | Jeudi 3 décembre, 23 h 59 |
+| Site en ligne, qui roule `finale-v1` | Jusqu'au 23 décembre | Jusqu'au 23 décembre |
+
+Il n'y a ni revue ni rétrospective à la fin de ce sprint : le sprint se termine par le bilan de cinq lignes à la fin de cette section.
+
+**La règle du sprint : ce qui marche passe avant ce qui s'ajoute.** Une application qui fait moins de choses, mais les fait toutes correctement, vaut plus qu'une application qui en fait beaucoup et plante.
+
+En plus de tout ce qui était exigé à l'alpha et à la bêta, l'application à l'étiquette `finale-v1` doit satisfaire les cinq points suivants. La dernière colonne dit quel récit ou quel ticket s'en occupe :
+
+| # | Exigence de la version finale | Récit ou ticket |
+|---|---|---|
+| 1 | **En ligne** : déployé sur un serveur, accessible depuis n'importe quel réseau à l'adresse du README, roule `finale-v1` jusqu'au 23 décembre | R3 (#207), #180, #184, #185, #188 |
+| 2 | **Temps réel complet** de bout en bout entre plusieurs navigateurs, sans rechargement; ce qui doit durer est toujours là après un rechargement | R1 (#120), R5 (#181) |
+| 3 | **Présence** : on voit qui est connecté, et une personne qui s'en va disparaît | R6 (#206) |
+| 4 | **Concurrence** : le point décrit dans `03-conception.md` donne un résultat correct quand deux personnes agissent en même temps : pas de doublon, pas de perte silencieuse, et celle qui perd le sait | R2 (#205), #217 |
+| 5 | **Aucun bogue visible** : pas de page d'erreur, de bouton sans effet ni de récit à moitié fait; ce qui n'est pas prêt est retiré de l'interface | #216 |
+
+Toujours exigé : le démarrage local avec Docker (un clone neuf, le `.env` transmis en privé et une commande, données qui survivent à un redémarrage, #213); la connexion GitHub sur le site en ligne avec un compte de test de l'enseignant, avec **deux applications OAuth** (une pour le site en ligne, une pour `localhost`); un compte de démonstration par rôle (#210); ce qui est simulé annoncé à l'écran et dans le README.
+
+**Comment c'est noté** (barème du cours, « Acquis » = 75 %) :
+
+| Objectif | Poids | Ce que l'enseignant regarde |
+|---|---|---|
+| 1. La version finale en ligne | 35 % | Les cinq exigences ci-dessus sur le site en ligne; les permissions qui tiennent quand on essaie de les contourner, par HTTP et par le WebSocket (#211, #212); chaque récit terminé respecte tous ses critères, cas d'erreur compris |
+| 2. Code, sécurité, tests, CI | 25 % | Couches séparées, permissions centralisées (#214), pas de code mort (#218), un test par récit terminé et un test de refus par permission, protections CSRF, XSS (#215) et injection SQL, validation côté serveur y compris par le WebSocket, un test automatisé de deux écritures simultanées, CI verte à l'étiquette |
+| 3. Traces de travail | 15 % | Cette section commise à temps, chaque membre responsable d'au moins un récit, une entrée de journal par bloc le jour même, des commits de chaque membre sur les quatre semaines rattachés à un ticket, le bilan |
+| 4. Points de contrôle | 25 % | À chaque point : la mêlée, un backlog vivant (tickets déplacés, un responsable par ticket en cours), du travail poussé par chacun, des PR revues par un coéquipier, le journal |
+
+La note est individuelle : un membre qui ne sait pas expliquer ce que l'équipe a livré, ou dont l'historique Git ne le montre pas, a une note plus basse.
+
+**À remettre** : l'étiquette `finale-v1` posée sur `main`, le `.env` local envoyé sur MIO (pas les secrets de production), un README qui suffit pour démarrer en local et accéder au site en ligne, cette section terminée par le bilan de cinq lignes, et `journal.md` avec une entrée par bloc.
 
 ### Engagement réel du sprint 3
 
@@ -265,10 +309,10 @@ Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence
 | Récit | Description et critère d'acceptation | Points | Responsable |
 |---|---|---|---|
 | R1 | **Reconnexion temps réel robuste** (#120) : l'interface signale la coupure, le client se reconnecte seul et rattrape les alertes, messages et changements manqués, sans doublon | 8 | Michael |
-| R2 | **Concurrence prouvée** : un test automatisé envoie deux modifications simultanées du même dossier; une réussit, l'autre reçoit 409 avec l'état actuel et le voit à l'écran | 5 | Chrysler |
-| R3 | **Site final en ligne** : `finale-v1` sur Azure, HTTPS avec HSTS (#180), sauvegarde quotidienne testée (#184), mémoire suffisante (#185), relais TURN (#188), connexion GitHub avec un compte de test | 5 | Massyle |
+| R2 | **Concurrence prouvée** (#205) : un test automatisé envoie deux modifications simultanées du même dossier; une réussit, l'autre reçoit 409 avec l'état actuel et le voit à l'écran | 5 | Chrysler |
+| R3 | **Site final en ligne** (#207) : `finale-v1` sur Azure, HTTPS avec HSTS (#180), sauvegarde quotidienne testée (#184), mémoire suffisante (#185), relais TURN (#188), connexion GitHub avec un compte de test | 5 | Massyle |
 | R5 | **Test de bout en bout** (#181) : Playwright ouvre deux navigateurs dans la CI; une alerte arrive en direct chez l'autre, une action interdite est refusée | 5 | Eric |
-| R6 | **Présence fiable** : un agent qui ferme son dernier onglet disparaît en moins de 30 secondes; plusieurs onglets comptent pour une seule présence; un test automatisé le vérifie | 3 | Chrysler |
+| R6 | **Présence fiable** (#206) : un agent qui ferme son dernier onglet disparaît en moins de 30 secondes; plusieurs onglets comptent pour une seule présence; un test automatisé le vérifie | 3 | Chrysler |
 | **Total** | | **26** | |
 
 **Hors engagement** (ne compte pas dans la vélocité) : R4, expérience mobile et bureau (#174 à #177), Michael.
@@ -280,6 +324,17 @@ Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence
 
 On ne coupe jamais R3 (en ligne), R2 (concurrence), R6 (présence) ni la correction des bogues visibles : ce sont des exigences de la version finale.
 
+**Demandes du Product Owner (6 novembre)**, hors engagement : elles ne comptent pas dans la vélocité et passent après les récits engagés. Chacune a son ticket, ses critères d'acceptation (dans le ticket) et une estimation en points (planning poker du PO, à confirmer en équipe). Si le temps manque, elles sont coupées dans l'ordre inverse de cette liste, avant R4. Ce qui n'est pas terminé et testé le vendredi 27 novembre (gel) reste hors de l'interface.
+
+1. Les policiers diffusent des alertes, les communiqués restent à la direction et aux superviseurs (#202) : 2 points, Chrysler.
+2. Alertes et communiqués jusqu'à 2 000 caractères (#219) : 2 points, Chrysler.
+3. Retirer un dossier l'archive en cascade, et on peut le désarchiver (#221) : 5 points, Eric.
+4. Modifier et retirer une alerte ou un communiqué, avec la mention « modifié » (#220) : 5 points, Chrysler.
+5. Page « Archives » commune (#222) : 3 points, Eric.
+6. Page Utilisateurs présentée comme un vrai service de police (#223) : 2 points, Michael.
+
+Total des demandes : 19 points, au-delà de la capacité de 26 points déjà engagée. Elles ne seront faites que si les récits engagés avancent comme prévu; sinon elles sont coupées dans l'ordre ci-dessus, en commençant par la dernière.
+
 ### Avancement du sprint 3
 
 Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi notée dans `journal.md`.
@@ -287,6 +342,7 @@ Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi 
 | Date | Points restants | Récits terminés | Décision |
 |---|---|---|---|
 | Mar. 3 novembre | 26 | — | Engagement écrit; les PR #161 à #170 du plan de corrections sont fusionnées |
+| Mer. 11 novembre | 26 | — | R1 : le bandeau et le rattrapage sont dans `main` (PR #204), mais le récit attend son test automatisé avant d'être compté terminé. R2, R3 et R6 n'avaient pas de ticket de récit : créés (#205, #206, #207). La PR #197 (expérience mobile, R4 hors engagement) est fusionnée après revue d'Eric. Décision : Chrysler commence par R2 et R6, qui ne se coupent pas; les demandes du PO attendent les récits engagés. |
 
 ---
 
@@ -294,10 +350,10 @@ Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi 
 
 Si l'équipe prend du retard, voici l'ordre dans lequel on coupe — décidé maintenant, à froid :
 
-1. **Statistiques globales** (#17, `Could`) — aucune valeur fonctionnelle pour la correction
-2. **Journal d'audit** (#16, `Should`) — utile mais non démontrable facilement
-3. **Historique des signalements** (#15, `Should`) — le signalement reste, l'historique saute
-4. **Désactivation de compte** (#14, `Should`) — on garde la création de compte
+1. **Statistiques globales** (récit 18, ticket #20, `Could`) — aucune valeur fonctionnelle pour la correction
+2. **Journal d'audit** (récit 16, ticket #18, `Should`) — utile mais non démontrable facilement
+3. **Historique des signalements** (récit 15, ticket #17, `Should`) — le signalement reste, l'historique saute
+4. **Désactivation de compte** (récit 14, ticket #16, `Should`) — on garde la création de compte
 5. **Filtre avancé** (#7) — on conserve la recherche par nom, on retire les filtres secondaires
 
 On ne coupe jamais : authentification, registre de base, tableau de bord temps réel, gestion de la concurrence. Ce sont les récits `Must` qui définissent l'application.

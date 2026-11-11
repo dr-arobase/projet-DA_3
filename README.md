@@ -56,6 +56,8 @@ cd backend && node scripts/compte-equipe.js               # sans Docker (npm run
 
 > Ces comptes ne sont créés que dans une base **vide**. Si votre base a été créée avant l'ajout de ces mots de passe, réinitialisez-la (`docker compose down -v`) ou, dans `backend/`, lancez `node scripts/set-passwords.js Alpha2026!` (change le mot de passe de **tous** les comptes).
 
+**Double authentification** (facultative, tous les comptes) : dans « Mon profil », « Activer la double authentification », puis scanner le code QR avec Google Authenticator ou Microsoft Authenticator. À la connexion suivante, le code à 6 chiffres est demandé après le mot de passe (ou après GitHub). Les comptes de démonstration ne l'ont pas : ils se connectent avec le mot de passe seul. Voir la décision 19 de `docs/03-conception.md`.
+
 ---
 
 ## Développer
@@ -86,7 +88,14 @@ npm test
 
 Les tests du backend (Jest + Supertest) simulent la base de données : PostgreSQL n'est pas nécessaire. Les tests d'intégration `tests/integration/` s'exécutent seulement si une base est disponible.
 
-La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
+```bash
+cd frontend
+npm test
+```
+
+Les tests du frontend (Vitest + Testing Library) rendent les composants dans un faux navigateur (jsdom), avec l'API simulée : par exemple la double authentification dans « Mon profil », l'étape du code à la connexion et la réinitialisation par la direction.
+
+La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests du backend et du frontend, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
 
 Pour lancer la même vérification en local : `npm run verifier` à la racine. Les avis modérés de l'audit npm restent visibles dans la sortie; ils ne bloquent pas le push.
 
@@ -130,7 +139,7 @@ Le sprint 3 porte sur la finition de la documentation, l'accessibilité (contras
 
 ## Liens
 
-- [Backlog GitHub (Project)](https://github.com/users/dr-arobase/projects/1)
+- [Backlog GitHub (Project)](https://github.com/users/dr-arobase/projects/2)
 - [Issues GitHub](https://github.com/dr-arobase/projet-DA_3/issues)
 - [Vision et portée](docs/01-vision.md)
 - [Backlog produit](docs/02-backlog.md)

@@ -22,8 +22,19 @@ export default function AuthProvider({ children }) {
       });
   }, []);
 
+  // Retourne { deuxFacteurs: true } quand le code de double authentification est demandé :
+  // le serveur n'a pas encore posé de session.
   async function seConnecter(matricule, motDePasse, seSouvenir) {
-    const { user } = await api.connexion(matricule, motDePasse, seSouvenir);
+    const reponse = await api.connexion(matricule, motDePasse, seSouvenir);
+    if (reponse.deuxFacteurs) return { deuxFacteurs: true };
+    enregistrerSession(reponse.user, seSouvenir);
+    setUtilisateur(reponse.user);
+    return reponse.user;
+  }
+
+  // Deuxième étape : le code de l'application (ou un code de secours) ouvre la session
+  async function verifierCode(code, seSouvenir = false) {
+    const { user } = await api.verifierCodeConnexion(code);
     enregistrerSession(user, seSouvenir);
     setUtilisateur(user);
     return user;
@@ -57,6 +68,7 @@ export default function AuthProvider({ children }) {
     utilisateur,
     estConnecte: Boolean(utilisateur),
     seConnecter,
+    verifierCode,
     terminerConnexionGithub,
     seDeconnecter,
     mettreAJourUtilisateur,

@@ -176,3 +176,20 @@
   .entete-profil { padding: 14px 16px; }
   .profil-champs { grid-template-columns: 1fr; }
 }
+
+/* Double authentification (Mon profil) */
+.deux-facteurs-etat { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 600; color: var(--texte-doux); }
+.deux-facteurs-etat.actif { color: var(--succes); }
+.deux-facteurs-qr { justify-self: start; align-self: flex-start; width: fit-content; padding: 8px; border: 1px solid var(--bordure); border-radius: 8px; background: #fff; line-height: 0; }
+.deux-facteurs-qr svg { width: 176px; height: 176px; max-width: 100%; }
+.deux-facteurs-cle {
+  display: block; padding: 10px 12px; border-radius: 6px; background: var(--fond, #f3f5f8);
+  font-family: var(--mono, ui-monospace, monospace); font-size: 15px; letter-spacing: 0.04em; overflow-wrap: anywhere;
+}
+.deux-facteurs-codes {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px;
+  margin: 0; padding-left: 22px; font-variant-numeric: tabular-nums;
+}
+.deux-facteurs-codes code { font-family: var(--mono, ui-monospace, monospace); font-size: 15px; }
+@media (max-width: 420px) { .deux-facteurs-codes { grid-template-columns: minmax(0, 1fr); } }
+.deux-facteurs-texte { display: block; }

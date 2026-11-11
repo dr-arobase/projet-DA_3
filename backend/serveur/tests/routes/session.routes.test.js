@@ -123,7 +123,7 @@ describe('routes protégées avec le cookie seul', () => {
     expect(res.status).toBe(200);
     expect(res.body.user).toEqual({
       id: 3, first_name: 'Chrysler', last_name: 'Jean', badge_number: 'PL-003',
-      role: 'policier', grade: 'sergent_autres_fonctions',
+      role: 'policier', grade: 'sergent_autres_fonctions', totp_active: false,
     });
     expect(res.body.user).not.toHaveProperty('password_hash');
   });

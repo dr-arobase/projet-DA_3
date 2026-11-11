@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  getUsers, getUserById, createUser, deactivateUser, reactivateUser, promoteUser
+  getUsers, getUserById, createUser, deactivateUser, reactivateUser, promoteUser, reinitialiserDeuxFacteurs
 } from '../controllers/users.controller.js';
 import { verifyToken } from '../middleware/auth.middleware.js';
 import { requireRole } from '../middleware/rbac.middleware.js';
@@ -20,5 +20,7 @@ router.post('/', requireRole('superviseur'), createUser);
 router.patch('/:id/deactivate', requireRole('superviseur'), deactivateUser);
 router.patch('/:id/reactivate', requireRole('superviseur'), reactivateUser);
 router.patch('/:id/promote', requireRole('direction'), promoteUser);
+// La direction réinitialise la double authentification d'un agent qui a perdu son téléphone
+router.post('/:id/2fa/reinitialiser', requireRole('direction'), reinitialiserDeuxFacteurs);
 
 export default router;
