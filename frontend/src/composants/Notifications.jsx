@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext.js';
-import { useEvenement } from './TempsReelContext.js';
+import { useEvenement, useTempsReel } from './TempsReelContext.js';
 import { IconeSirene, IconeMegaphone } from './Icones.jsx';
+import * as api from '../api.js';
 
 const DUREE_COMMUNIQUE = 8000; // un communiqué disparaît seul; une alerte urgente reste jusqu'à ce qu'on la ferme
 const MAX_AFFICHEES = 4;
@@ -13,14 +14,31 @@ const PAGE = { urgent: '/alertes', info: '/communiques' };
 // Onglet en arrière-plan : notification du navigateur aussi, si l'agent l'a autorisée.
 export default function Notifications() {
   const { utilisateur } = useAuth();
+  const { reconnexions } = useTempsReel();
   const navigate = useNavigate();
   const [liste, setListe] = useState([]);
   const [permission, setPermission] = useState(() => ('Notification' in window ? Notification.permission : 'denied'));
+  const alertesVues = useRef(new Set());
 
   const fermer = useCallback((id) => setListe((enCours) => enCours.filter((n) => n.id !== id)), []);
 
+  const ajouterNotificationsManquees = useCallback(async () => {
+    const resultat = await api.listerAlertes({ limit: 50 });
+    const nouvelles = resultat.data.filter((a) => (
+      a.issued_by_id !== utilisateur.id && !alertesVues.current.has(a.id)
+    ));
+    nouvelles.forEach((a) => alertesVues.current.add(a.id));
+    if (nouvelles.length) setListe((enCours) => [...nouvelles, ...enCours].slice(0, MAX_AFFICHEES));
+  }, [utilisateur.id]);
+
+  useEffect(() => {
+    if (reconnexions === 0) return;
+    ajouterNotificationsManquees().catch((err) => console.error('Impossible de récupérer les alertes manquées.', err));
+  }, [reconnexions, ajouterNotificationsManquees]);
+
   useEvenement('alert:broadcast', useCallback((a) => {
     if (a.issued_by_id === utilisateur.id) return; // on ne se notifie pas soi-même
+    alertesVues.current.add(a.id);
     setListe((enCours) => [a, ...enCours.filter((n) => n.id !== a.id)].slice(0, MAX_AFFICHEES));
 
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
