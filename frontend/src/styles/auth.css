@@ -20,13 +20,13 @@
   color: #fff;
 }
 
-/* Écusson en filigrane, très discret, calé en bas à droite */
+/* Écusson en filigrane, très discret, en bas à droite, entièrement visible (plus coupé par le bas de l'écran) */
 .auth-vitrine::before {
   content: '';
   position: absolute;
   z-index: -1;
-  right: -8%;
-  bottom: -10%;
+  right: -4%;
+  bottom: 8%;
   width: min(62%, 520px);
   aspect-ratio: 613 / 638;
   background: url('../assets/badge-police.png') center / contain no-repeat;

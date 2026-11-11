@@ -7,7 +7,6 @@ import { emitEvent } from '../sockets/index.js';
 // le contrôleur les traduit en réponse HTTP, comme pour les dossiers (criminals.service.js).
 
 export const VALID_SEVERITIES = ['info', 'urgent'];
-export const MESSAGE_MAX_LENGTH = 500; // alert.message est un VARCHAR(500)
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
 
@@ -29,9 +28,7 @@ export const createAlert = async (data = {}, issuedBy) => {
   if (!message) {
     throw httpError(400, 'Le champ message est obligatoire');
   }
-  if (message.length > MESSAGE_MAX_LENGTH) {
-    throw httpError(400, `Le message ne doit pas dépasser ${MESSAGE_MAX_LENGTH} caractères`);
-  }
+  // Pas de limite de caractères (alert.message est un TEXT) : seule la taille d'une requête, 1 Mo, la borne
 
   const severity = data.severity ?? 'info';
   if (!VALID_SEVERITIES.includes(severity)) {

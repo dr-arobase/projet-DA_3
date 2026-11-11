@@ -43,7 +43,7 @@ export default function Notifications() {
 
     if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
       const titre = a.severity === 'urgent' ? 'Alerte urgente' : 'Communiqué';
-      const notif = new Notification(`${titre} · ${a.issued_by ?? 'CrimeTracker'}`, { body: a.message, tag: `alerte-${a.id}` });
+      const notif = new Notification(`${titre} · ${a.issued_by ?? 'CrimeTracker'}`, { body: a.message.length > 200 ? `${a.message.slice(0, 200)}…` : a.message, tag: `alerte-${a.id}` });
       notif.onclick = () => {
         window.focus();
         navigate(PAGE[a.severity] ?? '/alertes');

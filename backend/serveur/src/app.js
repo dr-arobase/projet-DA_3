@@ -38,7 +38,8 @@ app.use(helmet({
 }));
 
 // Middlewares de parsing
-app.use(express.json());
+// Jusqu'à 1 Mo : une alerte ou un communiqué n'a pas de limite de caractères (au-delà : 413)
+app.use(express.json({ limit: '1mb' }));
 app.use(verifyCsrf);
 
 // Serveur Swagger UI. En production, API_DOCS=false le retire (#194) : la liste des routes

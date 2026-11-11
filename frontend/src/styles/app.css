@@ -574,7 +574,11 @@ button.menu-titre:hover { color: #c3ccd8; }
 .notification-corps strong { font-size: 14px; }
 .notification.urgente .notification-corps strong { color: var(--danger); }
 .notification-corps small { color: var(--texte-doux); font-size: 12px; }
-.notification-message { overflow-wrap: anywhere; font-size: 13px; }
+.notification-message {
+  overflow-wrap: anywhere; font-size: 13px;
+  /* Un long message s'arrête à 4 lignes; il est complet sur la page Alertes ou Communiqués */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden;
+}
 .notification-icone { color: var(--marine-600); }
 .notification.urgente .notification-icone { color: var(--danger); }
 .notification-fermer {
