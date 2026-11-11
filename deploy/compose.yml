@@ -35,6 +35,8 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       # Compte rapide de l'équipe (1 / 2) : jamais créé en production (décision 18)
       COMPTE_EQUIPE: ${COMPTE_EQUIPE:-false}
+      # Documentation Swagger (/api-docs) : fermée en production (#194)
+      API_DOCS: ${API_DOCS:-false}
       # Relais TURN des appels (service turn ci-dessous) : vide = STUN seulement
       TURN_URLS: ${TURN_URLS:-}
       TURN_SECRET: ${TURN_SECRET:-}
