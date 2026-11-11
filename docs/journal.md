@@ -236,7 +236,6 @@ Ce qui bloque :
 •   La configuration TURN et la validation d'un appel sur réseau cellulaire nécessitent une infrastructure Azure et des identifiants hors dépôt.
 Décisions prises :
 •   Documenter explicitement les limites non vérifiables localement plutôt que de les présenter comme validées.
-
 **Bloc de finition — mardi 3 novembre 2026**
 Présence : Michael
 Tickets suivis : #88, #104, #112, #114
