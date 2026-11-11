@@ -9,6 +9,15 @@ const router = express.Router();
 // Route publique : Connexion
 router.post('/login', limitLoginAttempts, authController.login);
 
+// Route publique : deuxième étape de la connexion (double authentification). Elle exige le cookie
+// de deuxième étape posé par /login ou par le retour de GitHub, et compte les essais comme /login.
+router.post('/login/code', limitLoginAttempts, authController.loginCode);
+
+// Routes protégées : double authentification de l'agent connecté (facultative, tous les comptes)
+router.post('/2fa/preparer', verifyToken, authController.preparerDeuxFacteurs);
+router.post('/2fa/activer', verifyToken, authController.activerDeuxFacteurs);
+router.post('/2fa/desactiver', verifyToken, authController.desactiverDeuxFacteurs);
+
 // Routes publiques : connexion GitHub (OAuth 2). Le navigateur y est envoyé, il ne les appelle pas en fetch
 router.get('/github', authController.githubStart);
 router.get('/github/callback', authController.githubCallback);

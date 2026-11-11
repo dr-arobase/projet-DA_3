@@ -9,7 +9,7 @@ import path from 'node:path';
 export const loginUser = async (badge_number, password) => {
   // 1. Recherche de l'utilisateur actif dans app_user
   const result = await db.query(
-    'SELECT id, first_name, last_name, badge_number, password_hash, role, grade, avatar_url FROM app_user WHERE badge_number = $1 AND is_active = true',
+    'SELECT id, first_name, last_name, badge_number, password_hash, role, grade, avatar_url, totp_active FROM app_user WHERE badge_number = $1 AND is_active = true',
     [badge_number]
   );
 
@@ -47,7 +47,8 @@ export const loginUser = async (badge_number, password) => {
       badge_number: user.badge_number,
       role: user.role,
       grade: user.grade,
-      avatar_url: user.avatar_url ?? null
+      avatar_url: user.avatar_url ?? null,
+      totp_active: user.totp_active === true
     }
   };
 };
@@ -101,8 +102,8 @@ export const getCurrentUser = async (userId) => {
   return publicProfile(user);
 };
 
-const publicProfile = ({ id, first_name, last_name, badge_number, email, role, grade, avatar_url, created_at }) =>
-  ({ id, first_name, last_name, badge_number, email, role, grade, avatar_url, created_at });
+const publicProfile = ({ id, first_name, last_name, badge_number, email, role, grade, avatar_url, created_at, totp_active }) =>
+  ({ id, first_name, last_name, badge_number, email, role, grade, avatar_url, created_at, totp_active: totp_active === true });
 
 // Changement de mot de passe par l'agent lui-même (page Mon profil) :
 // l'ancien mot de passe doit être confirmé avant d'enregistrer le nouveau.

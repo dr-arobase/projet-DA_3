@@ -88,6 +88,7 @@ describe('loginUser', () => {
       role: 'superviseur',
       grade: 'lieutenant',
       avatar_url: null,
+      totp_active: false,
     });
     expect(result.user).not.toHaveProperty('password_hash');
     expect(jwt.decode(result.token)).not.toHaveProperty('password_hash');

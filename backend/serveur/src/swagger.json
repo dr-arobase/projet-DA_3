@@ -157,6 +157,159 @@
         }
       }
     },
+    "/api/auth/login/code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Connexion, deuxième étape : code de double authentification",
+        "description": "Quand la double authentification est active, POST /api/auth/login (ou le retour de GitHub) ne crée pas de session : il pose un cookie httpOnly de deuxième étape (5 minutes). Cette route vérifie le code à 6 chiffres ou un code de secours, puis pose la session. Un code ne sert qu'une fois; 5 mauvais codes bloquent le compte 15 minutes.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "example": "123456",
+                    "description": "Code à 6 chiffres de l'application, ou code de secours ABCD-EFGH"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie, cookie de session posé"
+          },
+          "400": {
+            "description": "Code manquant"
+          },
+          "401": {
+            "description": "Code incorrect ou déjà utilisé, ou étape expirée"
+          },
+          "429": {
+            "description": "Compte bloqué après 5 mauvais codes, ou trop d'essais depuis cette adresse"
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/preparer": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Double authentification : afficher le code QR",
+        "description": "Crée un nouveau secret, gardé chiffré en attente, et le renvoie une seule fois avec l'adresse otpauth:// du code QR.",
+        "responses": {
+          "200": {
+            "description": "{ secret, adresse }"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "description": "Déjà active"
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/activer": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Double authentification : activer avec le premier code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Activée; renvoie les 10 codes de secours, une seule fois"
+          },
+          "400": {
+            "description": "Code incorrect, ou code QR pas encore affiché"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "409": {
+            "description": "Déjà active"
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/desactiver": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Double authentification : désactiver",
+        "description": "Exige le mot de passe actuel (si le compte en a un) et un code valide.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code"
+                ],
+                "properties": {
+                  "mot_de_passe": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string",
+                    "example": "123456"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Désactivée"
+          },
+          "400": {
+            "description": "Code manquant ou mot de passe incorrect"
+          },
+          "401": {
+            "description": "Code incorrect ou session expirée"
+          },
+          "409": {
+            "description": "Pas active"
+          },
+          "429": {
+            "description": "Compte bloqué après 5 mauvais codes"
+          }
+        }
+      }
+    },
     "/api/auth/change-password": {
       "post": {
         "tags": ["Auth"],
@@ -781,6 +934,42 @@
           "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" },
           "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/users/{id}/2fa/reinitialiser": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Réinitialiser la double authentification d'un agent (direction)",
+        "description": "Pour un agent qui a perdu son téléphone. Inscrit au journal d'audit. Pas pour son propre compte.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Réinitialisée"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "description": "Rôle insuffisant, ou son propre compte"
+          },
+          "404": {
+            "description": "Utilisateur introuvable"
+          },
+          "409": {
+            "description": "Pas active pour ce compte"
+          }
         }
       }
     },
