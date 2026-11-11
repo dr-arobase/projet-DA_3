@@ -103,7 +103,12 @@
 .activite { display: flex; align-items: center; gap: 12px; padding: 14px 0; }
 .activite + .activite { border-top: 1px solid var(--bordure); }
 .activite div { display: flex; flex-direction: column; gap: 2px; }
-.activite strong { font-size: 14px; }
+.activite div { min-width: 0; }
+.activite strong {
+  font-size: 14px; overflow-wrap: anywhere;
+  /* Une longue alerte s'arrête à 3 lignes sur l'accueil */
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+}
 .activite small { color: var(--texte-doux); font-size: 12px; }
 
 .activite-icone {

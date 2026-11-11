@@ -22,6 +22,10 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Erreur du client (4xx) : normale, pas journalisée; texte d'origine seulement s'il est prévu pour lui
+  // Requête trop grosse (body-parser) : son texte est en anglais, on renvoie le nôtre
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'Le contenu envoyé est trop volumineux (1 Mo au plus).' });
+  }
   const message = err.expose === false || !err.message ? (MESSAGES[status] ?? 'Requête invalide') : err.message;
   return res.status(status).json({ message });
 };

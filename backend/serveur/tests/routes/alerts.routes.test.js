@@ -103,24 +103,27 @@ describe('POST /api/alerts : message', () => {
     expect(emitEvent).not.toHaveBeenCalled();
   });
 
-  test('400 au-delà de 500 caractères', async () => {
-    const res = await post({ message: 'a'.repeat(501) });
-    expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/500 caractères/);
+  // Sans limite de caractères (demande du Product Owner, #219) : seule la taille d'une requête, 1 Mo, la borne
+  test.each([501, 2001, 50000])('accepte un message de %i caractères', async (longueur) => {
+    mockDb();
+    const res = await post({ message: 'a'.repeat(longueur) });
+    expect(res.status).toBe(201);
+    expect(insertCall()[1][2]).toHaveLength(longueur);
+  });
+
+  test('413 en français au-delà de 1 Mo, sans rien enregistrer', async () => {
+    const res = await post({ message: 'a'.repeat(1100000) });
+    expect(res.status).toBe(413);
+    expect(res.body.message).toBe('Le contenu envoyé est trop volumineux (1 Mo au plus).');
     expect(query).not.toHaveBeenCalled();
+    expect(emitEvent).not.toHaveBeenCalled();
   });
 
-  test('accepte exactement 500 caractères', async () => {
+  test('retire les espaces autour d\'un long message', async () => {
     mockDb();
-    const res = await post({ message: 'a'.repeat(500) });
+    const res = await post({ message: `  ${'a'.repeat(5000)}  ` });
     expect(res.status).toBe(201);
-  });
-
-  test('compte la longueur après avoir retiré les espaces', async () => {
-    mockDb();
-    const res = await post({ message: `  ${'a'.repeat(500)}  ` });
-    expect(res.status).toBe(201);
-    expect(insertCall()[1][2]).toBe('a'.repeat(500));
+    expect(insertCall()[1][2]).toBe('a'.repeat(5000));
   });
 
   test('enregistre le message sans les espaces autour', async () => {

@@ -9,7 +9,6 @@ import RechercheDossier from '../composants/RechercheDossier.jsx';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
-const MAX_MESSAGE = 500; // alert.message VARCHAR(500)
 const PAR_PAGE = 20;
 
 // Une alerte est une diffusion « urgent », un communiqué une diffusion « info » (table alert)
@@ -118,13 +117,12 @@ export default function Diffusions({ severite }) {
               <label htmlFor="message">Message<span className="requis" aria-hidden="true"> *</span></label>
               <textarea
                 id="message"
-                rows={3}
-                maxLength={MAX_MESSAGE}
+                rows={5}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 aria-invalid={Boolean(envoi.erreur)}
               />
-              <small className="registre-note">{message.length} / {MAX_MESSAGE}</small>
+              <small className="registre-note">{message.length} caractère{message.length > 1 ? 's' : ''}, sans limite</small>
             </div>
             <div className="champ-registre complet">
               <label htmlFor="alerte-dossier">Dossier lié (facultatif)</label>
