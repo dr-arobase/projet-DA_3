@@ -45,7 +45,7 @@ const libelleAgent = (a) => `${a.badge_number} · ${nomAgent(a)}`;
 // La liste ne montre que les conversations existantes; la recherche trouve tous les agents.
 export default function Messagerie() {
   const { utilisateur } = useAuth();
-  const { presence } = useTempsReel();
+  const { presence, reconnexions } = useTempsReel();
   const { appeler, enAppel } = useAppel();
   const [params, setParams] = useSearchParams();
   const avecId = Number(params.get('avec')) || null;
@@ -128,7 +128,7 @@ export default function Messagerie() {
       .catch((err) => actif && setErreur(err.message))
       .finally(() => actif && setChargementConversation(false));
     return () => { actif = false; };
-  }, [avecId, groupeId, ouvrir]);
+  }, [avecId, groupeId, ouvrir, reconnexions]);
 
   useEffect(() => { fin.current?.scrollIntoView({ block: 'end' }); }, [messages]);
 

@@ -249,3 +249,15 @@ Ce qui bloque :
 •   La configuration d'une approbation obligatoire sur `main` et la revue effective des anciennes PR sont des réglages et actions GitHub à effectuer par un administrateur et un coéquipier; elles ne peuvent pas être produites par une modification du dépôt.
 Décisions prises :
 •   Soumettre ces corrections dans une PR dédiée avec `Closes #88`, `Closes #104`, `Closes #112` et `Closes #114`, puis demander une revue concrète avant la fusion.
+
+**Bloc de finition — mardi 10 novembre 2026**
+Présence : Michael
+Tickets suivis : #120
+Ce qui a avancé :
+•   Renforcement de la reconnexion temps réel : le bandeau existant reste visible pendant la coupure et les données manquées sont relues après reconnexion.
+•   Les alertes manquées sont récupérées par l'API avec déduplication, et la messagerie recharge la conversation, les contacts et les groupes après une reconnexion.
+•   Validation du lint et du build frontend.
+Ce qui bloque :
+•   Le parcours complet sur le site en ligne et la coupure réseau réelle de 30 secondes nécessitent l'environnement déployé.
+Décisions prises :
+•   Conserver la récupération native de Socket.IO lorsqu'elle réussit et utiliser la relecture API comme filet de sécurité lorsqu'elle échoue ou dépasse sa fenêtre de 30 secondes.
