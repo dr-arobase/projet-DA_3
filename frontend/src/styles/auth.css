@@ -186,6 +186,23 @@
 
 .auth-mention { margin-top: 20px; color: var(--texte-doux); font-size: 13px; text-align: center; }
 
+/* Deuxième étape (double authentification) */
+.auth-indice { margin: 8px 0 18px; color: var(--texte-doux); font-size: 13px; }
+.bouton-lien {
+  display: block;
+  min-height: 40px;
+  margin: 12px auto 0;
+  padding: 8px 12px;
+  border: 0;
+  background: none;
+  color: var(--marine-600);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bouton-lien:hover { text-decoration: underline; }
+
 .auth-formulaire button:focus-visible, .auth-formulaire a:focus-visible, .case input:focus-visible {
   outline: 2px solid var(--marine-600);
   outline-offset: 2px;

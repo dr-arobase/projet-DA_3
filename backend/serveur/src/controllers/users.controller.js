@@ -1,4 +1,5 @@
 import * as userService from '../services/users.service.js';
+import * as deuxFacteurs from '../services/deuxFacteurs.service.js';
 
 const VALID_ROLES = ['policier', 'superviseur', 'direction'];
 const VALID_GRADES = [
@@ -93,5 +94,23 @@ export const promoteUser = async (req, res) => {
     return res.json({ message: 'Utilisateur promu', user });
   } catch (error) {
     return handleError(res, error, 'de la promotion');
+  }
+};
+// POST /api/users/:id/2fa/reinitialiser (direction) : l'agent a perdu son téléphone
+export const reinitialiserDeuxFacteurs = async (req, res) => {
+  try {
+    await deuxFacteurs.reinitialiser(req.user, req.params.id);
+    return res.json({ message: 'Double authentification réinitialisée : l\'agent se connecte avec son mot de passe, puis peut la réactiver.' });
+  } catch (error) {
+    if (error.message === 'SELF_RESET_FORBIDDEN') {
+      return res.status(403).json({ message: 'Pour votre propre compte, désactivez-la depuis « Mon profil ».' });
+    }
+    if (error.message === 'USER_NOT_FOUND') {
+      return res.status(404).json({ message: 'Utilisateur introuvable' });
+    }
+    if (error.message === 'TOTP_INACTIVE') {
+      return res.status(409).json({ message: 'La double authentification n\'est pas active pour ce compte.' });
+    }
+    return handleError(res, error, 'de la réinitialisation de la double authentification');
   }
 };

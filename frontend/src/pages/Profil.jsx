@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '../composants/AuthContext.js';
 import * as api from '../api.js';
 import Avatar from '../composants/Avatar.jsx';
+import DeuxFacteurs from '../composants/DeuxFacteurs.jsx';
 import {
   IconeUtilisateur, IconeCourriel, IconeCalendrier, IconeCadenas, IconeEnregistrer, IconeAppareilPhoto,
 } from '../composants/Icones.jsx';
@@ -248,6 +249,8 @@ export default function Profil() {
               </button>
             </form>
           </section>}
+
+          <DeuxFacteurs utilisateur={utilisateur} mettreAJourUtilisateur={mettreAJourUtilisateur} />
         </div>
       </div>
     </>

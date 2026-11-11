@@ -7,7 +7,8 @@
  *   4. Audit des dépendances frontend
  *   5. Tests du backend (npm test)
  *   6. Démarrage réel du serveur : il doit répondre sur / et /api-docs/
- *   7. Build du frontend (npm run build) : échoue à la moindre erreur de compilation
+ *   7. Tests du frontend (npm test) : composants rendus dans un faux navigateur
+ *   8. Build du frontend (npm run build) : échoue à la moindre erreur de compilation
  *
  * Le serveur a besoin de PostgreSQL (DATABASE_URL du fichier backend/.env) :
  * s'il ne démarre pas, le push est refusé.
@@ -109,26 +110,29 @@ async function demarrerServeur() {
 verifierDependances(backend, 'backend');
 verifierDependances(frontend, 'frontend');
 
-titre('1/7 Lint du backend');
+titre('1/8 Lint du backend');
 if (!(await npm(['run', 'lint'], backend))) echec('Le lint du backend a échoué.');
 
-titre('2/7 Lint du frontend');
+titre('2/8 Lint du frontend');
 if (!(await npm(['run', 'lint'], frontend))) echec('Le lint du frontend a échoué.');
 
-titre('3/7 Audit des dépendances backend');
+titre('3/8 Audit des dépendances backend');
 if (!(await npm(['audit', '--audit-level=high'], backend))) echec('L’audit des dépendances backend a trouvé une vulnérabilité élevée ou critique.');
 
-titre('4/7 Audit des dépendances frontend');
+titre('4/8 Audit des dépendances frontend');
 if (!(await npm(['audit', '--audit-level=high'], frontend))) echec('L’audit des dépendances frontend a trouvé une vulnérabilité élevée ou critique.');
 
-titre('5/7 Tests du backend');
+titre('5/8 Tests du backend');
 // Les tests d'intégration partagent PostgreSQL et ne peuvent pas lancer les migrations en parallèle.
 if (!(await npm(['test', '--', '--silent', '--runInBand'], backend))) echec('Des tests du backend échouent.');
 
-titre('6/7 Démarrage du serveur');
+titre('6/8 Démarrage du serveur');
 await demarrerServeur();
 
-titre('7/7 Build du frontend');
+titre('7/8 Tests du frontend');
+if (!(await npm(['test'], frontend))) echec('Des tests du frontend échouent.');
+
+titre('8/8 Build du frontend');
 if (!(await npm(['run', 'build'], frontend))) echec('Le frontend ne compile pas.');
 
 console.log(vert('\n✔ Tout fonctionne : push autorisé.\n'));

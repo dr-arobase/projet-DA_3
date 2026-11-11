@@ -29,6 +29,8 @@ export default function Utilisateurs() {
   const [formulaireOuvert, setFormulaireOuvert] = useState(false);
   const [promotion, setPromotion] = useState(null); // { id, role, grade }
   const [confirmation, setConfirmation] = useState(null);
+  // Direction : réinitialiser la double authentification d'un agent qui a perdu son téléphone
+  const [reinitialisation, setReinitialisation] = useState(null);
   const [recherche, setRecherche] = useState('');
   const [filtreRole, setFiltreRole] = useState('');
   const [filtreEtat, setFiltreEtat] = useState('');
@@ -83,6 +85,18 @@ export default function Utilisateurs() {
       setConfirmation(null);
       setMessage({ type: 'succes', texte: `Compte de ${nomAgent(user)} ${user.is_active ? 'réactivé' : 'désactivé'}.` });
     } catch (err) {
+      setMessage({ type: 'erreur', texte: err.message });
+    }
+  }
+
+  async function reinitialiser(agent) {
+    try {
+      await api.reinitialiserDeuxFacteurs(agent.id);
+      remplacer({ ...agent, totp_active: false });
+      setReinitialisation(null);
+      setMessage({ type: 'succes', texte: `Double authentification de ${nomAgent(agent)} réinitialisée : il se connecte avec son mot de passe, puis peut la réactiver.` });
+    } catch (err) {
+      setReinitialisation(null);
       setMessage({ type: 'erreur', texte: err.message });
     }
   }
@@ -220,6 +234,11 @@ export default function Utilisateurs() {
                           {a.is_active ? 'Désactiver' : 'Réactiver'}
                         </button>
                       )}
+                      {peutPromouvoir && a.totp_active && a.id !== utilisateur.id && (
+                        <button type="button" className="registre-lien" onClick={() => setReinitialisation(a)}>
+                          Réinitialiser la double authentification
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -244,6 +263,21 @@ export default function Utilisateurs() {
           </nav>
         )}
       </div>
+      {reinitialisation && (
+        <div className="fenetre-confirmation" role="dialog" aria-modal="true" aria-labelledby="reinitialisation-titre">
+          <div className="carte">
+            <h2 id="reinitialisation-titre">Réinitialiser la double authentification ?</h2>
+            <p>
+              À faire seulement si {nomAgent(reinitialisation)} a perdu son téléphone et ses codes de secours :
+              sa prochaine connexion ne demandera plus de code. L'action est inscrite au journal d'audit.
+            </p>
+            <div className="formulaire-actions">
+              <button type="button" className="registre-lien" onClick={() => setReinitialisation(null)}>Annuler</button>
+              <button type="button" className="registre-bouton-danger" onClick={() => reinitialiser(reinitialisation)}>Réinitialiser</button>
+            </div>
+          </div>
+        </div>
+      )}
       {confirmation && (
         <div className="fenetre-confirmation" role="dialog" aria-modal="true" aria-labelledby="confirmation-titre">
           <div className="carte">

@@ -1,6 +1,6 @@
 import { pool } from '../config/db.js';
 
-const PUBLIC_FIELDS = 'id, first_name, last_name, badge_number, email, role, grade, is_active, avatar_url, created_at';
+const PUBLIC_FIELDS = 'id, first_name, last_name, badge_number, email, role, grade, is_active, avatar_url, created_at, totp_active';
 
 // Lister tous les comptes (sans le mot de passe)
 export const findAll = async () => {

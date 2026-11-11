@@ -118,3 +118,13 @@ ALTER TABLE audit_log ALTER COLUMN target_id DROP NOT NULL;
 
 -- Photo d'un groupe de discussion : changée par le créateur du groupe (même règles que la photo d'un agent)
 ALTER TABLE message_group ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
+
+-- Double authentification par application (TOTP, RFC 6238), facultative pour tous les comptes.
+-- Les secrets sont chiffrés (AES-256-GCM) et les codes de secours hachés (bcrypt) : rien n'est lisible en clair.
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_secret TEXT;
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_secret_attente TEXT;        -- pendant l'activation, avant le premier code
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_active BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_dernier_pas BIGINT;          -- dernier pas de 30 s accepté : un code ne sert qu'une fois
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_codes_secours TEXT[];
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_echecs INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_bloque_jusqua TIMESTAMPTZ;
