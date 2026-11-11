@@ -56,6 +56,8 @@ cd backend && node scripts/compte-equipe.js               # sans Docker (npm run
 
 > Ces comptes ne sont créés que dans une base **vide**. Si votre base a été créée avant l'ajout de ces mots de passe, réinitialisez-la (`docker compose down -v`) ou, dans `backend/`, lancez `node scripts/set-passwords.js Alpha2026!` (change le mot de passe de **tous** les comptes).
 
+**Double authentification** (facultative, tous les comptes) : dans « Mon profil », « Activer la double authentification », puis scanner le code QR avec Google Authenticator ou Microsoft Authenticator. À la connexion suivante, le code à 6 chiffres est demandé après le mot de passe (ou après GitHub). Les comptes de démonstration ne l'ont pas : ils se connectent avec le mot de passe seul. Voir la décision 19 de `docs/03-conception.md`.
+
 ---
 
 ## Développer

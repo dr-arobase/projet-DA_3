@@ -58,6 +58,18 @@ export async function requete(chemin, { method = 'GET', body } = {}) {
 export const connexion = (badge_number, password, se_souvenir = false) =>
   requete('/api/auth/login', { method: 'POST', body: { badge_number, password, se_souvenir } });
 
+// Deuxième étape de la connexion, quand la double authentification est active
+export const verifierCodeConnexion = (code) =>
+  requete('/api/auth/login/code', { method: 'POST', body: { code } });
+
+// Double authentification de l'agent connecté
+export const preparerDeuxFacteurs = () => requete('/api/auth/2fa/preparer', { method: 'POST' });
+export const activerDeuxFacteurs = (code) => requete('/api/auth/2fa/activer', { method: 'POST', body: { code } });
+export const desactiverDeuxFacteurs = (mot_de_passe, code) =>
+  requete('/api/auth/2fa/desactiver', { method: 'POST', body: { mot_de_passe, code } });
+// Direction : un agent a perdu son téléphone
+export const reinitialiserDeuxFacteurs = (id) => requete(`/api/users/${id}/2fa/reinitialiser`, { method: 'POST' });
+
 export const deconnexion = () => requete('/api/auth/logout', { method: 'POST' });
 
 export const moi = () => requete('/api/auth/me');
