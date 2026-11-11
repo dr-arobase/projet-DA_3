@@ -7,6 +7,15 @@ const MAX_LOCATION = 255; // sighting.location VARCHAR(255)
 const MAX_NOTES = 2000;
 
 const MAX_RECENT = 500;
+const MAX_INT = 2147483647; // plus grand INTEGER de PostgreSQL
+
+// Identifiant de dossier : un entier positif (nombre ou chaîne de chiffres), sinon null (#84).
+// Sans ce contrôle, "abc" ou 1.5 arrivaient à PostgreSQL et donnaient 500.
+function lireCriminalId(valeur) {
+  const estNombre = typeof valeur === 'number' || (typeof valeur === 'string' && /^\d+$/.test(valeur));
+  const id = Number(valeur);
+  return estNombre && Number.isInteger(id) && id >= 1 && id <= MAX_INT ? id : null;
+}
 
 // Position facultative : les deux coordonnées ensemble, dans les bornes, sinon null
 function lirePosition(latitude, longitude) {
@@ -23,11 +32,15 @@ function lirePosition(latitude, longitude) {
 
 // POST /api/sightings : signaler une observation
 export const createSighting = async (req, res) => {
-  const { criminal_id, latitude, longitude } = req.body;
+  const { latitude, longitude } = req.body;
   // Le lieu et les notes doivent être du texte (#94) : un objet ou un tableau était enregistré tel quel
   const location = texte(req.body.location);
-  if (!criminal_id || !location || !estVisible(location)) {
+  if (!req.body.criminal_id || !location || !estVisible(location)) {
     return res.status(400).json({ message: 'criminal_id et location sont obligatoires' });
+  }
+  const criminal_id = lireCriminalId(req.body.criminal_id);
+  if (!criminal_id) {
+    return res.status(400).json({ message: 'criminal_id doit être un identifiant numérique' });
   }
   if (location.length > MAX_LOCATION) {
     return res.status(400).json({ message: `Le lieu dépasse ${MAX_LOCATION} caractères` });
@@ -76,10 +89,12 @@ export const getRecentSightings = async (req, res) => {
 
 // GET /api/sightings?criminal_id=... : historique des signalements pour un dossier
 export const getSightingsByCriminal = async (req, res) => {
-  const { criminal_id } = req.query;
-
-  if (!criminal_id) {
+  if (!req.query.criminal_id) {
     return res.status(400).json({ message: 'Le paramètre criminal_id est obligatoire' });
+  }
+  const criminal_id = lireCriminalId(req.query.criminal_id);
+  if (!criminal_id) {
+    return res.status(400).json({ message: 'criminal_id doit être un identifiant numérique' });
   }
 
   try {
