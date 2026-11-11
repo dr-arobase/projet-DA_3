@@ -117,6 +117,7 @@ Chaque PR doit aussi être revue par un coéquipier avant la fusion.
 - **Objectif en une phrase** : l'application sait qui est connecté (mot de passe ou GitHub), ce que chacun a le droit de faire (vérifié par le serveur), et elle réagit en temps réel entre agents.
 - **Capacité** : la vélocité réelle du sprint 1, soit **19 points**.
 - **Responsable de la mêlée** : Eric.
+- **Chaque membre est responsable d'au moins un récit** (vérifié le 11 novembre) : Michael R1, Chrysler R2 et R6, Massyle R3, Eric R5. Les mêmes responsables sont assignés aux tickets dans le Project.
 
 Les numéros sont ceux des tickets GitHub. Le tableau « Récits prévus » ci-dessus utilise les numéros du backlog (`02-backlog.md`).
 
@@ -244,7 +245,7 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 | 13              | Gestion de la concurrence (verrouillage optimiste) | 8                 |
 | 15              | Historique des signalements sur un dossier         | 3                 |
 | 16              | Journal d'audit des actions sensibles              | 5                 |
-| 17              | Statistiques globales (Could)                      | 5                 |
+| 18              | Statistiques globales (Could)                      | 5                 |
 | +               | Déploiement, peaufinage, tests e2e                | —                |
 | **Total** |                                                    | **~24 pts** |
 
@@ -323,14 +324,16 @@ Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence
 
 On ne coupe jamais R3 (en ligne), R2 (concurrence), R6 (présence) ni la correction des bogues visibles : ce sont des exigences de la version finale.
 
-**Demandes du Product Owner (6 novembre)**, hors engagement : elles ne comptent pas dans la vélocité et passent après les récits engagés. Chacune a son ticket et ses critères d'acceptation. Si le temps manque, elles sont coupées dans l'ordre inverse de cette liste, avant R4. Ce qui n'est pas terminé et testé le vendredi 27 novembre (gel) reste hors de l'interface.
+**Demandes du Product Owner (6 novembre)**, hors engagement : elles ne comptent pas dans la vélocité et passent après les récits engagés. Chacune a son ticket, ses critères d'acceptation (dans le ticket) et une estimation en points (planning poker du PO, à confirmer en équipe). Si le temps manque, elles sont coupées dans l'ordre inverse de cette liste, avant R4. Ce qui n'est pas terminé et testé le vendredi 27 novembre (gel) reste hors de l'interface.
 
-1. Les policiers diffusent des alertes, les communiqués restent à la direction et aux superviseurs (#202).
-2. Alertes et communiqués jusqu'à 2 000 caractères (#219).
-3. Retirer un dossier l'archive en cascade, et on peut le désarchiver (#221).
-4. Modifier et retirer une alerte ou un communiqué, avec la mention « modifié » (#220).
-5. Page « Archives » commune (#222).
-6. Page Utilisateurs présentée comme un vrai service de police (#223).
+1. Les policiers diffusent des alertes, les communiqués restent à la direction et aux superviseurs (#202) : 2 points, Chrysler.
+2. Alertes et communiqués jusqu'à 2 000 caractères (#219) : 2 points, Chrysler.
+3. Retirer un dossier l'archive en cascade, et on peut le désarchiver (#221) : 5 points, Eric.
+4. Modifier et retirer une alerte ou un communiqué, avec la mention « modifié » (#220) : 5 points, Chrysler.
+5. Page « Archives » commune (#222) : 3 points, Eric.
+6. Page Utilisateurs présentée comme un vrai service de police (#223) : 2 points, Michael.
+
+Total des demandes : 19 points, au-delà de la capacité de 26 points déjà engagée. Elles ne seront faites que si les récits engagés avancent comme prévu; sinon elles sont coupées dans l'ordre ci-dessus, en commençant par la dernière.
 
 ### Avancement du sprint 3
 
@@ -347,10 +350,10 @@ Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi 
 
 Si l'équipe prend du retard, voici l'ordre dans lequel on coupe — décidé maintenant, à froid :
 
-1. **Statistiques globales** (#17, `Could`) — aucune valeur fonctionnelle pour la correction
-2. **Journal d'audit** (#16, `Should`) — utile mais non démontrable facilement
-3. **Historique des signalements** (#15, `Should`) — le signalement reste, l'historique saute
-4. **Désactivation de compte** (#14, `Should`) — on garde la création de compte
+1. **Statistiques globales** (récit 18, ticket #20, `Could`) — aucune valeur fonctionnelle pour la correction
+2. **Journal d'audit** (récit 16, ticket #18, `Should`) — utile mais non démontrable facilement
+3. **Historique des signalements** (récit 15, ticket #17, `Should`) — le signalement reste, l'historique saute
+4. **Désactivation de compte** (récit 14, ticket #16, `Should`) — on garde la création de compte
 5. **Filtre avancé** (#7) — on conserve la recherche par nom, on retire les filtres secondaires
 
 On ne coupe jamais : authentification, registre de base, tableau de bord temps réel, gestion de la concurrence. Ce sont les récits `Must` qui définissent l'application.

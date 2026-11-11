@@ -130,7 +130,7 @@ Le sprint 3 porte sur la finition de la documentation, l'accessibilité (contras
 
 ## Liens
 
-- [Backlog GitHub (Project)](https://github.com/users/dr-arobase/projects/1)
+- [Backlog GitHub (Project)](https://github.com/users/dr-arobase/projects/2)
 - [Issues GitHub](https://github.com/dr-arobase/projet-DA_3/issues)
 - [Vision et portée](docs/01-vision.md)
 - [Backlog produit](docs/02-backlog.md)
