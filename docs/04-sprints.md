@@ -230,7 +230,7 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 
 ---
 
-## Sprint 3 — Version finale (~5 semaines)
+## Sprint 3 — Version finale (4 semaines, du 4 novembre au 3 décembre)
 
 **Objectif** : Le temps réel est complet (présence, resynchronisation après déconnexion), la concurrence est gérée correctement, et l'application est déployée sur un serveur public.
 
@@ -251,6 +251,49 @@ La correction fonctionnelle est rattachée à la [PR #136](https://github.com/dr
 ### Notions disponibles
 
 Socket.IO (présence, état partagé), gestion de la concurrence, déploiement.
+
+### Ce que l'énoncé exige pour la version finale
+
+Source : [énoncé du sprint 3](https://archambaultv.github.io/2026A-420-5D1-MA-Gr2/docs/evaluations/sprint_3/). Pondération : 25 % de la note du cours.
+
+**Dates.** L'énoncé donne des jeudis; notre groupe a ses cours le mercredi et le vendredi. Les dates de notre groupe sont à confirmer avec l'enseignant (tâche FS1 du plan) :
+
+| Étape | Date de l'énoncé | Pour notre groupe |
+|---|---|---|
+| Planification commise dans ce fichier | Jeudi 5 novembre | Commise le mardi 3 novembre |
+| Points de contrôle (notés, toute l'équipe présente) | Jeudis 12, 19 et 26 novembre et 3 décembre | Vendredis 13, 20 et 27 novembre, puis le dernier avant la remise |
+| Gel des fonctionnalités (décision de l'équipe) | — | Vendredi 27 novembre |
+| Remise : étiquette `finale-v1` sur `main` | Jeudi 3 décembre, 23 h 59 | Jeudi 3 décembre, 23 h 59 |
+| Site en ligne, qui roule `finale-v1` | Jusqu'au 23 décembre | Jusqu'au 23 décembre |
+
+Il n'y a ni revue ni rétrospective à la fin de ce sprint : le sprint se termine par le bilan de cinq lignes à la fin de cette section.
+
+**La règle du sprint : ce qui marche passe avant ce qui s'ajoute.** Une application qui fait moins de choses, mais les fait toutes correctement, vaut plus qu'une application qui en fait beaucoup et plante.
+
+En plus de tout ce qui était exigé à l'alpha et à la bêta, l'application à l'étiquette `finale-v1` doit satisfaire les cinq points suivants. La dernière colonne dit quel récit ou quel ticket s'en occupe :
+
+| # | Exigence de la version finale | Récit ou ticket |
+|---|---|---|
+| 1 | **En ligne** : déployé sur un serveur, accessible depuis n'importe quel réseau à l'adresse du README, roule `finale-v1` jusqu'au 23 décembre | R3 (#207), #180, #184, #185, #188 |
+| 2 | **Temps réel complet** de bout en bout entre plusieurs navigateurs, sans rechargement; ce qui doit durer est toujours là après un rechargement | R1 (#120), R5 (#181) |
+| 3 | **Présence** : on voit qui est connecté, et une personne qui s'en va disparaît | R6 (#206) |
+| 4 | **Concurrence** : le point décrit dans `03-conception.md` donne un résultat correct quand deux personnes agissent en même temps : pas de doublon, pas de perte silencieuse, et celle qui perd le sait | R2 (#205), #217 |
+| 5 | **Aucun bogue visible** : pas de page d'erreur, de bouton sans effet ni de récit à moitié fait; ce qui n'est pas prêt est retiré de l'interface | #216 |
+
+Toujours exigé : le démarrage local avec Docker (un clone neuf, le `.env` transmis en privé et une commande, données qui survivent à un redémarrage, #213); la connexion GitHub sur le site en ligne avec un compte de test de l'enseignant, avec **deux applications OAuth** (une pour le site en ligne, une pour `localhost`); un compte de démonstration par rôle (#210); ce qui est simulé annoncé à l'écran et dans le README.
+
+**Comment c'est noté** (barème du cours, « Acquis » = 75 %) :
+
+| Objectif | Poids | Ce que l'enseignant regarde |
+|---|---|---|
+| 1. La version finale en ligne | 35 % | Les cinq exigences ci-dessus sur le site en ligne; les permissions qui tiennent quand on essaie de les contourner, par HTTP et par le WebSocket (#211, #212); chaque récit terminé respecte tous ses critères, cas d'erreur compris |
+| 2. Code, sécurité, tests, CI | 25 % | Couches séparées, permissions centralisées (#214), pas de code mort (#218), un test par récit terminé et un test de refus par permission, protections CSRF, XSS (#215) et injection SQL, validation côté serveur y compris par le WebSocket, un test automatisé de deux écritures simultanées, CI verte à l'étiquette |
+| 3. Traces de travail | 15 % | Cette section commise à temps, chaque membre responsable d'au moins un récit, une entrée de journal par bloc le jour même, des commits de chaque membre sur les quatre semaines rattachés à un ticket, le bilan |
+| 4. Points de contrôle | 25 % | À chaque point : la mêlée, un backlog vivant (tickets déplacés, un responsable par ticket en cours), du travail poussé par chacun, des PR revues par un coéquipier, le journal |
+
+La note est individuelle : un membre qui ne sait pas expliquer ce que l'équipe a livré, ou dont l'historique Git ne le montre pas, a une note plus basse.
+
+**À remettre** : l'étiquette `finale-v1` posée sur `main`, le `.env` local envoyé sur MIO (pas les secrets de production), un README qui suffit pour démarrer en local et accéder au site en ligne, cette section terminée par le bilan de cinq lignes, et `journal.md` avec une entrée par bloc.
 
 ### Engagement réel du sprint 3
 
