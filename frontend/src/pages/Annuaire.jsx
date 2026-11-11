@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useTempsReel } from '../composants/TempsReelContext.js';
 import { IconeRecherche } from '../composants/Icones.jsx';
+import { useAppel } from '../composants/AppelContext.js';
 import { LIBELLES_ROLE, LIBELLES_GRADE, estAuMoins, nomAgent } from '../agents.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
@@ -14,6 +16,7 @@ const PAR_PAGE = 20;
 export default function Annuaire() {
   const { utilisateur } = useAuth();
   const { presence } = useTempsReel();
+  const { appeler } = useAppel();
   const voitTout = estAuMoins(utilisateur, 'superviseur');
 
   const [agents, setAgents] = useState([]);
@@ -106,7 +109,7 @@ export default function Annuaire() {
 
             {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
 
-            <div className="carte registre-tableau-cadre">
+            <div className="carte registre-tableau-cadre registre-cartes-mobile">
               <table className="registre-tableau pages-tableau-fixe annuaire-tableau">
                 <thead>
                   <tr>
@@ -114,23 +117,32 @@ export default function Annuaire() {
                     <th scope="col">Rôle et grade</th>
                     <th scope="col">Courriel</th>
                     <th scope="col">Présence</th>
+                    <th scope="col">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibles.map((a) => (
-                    <tr key={a.id}>
-                      <td><strong>{nomAgent(a)}</strong><small className="annuaire-matricule">{a.badge_number}</small></td>
-                      <td>{LIBELLES_ROLE[a.role]}<small>{LIBELLES_GRADE[a.grade]}</small></td>
-                      <td><a href={`mailto:${a.email}`}>{a.email}</a></td>
-                      <td>
+                    <tr key={a.id} className="annuaire-ligne">
+                      <td data-label="Agent"><strong>{nomAgent(a)}</strong><small className="annuaire-matricule">{a.badge_number}</small></td>
+                      <td data-label="Rôle et grade">{LIBELLES_ROLE[a.role]}<small>{LIBELLES_GRADE[a.grade]}</small></td>
+                      <td data-label="Courriel"><a href={`mailto:${a.email}`}>{a.email}</a></td>
+                      <td data-label="Présence">
                         {enLigne.has(a.id)
                           ? <span className="statut statut-capture">En ligne</span>
                           : <span className="registre-note">Hors ligne</span>}
                       </td>
+                      <td className="annuaire-actions" data-label="Actions">
+                        {a.id === utilisateur.id ? <span className="registre-note">Vous</span> : (
+                          <>
+                            <Link className="registre-lien" to={`/messagerie?avec=${a.id}`}>Écrire</Link>
+                            <button type="button" className="registre-lien" onClick={() => appeler(a, false)} disabled={!enLigne.has(a.id)}>Appeler</button>
+                          </>
+                        )}
+                      </td>
                     </tr>
                   ))}
                   {filtres.length === 0 && (
-                    <tr className="registre-vide"><td colSpan={4}>Aucun agent ne correspond.</td></tr>
+                    <tr className="registre-vide"><td colSpan={5}>Aucun agent ne correspond.</td></tr>
                   )}
                 </tbody>
               </table>

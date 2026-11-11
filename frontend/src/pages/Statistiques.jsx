@@ -10,6 +10,7 @@ export default function Statistiques() {
   const { agentsConnectes } = useTempsReel();
   const [parStatut, setParStatut] = useState(null);
   const [alertes, setAlertes] = useState([]);
+  const [evolution, setEvolution] = useState([]);
   const [erreur, setErreur] = useState('');
 
   const charger = useCallback(async () => {
@@ -23,6 +24,25 @@ export default function Statistiques() {
       });
       setParStatut(Object.fromEntries(STATUTS.map((s, i) => [s, totaux[i].total])));
       setAlertes({ urgentesDuJour });
+      const [dossiers, listeAlertes] = await Promise.all([
+        api.listerCriminels({ limit: 100 }),
+        api.listerAlertes({ limit: 100 }),
+      ]);
+      const semaines = Array.from({ length: 6 }, (_, index) => {
+        const debut = new Date();
+        debut.setHours(0, 0, 0, 0);
+        debut.setDate(debut.getDate() - (5 - index) * 7 - debut.getDay() + 1);
+        const fin = new Date(debut);
+        fin.setDate(fin.getDate() + 7);
+        const dans = (date) => { const d = new Date(date); return d >= debut && d < fin; };
+        return {
+          label: debut.toLocaleDateString('fr-CA', { day: '2-digit', month: '2-digit' }),
+          ajoutes: dossiers.data.filter((d) => dans(d.added_at)).length,
+          captures: dossiers.data.filter((d) => d.status === 'capture' && dans(d.updated_at)).length,
+          alertes: listeAlertes.data.filter((a) => dans(a.created_at)).length,
+        };
+      });
+      setEvolution(semaines);
       setErreur('');
     } catch (err) {
       setErreur(err.message);
@@ -37,6 +57,8 @@ export default function Statistiques() {
   useEvenement('alert:broadcast', charger);
 
   const total = parStatut ? STATUTS.reduce((somme, s) => somme + parStatut[s], 0) : 0;
+  const maxSemaine = Math.max(1, ...evolution.flatMap((s) => [s.ajoutes, s.captures, s.alertes]));
+  const hauteurBarre = (valeur) => `${Math.max(4, Math.round((valeur / maxSemaine) * 110))}px`;
   const tauxCapture = total ? Math.round((parStatut.capture / total) * 100) : 0;
   const duJour = alertes.urgentesDuJour ?? 0;
 
@@ -67,6 +89,24 @@ export default function Statistiques() {
             </div>
           ))}
         </div>
+
+        <section className="carte pages-carte">
+          <h2 className="pages-titre">Évolution hebdomadaire</h2>
+          {/* Barres à l'échelle de la plus grande valeur : elles restent dans leur cadre de 115 px */}
+          <div className="evolution" role="img" aria-label="Évolution des dossiers et alertes par semaine">
+            {evolution.map((semaine) => (
+              <div className="evolution-semaine" key={semaine.label}>
+                <div className="evolution-barres">
+                  <span className="evolution-barre ajoutes" style={{ height: hauteurBarre(semaine.ajoutes) }} title={`${semaine.ajoutes} dossiers ajoutés`} />
+                  <span className="evolution-barre captures" style={{ height: hauteurBarre(semaine.captures) }} title={`${semaine.captures} dossiers capturés`} />
+                  <span className="evolution-barre alertes" style={{ height: hauteurBarre(semaine.alertes) }} title={`${semaine.alertes} alertes`} />
+                </div>
+                <small>{semaine.label}</small>
+              </div>
+            ))}
+          </div>
+          <p className="registre-note">Barres : ajoutés, capturés, alertes. Les dates indiquent le début de la semaine.</p>
+        </section>
 
         <section className="carte pages-carte">
           <h2 className="pages-titre">Dossiers par statut</h2>

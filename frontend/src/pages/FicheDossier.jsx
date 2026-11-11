@@ -28,6 +28,9 @@ export default function FicheDossier() {
 
   // Dernière adresse connue (#64); l'avertissement peut venir de la page d'ajout
   const [adresse, setAdresse] = useState('');
+  const [signalements, setSignalements] = useState([]);
+  // null : pas encore chargés; false : l'agent n'a pas le droit de les voir (403), la section est cachée
+  const [signalementsVisibles, setSignalementsVisibles] = useState(null);
   const [messageAdresse, setMessageAdresse] = useState(() =>
     (location.state?.avertissement ? { type: 'erreur', texte: location.state.avertissement } : null));
 
@@ -45,6 +48,16 @@ export default function FicheDossier() {
       .then(afficher)
       .catch((err) => (err.status === 404 ? setIntrouvable(true) : setErreur(err.message)));
   }, [id, afficher]);
+
+  useEffect(() => {
+    setSignalementsVisibles(null);
+    api.listerSignalementsDossier(id)
+      .then((liste) => { setSignalements(liste); setSignalementsVisibles(true); })
+      .catch((err) => {
+        setSignalementsVisibles(false);
+        if (err.status !== 403) setErreur(err.message);
+      });
+  }, [id]);
 
   // Temps réel : la fiche suit les changements faits par les autres agents
   useEvenement('criminal:updated', useCallback((c) => {
@@ -96,8 +109,10 @@ export default function FicheDossier() {
         afficher(actuel);
         setMessage({
           type: 'erreur',
-          texte: `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} : `
-            + `son statut est maintenant « ${LIBELLES_STATUT[actuel.status]} ». Votre changement n'a pas été appliqué.`,
+          texte: actuel.status === dossier.status
+            ? `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} (adresse ou autre information). Votre changement de statut n'a pas été appliqué.`
+            : `Ce dossier a été modifié entre-temps${actuel.updated_by ? ` par ${actuel.updated_by}` : ''} : `
+              + `son statut est maintenant « ${LIBELLES_STATUT[actuel.status]} ». Votre changement n'a pas été appliqué.`,
         });
       } else {
         setMessage({ type: 'erreur', texte: err.message });
@@ -241,6 +256,25 @@ export default function FicheDossier() {
                 <div><dt>Dernière modification</dt><dd>{formaterDate(dossier.updated_at, true)}{dossier.updated_by && ` par ${dossier.updated_by}`}</dd></div>
               </dl>
             </section>
+
+            {signalementsVisibles && (
+            <section className="carte fiche-carte">
+              <h2 className="fiche-titre">Signalements récents</h2>
+              <div className="fiche-corps">
+                {signalements.length === 0 ? <p>Aucun signalement enregistré.</p> : (
+                  <ul className="fiche-signalements">
+                    {signalements.map((s) => (
+                      <li key={s.id}>
+                        <strong>{s.location}</strong>
+                        <span>{formaterDate(s.reported_at, true)} · {s.reported_by ?? '—'}</span>
+                        {s.notes && <small>{s.notes}</small>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </section>
+            )}
 
             {peutRetirer(utilisateur) && (
               <section className="carte fiche-carte fiche-danger">

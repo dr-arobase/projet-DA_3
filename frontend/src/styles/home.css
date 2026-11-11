@@ -9,9 +9,12 @@
   border-bottom: 1px solid var(--bordure);
 }
 .entete h1 { font-size: 19px; font-weight: 700; }
-.entete-sous-titre { margin-top: 2px; color: var(--texte-doux); font-family: var(--mono); font-size: 11px; }
+.entete-sous-titre { margin-top: 2px; color: var(--texte-doux); font-family: var(--mono); font-size: 12px; }
 
 .entete-actions { display: flex; align-items: center; gap: 16px; }
+.accueil-alerte { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; padding: 12px 16px; border-left: 4px solid var(--danger); border-radius: 8px; background: var(--danger-fond); color: var(--danger); text-decoration: none; }
+.accueil-alerte span { flex: 1; }
+.accueil-alerte small { color: var(--texte-doux); }
 
 .recherche {
   display: flex;
@@ -28,6 +31,13 @@
 .recherche { margin: 0; }
 .recherche input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; font-size: 14px; }
 .recherche:focus-within { border-color: var(--marine-600); }
+.recherche-accueil { position: relative; }
+.recherche-resultats { position: absolute; top: calc(100% + 6px); right: 0; left: 0; z-index: 20; display: grid; margin: 0; padding: 4px; border: 1px solid var(--bordure); border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgba(12, 26, 48, .16); list-style: none; }
+.recherche-resultats button { display: grid; width: 100%; gap: 2px; padding: 9px 10px; border: 0; border-radius: 6px; background: none; color: var(--texte); text-align: left; cursor: pointer; }
+.recherche-resultats button:hover, .recherche-resultats button:focus-visible { background: var(--fond); }
+.recherche-resultats small, .recherche-aucun { color: var(--texte-doux); font-size: 12px; }
+.recherche-aucun { padding: 9px 10px; }
+.erreur-texte { color: var(--danger); }
 
 .cloche {
   position: relative;
@@ -52,7 +62,7 @@
   border-radius: 999px;
   background: var(--danger);
   color: #fff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 15px;
 }
@@ -123,6 +133,7 @@
   font-weight: 700;
   text-decoration: none;
 }
+.action { min-height: 40px; }
 .action:hover { border-color: var(--marine-600); }
 .action-principale { border-color: var(--marine-700); background: var(--marine-700); color: #fff; }
 .action-principale:hover { background: var(--marine-600); }
@@ -139,7 +150,7 @@
   border-radius: 999px;
   background: var(--danger-fond);
   color: var(--danger);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 

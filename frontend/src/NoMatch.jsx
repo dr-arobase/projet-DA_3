@@ -5,8 +5,9 @@ import './styles/pages.css';
 export default function NoMatch() {
   const { pathname } = useLocation();
   return (
-    <div className="page pages-introuvable">
-      <p className="pages-code">404</p>
+    <div className="page pages-introuvable" role="main">
+      <p className="pages-code" aria-hidden="true">404</p>
+      <p className="pages-sur-titre">ERREUR DE NAVIGATION</p>
       <h1>Page introuvable</h1>
       <p>L'adresse <code>{pathname}</code> ne correspond à aucune page de CrimeTracker.</p>
       <div className="pages-liens">
