@@ -265,10 +265,10 @@ Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence
 | Récit | Description et critère d'acceptation | Points | Responsable |
 |---|---|---|---|
 | R1 | **Reconnexion temps réel robuste** (#120) : l'interface signale la coupure, le client se reconnecte seul et rattrape les alertes, messages et changements manqués, sans doublon | 8 | Michael |
-| R2 | **Concurrence prouvée** : un test automatisé envoie deux modifications simultanées du même dossier; une réussit, l'autre reçoit 409 avec l'état actuel et le voit à l'écran | 5 | Chrysler |
-| R3 | **Site final en ligne** : `finale-v1` sur Azure, HTTPS avec HSTS (#180), sauvegarde quotidienne testée (#184), mémoire suffisante (#185), relais TURN (#188), connexion GitHub avec un compte de test | 5 | Massyle |
+| R2 | **Concurrence prouvée** (#205) : un test automatisé envoie deux modifications simultanées du même dossier; une réussit, l'autre reçoit 409 avec l'état actuel et le voit à l'écran | 5 | Chrysler |
+| R3 | **Site final en ligne** (#207) : `finale-v1` sur Azure, HTTPS avec HSTS (#180), sauvegarde quotidienne testée (#184), mémoire suffisante (#185), relais TURN (#188), connexion GitHub avec un compte de test | 5 | Massyle |
 | R5 | **Test de bout en bout** (#181) : Playwright ouvre deux navigateurs dans la CI; une alerte arrive en direct chez l'autre, une action interdite est refusée | 5 | Eric |
-| R6 | **Présence fiable** : un agent qui ferme son dernier onglet disparaît en moins de 30 secondes; plusieurs onglets comptent pour une seule présence; un test automatisé le vérifie | 3 | Chrysler |
+| R6 | **Présence fiable** (#206) : un agent qui ferme son dernier onglet disparaît en moins de 30 secondes; plusieurs onglets comptent pour une seule présence; un test automatisé le vérifie | 3 | Chrysler |
 | **Total** | | **26** | |
 
 **Hors engagement** (ne compte pas dans la vélocité) : R4, expérience mobile et bureau (#174 à #177), Michael.
@@ -280,6 +280,15 @@ Les récits prévus plus haut sont déjà livrés depuis le sprint 2 : présence
 
 On ne coupe jamais R3 (en ligne), R2 (concurrence), R6 (présence) ni la correction des bogues visibles : ce sont des exigences de la version finale.
 
+**Demandes du Product Owner (6 novembre)**, hors engagement : elles ne comptent pas dans la vélocité et passent après les récits engagés. Chacune a son ticket et ses critères d'acceptation. Si le temps manque, elles sont coupées dans l'ordre inverse de cette liste, avant R4. Ce qui n'est pas terminé et testé le vendredi 27 novembre (gel) reste hors de l'interface.
+
+1. Les policiers diffusent des alertes, les communiqués restent à la direction et aux superviseurs (#202).
+2. Alertes et communiqués jusqu'à 2 000 caractères (#219).
+3. Retirer un dossier l'archive en cascade, et on peut le désarchiver (#221).
+4. Modifier et retirer une alerte ou un communiqué, avec la mention « modifié » (#220).
+5. Page « Archives » commune (#222).
+6. Page Utilisateurs présentée comme un vrai service de police (#223).
+
 ### Avancement du sprint 3
 
 Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi notée dans `journal.md`.
@@ -287,6 +296,7 @@ Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi 
 | Date | Points restants | Récits terminés | Décision |
 |---|---|---|---|
 | Mar. 3 novembre | 26 | — | Engagement écrit; les PR #161 à #170 du plan de corrections sont fusionnées |
+| Mer. 11 novembre | 26 | — | R1 : le bandeau et le rattrapage sont dans `main` (PR #204), mais le récit attend son test automatisé avant d'être compté terminé. R2, R3 et R6 n'avaient pas de ticket de récit : créés (#205, #206, #207). La PR #197 (expérience mobile, R4 hors engagement) est fusionnée après revue d'Eric. Décision : Chrysler commence par R2 et R6, qui ne se coupent pas; les demandes du PO attendent les récits engagés. |
 
 ---
 

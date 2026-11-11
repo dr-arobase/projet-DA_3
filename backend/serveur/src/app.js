@@ -41,8 +41,12 @@ app.use(helmet({
 app.use(express.json());
 app.use(verifyCsrf);
 
-// Serveur Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Serveur Swagger UI. En production, API_DOCS=false le retire (#194) : la liste des routes
+// n'a pas à être publique. En local et dans les tests, il reste ouvert pour le développement.
+const docsActives = process.env.API_DOCS !== 'false';
+if (docsActives) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+}
 
 // Enregistrement des routes de l'API
 app.use('/api/auth', authRoutes);
@@ -67,7 +71,7 @@ app.use(PHOTOS_URL, verifyToken, express.static(PHOTOS_DIR, { fallthrough: false
 app.get('/', (req, res) => {
   res.json({
     message: 'API CrimeTracker opérationnelle',
-    documentation: '/api-docs'
+    ...(docsActives ? { documentation: '/api-docs' } : {}),
   });
 });
 
