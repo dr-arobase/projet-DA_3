@@ -132,8 +132,12 @@ export default function Annuaire() {
                           : <span className="registre-note">Hors ligne</span>}
                       </td>
                       <td className="annuaire-actions" data-label="Actions">
-                        <Link className="registre-lien" to={`/messagerie?avec=${a.id}`}>Écrire</Link>
-                        <button type="button" className="registre-lien" onClick={() => appeler(a, false)} disabled={!enLigne.has(a.id)}>Appeler</button>
+                        {a.id === utilisateur.id ? <span className="registre-note">Vous</span> : (
+                          <>
+                            <Link className="registre-lien" to={`/messagerie?avec=${a.id}`}>Écrire</Link>
+                            <button type="button" className="registre-lien" onClick={() => appeler(a, false)} disabled={!enLigne.has(a.id)}>Appeler</button>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ))}

@@ -57,6 +57,8 @@ export default function Statistiques() {
   useEvenement('alert:broadcast', charger);
 
   const total = parStatut ? STATUTS.reduce((somme, s) => somme + parStatut[s], 0) : 0;
+  const maxSemaine = Math.max(1, ...evolution.flatMap((s) => [s.ajoutes, s.captures, s.alertes]));
+  const hauteurBarre = (valeur) => `${Math.max(4, Math.round((valeur / maxSemaine) * 110))}px`;
   const tauxCapture = total ? Math.round((parStatut.capture / total) * 100) : 0;
   const duJour = alertes.urgentesDuJour ?? 0;
 
@@ -90,13 +92,14 @@ export default function Statistiques() {
 
         <section className="carte pages-carte">
           <h2 className="pages-titre">Évolution hebdomadaire</h2>
+          {/* Barres à l'échelle de la plus grande valeur : elles restent dans leur cadre de 115 px */}
           <div className="evolution" role="img" aria-label="Évolution des dossiers et alertes par semaine">
             {evolution.map((semaine) => (
               <div className="evolution-semaine" key={semaine.label}>
                 <div className="evolution-barres">
-                  <span className="evolution-barre ajoutes" style={{ height: `${Math.max(4, semaine.ajoutes * 12)}px` }} title={`${semaine.ajoutes} dossiers ajoutés`} />
-                  <span className="evolution-barre captures" style={{ height: `${Math.max(4, semaine.captures * 12)}px` }} title={`${semaine.captures} dossiers capturés`} />
-                  <span className="evolution-barre alertes" style={{ height: `${Math.max(4, semaine.alertes * 12)}px` }} title={`${semaine.alertes} alertes`} />
+                  <span className="evolution-barre ajoutes" style={{ height: hauteurBarre(semaine.ajoutes) }} title={`${semaine.ajoutes} dossiers ajoutés`} />
+                  <span className="evolution-barre captures" style={{ height: hauteurBarre(semaine.captures) }} title={`${semaine.captures} dossiers capturés`} />
+                  <span className="evolution-barre alertes" style={{ height: hauteurBarre(semaine.alertes) }} title={`${semaine.alertes} alertes`} />
                 </div>
                 <small>{semaine.label}</small>
               </div>

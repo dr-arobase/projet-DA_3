@@ -29,6 +29,8 @@ export default function FicheDossier() {
   // Dernière adresse connue (#64); l'avertissement peut venir de la page d'ajout
   const [adresse, setAdresse] = useState('');
   const [signalements, setSignalements] = useState([]);
+  // null : pas encore chargés; false : l'agent n'a pas le droit de les voir (403), la section est cachée
+  const [signalementsVisibles, setSignalementsVisibles] = useState(null);
   const [messageAdresse, setMessageAdresse] = useState(() =>
     (location.state?.avertissement ? { type: 'erreur', texte: location.state.avertissement } : null));
 
@@ -48,9 +50,11 @@ export default function FicheDossier() {
   }, [id, afficher]);
 
   useEffect(() => {
+    setSignalementsVisibles(null);
     api.listerSignalementsDossier(id)
-      .then(setSignalements)
+      .then((liste) => { setSignalements(liste); setSignalementsVisibles(true); })
       .catch((err) => {
+        setSignalementsVisibles(false);
         if (err.status !== 403) setErreur(err.message);
       });
   }, [id]);
@@ -253,6 +257,7 @@ export default function FicheDossier() {
               </dl>
             </section>
 
+            {signalementsVisibles && (
             <section className="carte fiche-carte">
               <h2 className="fiche-titre">Signalements récents</h2>
               <div className="fiche-corps">
@@ -269,6 +274,7 @@ export default function FicheDossier() {
                 )}
               </div>
             </section>
+            )}
 
             {peutRetirer(utilisateur) && (
               <section className="carte fiche-carte fiche-danger">
