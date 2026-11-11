@@ -249,7 +249,18 @@ Ce qui bloque :
 Décisions prises :
 •   Soumettre ces corrections dans une PR dédiée avec `Closes #88`, `Closes #104`, `Closes #112` et `Closes #114`, puis demander une revue concrète avant la fusion.
 
-**Bloc de finition — mardi 10 novembre 2026**
+**Bloc de finition — mercredi 4 novembre 2026**
+Présence : Michael
+Tickets suivis : #120
+Ce qui a avancé :
+•   Analyse du parcours de reconnexion temps réel et du comportement existant du bandeau de coupure.
+•   Identification des surfaces à resynchroniser après une reconnexion : alertes, conversation ouverte, contacts et groupes.
+Ce qui bloque :
+•   Le parcours complet sur le site en ligne et la coupure réseau réelle de 30 secondes nécessitent l'environnement déployé.
+Décisions prises :
+•   Conserver la récupération native de Socket.IO et compléter les données manquées par une relecture API.
+
+**Bloc de finition — mercredi 11 novembre 2026**
 Présence : Michael
 Tickets suivis : #120
 Ce qui a avancé :
