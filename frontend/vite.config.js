@@ -15,4 +15,10 @@ export default defineConfig({
       '/socket.io': { target: backend, ws: true },
     },
   },
+  // Tests de l'interface (npm test) : composants rendus dans un faux navigateur (jsdom)
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/tests/preparation.js'],
+    css: false,
+  },
 });

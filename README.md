@@ -88,7 +88,14 @@ npm test
 
 Les tests du backend (Jest + Supertest) simulent la base de données : PostgreSQL n'est pas nécessaire. Les tests d'intégration `tests/integration/` s'exécutent seulement si une base est disponible.
 
-La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
+```bash
+cd frontend
+npm test
+```
+
+Les tests du frontend (Vitest + Testing Library) rendent les composants dans un faux navigateur (jsdom), avec l'API simulée : par exemple la double authentification dans « Mon profil », l'étape du code à la connexion et la réinitialisation par la direction.
+
+La **CI GitHub Actions** (`.github/workflows/ci.yml`) s'exécute à chaque poussée. Elle vérifie le lint backend/frontend, audite toutes les dépendances (les vulnérabilités élevées ou critiques bloquent), lance les tests du backend et du frontend, démarre réellement le serveur et compile le frontend, puis démarre la pile complète avec `docker compose up` et vérifie le frontend, l'API et Swagger à travers nginx.
 
 Pour lancer la même vérification en local : `npm run verifier` à la racine. Les avis modérés de l'audit npm restent visibles dans la sortie; ils ne bloquent pas le push.
 
