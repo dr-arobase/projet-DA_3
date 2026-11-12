@@ -2,7 +2,7 @@ import * as alertService from '../services/alerts.service.js';
 import { readPagination } from '../utils/pagination.js';
 
 // Le contrôleur lit la requête et répond ; la logique est dans alerts.service.js.
-// Les erreurs prévues du service portent un statusCode (400, 404) ;
+// Les erreurs prévues du service portent un statusCode (400, 403, 404) ;
 // toute autre erreur est une panne serveur.
 const handleError = (res, error, context) => {
   if (error.statusCode) {
@@ -12,10 +12,10 @@ const handleError = (res, error, context) => {
   return res.status(500).json({ message: 'Erreur serveur' });
 };
 
-// POST /api/alerts : diffuser une alerte
+// POST /api/alerts : diffuser une alerte (tout agent) ou un communiqué (superviseur, direction)
 export const createAlert = async (req, res) => {
   try {
-    const alert = await alertService.createAlert(req.body, req.user.id);
+    const alert = await alertService.createAlert(req.body, req.user);
     return res.status(201).json({ message: 'Alerte diffusée avec succès', alert });
   } catch (error) {
     return handleError(res, error, 'de la diffusion de l\'alerte');

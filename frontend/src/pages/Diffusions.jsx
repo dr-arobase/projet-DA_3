@@ -29,11 +29,12 @@ const TYPES = {
   },
 };
 
-// Alertes (#12) et communiqués : liste en temps réel, diffusion réservée aux superviseurs et à la direction
+// Alertes (#12) et communiqués : liste en temps réel. Tout agent diffuse une alerte;
+// un communiqué est réservé au superviseur et à la direction (#202 : l'API refuse aussi, 403)
 export default function Diffusions({ severite }) {
   const type = TYPES[severite];
   const { utilisateur } = useAuth();
-  const peutDiffuser = estAuMoins(utilisateur, 'superviseur');
+  const peutDiffuser = severite === 'urgent' || estAuMoins(utilisateur, 'superviseur');
 
   const [diffusions, setDiffusions] = useState([]);
   const [page, setPage] = useState(1);

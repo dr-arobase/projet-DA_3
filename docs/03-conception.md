@@ -190,7 +190,7 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `POST` | `/api/sightings` | Signaler une observation | `policier` |
 | `GET` | `/api/sightings?criminal_id=` | Historique des signalements d'un dossier | `superviseur` |
 | `GET` | `/api/sightings/recent?limit=` | Derniers signalements, tous dossiers, avec leur position (carte; 500 au plus) | `policier` |
-| `POST` | `/api/alerts` | Diffuser une alerte (enregistrée puis diffusée par Socket.IO) | `superviseur` |
+| `POST` | `/api/alerts` | Diffuser une alerte (`urgent`) ou un communiqué (`info`), enregistré puis diffusé par Socket.IO | alerte : `policier`; communiqué : `superviseur` (403 pour un policier, #202) |
 | `GET` | `/api/alerts` | Liste des alertes | `policier` |
 | `GET` | `/api/users` | Liste des comptes | `superviseur` |
 | `GET` | `/api/users/:id` | Détail d'un compte | `superviseur` |
