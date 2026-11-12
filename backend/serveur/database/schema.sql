@@ -89,7 +89,7 @@ CREATE TABLE alert (
     id              SERIAL PRIMARY KEY,
     issued_by       INTEGER NOT NULL REFERENCES app_user(id),
     criminal_id     INTEGER REFERENCES criminal(id) ON DELETE SET NULL,
-    message         VARCHAR(500) NOT NULL,
+    message         VARCHAR(2000) NOT NULL,
     severity        alert_severity NOT NULL DEFAULT 'info',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );

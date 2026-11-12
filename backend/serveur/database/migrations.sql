@@ -118,3 +118,7 @@ ALTER TABLE audit_log ALTER COLUMN target_id DROP NOT NULL;
 
 -- Photo d'un groupe de discussion : changée par le créateur du groupe (même règles que la photo d'un agent)
 ALTER TABLE message_group ADD COLUMN IF NOT EXISTS avatar_url VARCHAR(500);
+
+-- Alertes et communiqués jusqu'à 2 000 caractères (demande du PO) : 500 était trop court.
+-- Agrandir un VARCHAR ne réécrit pas la table et ne perd rien; sans effet si c'est déjà fait.
+ALTER TABLE alert ALTER COLUMN message TYPE VARCHAR(2000);

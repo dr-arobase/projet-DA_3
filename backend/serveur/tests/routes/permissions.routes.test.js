@@ -84,7 +84,8 @@ const ROUTES = [
   ['get', '/api/sightings?criminal_id=1', 'superviseur'],
   // Alertes
   ['get', '/api/alerts', null],
-  ['post', '/api/alerts', 'superviseur'],
+  // Tout agent diffuse une alerte; le refus d'un communiqué à un policier (403) dépend du corps : alerts.routes.test.js
+  ['post', '/api/alerts', null],
   // Comptes
   ['get', '/api/users', 'superviseur'],
   ['get', '/api/users/5', 'superviseur'],

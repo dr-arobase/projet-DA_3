@@ -163,7 +163,7 @@ describe('/api/sightings', () => {
 });
 
 describe('/api/alerts', () => {
-  test('POST est réservé aux superviseurs', async () => {
+    test('POST d\'un communiqué (info par défaut) : 403 pour un policier', async () => {
     const res = await request(app)
       .post('/api/alerts')
       .set('Authorization', bearer('policier'))

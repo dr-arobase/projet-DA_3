@@ -869,7 +869,7 @@
       "post": {
         "tags": ["Alerts"],
         "summary": "Diffuser une alerte",
-        "description": "Enregistre l'alerte, l'inscrit au journal d'audit et la diffuse à tous les agents connectés (`alert:broadcast`).\n\n**Rôle requis :** `superviseur`",
+        "description": "Enregistre l'alerte, l'inscrit au journal d'audit et la diffuse à tous les agents connectés (`alert:broadcast`). Message de 2 000 caractères au plus.\n\n**Rôle requis :** tout agent pour une alerte (`severity: urgent`); `superviseur` ou `direction` pour un communiqué (`severity: info`, la valeur par défaut) : 403 pour un policier.",
         "requestBody": {
           "required": true,
           "content": {
@@ -2298,7 +2298,7 @@
         "type": "object",
         "required": ["message"],
         "properties": {
-                    "message": { "type": "string", "minLength": 1, "maxLength": 500, "example": "Individu dangereux aperçu au centre-ville" },
+                    "message": { "type": "string", "minLength": 1, "maxLength": 2000, "example": "Individu dangereux aperçu au centre-ville" },
           "severity": { "$ref": "#/components/schemas/Severity" },
           "criminal_id": { "type": "integer", "nullable": true, "example": 1 }
         }

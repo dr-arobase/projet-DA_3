@@ -9,7 +9,7 @@ import RechercheDossier from '../composants/RechercheDossier.jsx';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
-const MAX_MESSAGE = 500; // alert.message VARCHAR(500)
+const MAX_MESSAGE = 2000; // alert.message VARCHAR(2000), même limite que l'API
 const PAR_PAGE = 20;
 
 // Une alerte est une diffusion « urgent », un communiqué une diffusion « info » (table alert)
@@ -30,11 +30,12 @@ const TYPES = {
   },
 };
 
-// Alertes (#12) et communiqués : liste en temps réel, diffusion réservée aux superviseurs et à la direction
+// Alertes (#12) et communiqués : liste en temps réel. Tout agent diffuse une alerte;
+// un communiqué est réservé au superviseur et à la direction (l'API refuse aussi : 403)
 export default function Diffusions({ severite }) {
   const type = TYPES[severite];
   const { utilisateur } = useAuth();
-  const peutDiffuser = estAuMoins(utilisateur, 'superviseur');
+  const peutDiffuser = severite === 'urgent' || estAuMoins(utilisateur, 'superviseur');
 
   const [diffusions, setDiffusions] = useState([]);
   const [page, setPage] = useState(1);
@@ -118,7 +119,7 @@ export default function Diffusions({ severite }) {
               <label htmlFor="message">Message<span className="requis" aria-hidden="true"> *</span></label>
               <textarea
                 id="message"
-                rows={3}
+                rows={4}
                 maxLength={MAX_MESSAGE}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
