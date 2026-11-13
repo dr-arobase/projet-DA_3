@@ -123,7 +123,7 @@ erDiagram
 
 ### Notes sur le sprint 1
 - `USER.avatar_url` : ajouté pendant le sprint pour la photo de profil (page « Mon profil »). Chemin de l'image servie par l'API, ou `null` pour afficher les initiales. Comme `schema.sql` ne s'applique pas à une base existante, l'API ajoute la colonne au démarrage (`ALTER TABLE … ADD COLUMN IF NOT EXISTS`, voir décision 7).
-- `CRIMINAL.version` : **déjà exploité au sprint 1**, plus tôt que prévu. Un déclencheur PostgreSQL (`trg_bump_criminal_version`) l'incrémente à chaque `UPDATE`, et `PATCH /api/criminals/:id/status` exige la version affichée par le client : si elle a changé entre-temps, l'API répond `409` avec l'état actuel du dossier. Il reste au frontend à afficher ce conflit (récit #13).
+- `CRIMINAL.version` : **déjà exploité au sprint 1**, plus tôt que prévu. Un déclencheur PostgreSQL (`trg_bump_criminal_version`) l'incrémente à chaque `UPDATE`, et `PATCH /api/criminals/:id/status` exige la version affichée par le client : si elle a changé entre-temps, l'API répond `409` avec l'état actuel du dossier. Le frontend affiche ce conflit (récit #13) ; voir « Point de concurrence » plus bas.
 - `CRIMINAL.crimes` : stocké en texte libre pour le sprint 1 ; normalisé en table séparée si besoin au sprint 2.
 - `CRIMINAL.status` : les valeurs de l'énumération sont sans accents (`recherche`, `capture`, `libere`), pour éviter les problèmes d'encodage entre la base, l'API et le frontend. Les libellés accentués sont ajoutés à l'affichage.
 - `SIGHTING` et `ALERT` : leurs routes existaient dès le sprint 1; leurs écrans (Carte, Alertes, Communiqués) ont été ajoutés au début du sprint 2.
@@ -183,7 +183,7 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `GET` | `/api/criminals/:id` | Détail d'un dossier | `policier` |
 | `POST` | `/api/criminals` | Créer un dossier | `policier` |
 | `PATCH` | `/api/criminals/:id/status` | Changer le statut, avec la `version` affichée (409 si conflit) | `policier` |
-| `PUT` | `/api/criminals/:id` | Modifier un dossier | `superviseur` |
+| `PUT` | `/api/criminals/:id` | Modifier un dossier, avec la `version` lue (409 si conflit) ; seuls les champs envoyés changent (#187) | `superviseur` |
 | `DELETE` | `/api/criminals/:id` | Retirer un dossier (journal d'audit) | `superviseur` |
 | `PATCH` | `/api/criminals/:id/address` | Changer la dernière adresse connue (vide pour l'effacer); le serveur la place sur la carte | `policier` |
 | `GET` | `/api/geocode?q=` | Position d'une adresse écrite (`404` introuvable, `503` service indisponible) | `policier` |
@@ -268,6 +268,50 @@ Les maquettes se trouvent dans le dossier [`maquettes/`](maquettes/).
 | `CrimeTracker-mobile-ajout-personne-recherchee.pdf` | Ajout d'un dossier de personne recherchée |
 | `CrimeTracker-mobile-alertes-temps-reel.pdf` | Alertes et communiqués diffusés en temps réel |
 | `CrimeTracker-mobile-gestion-utilisateurs.pdf` | Gestion des utilisateurs et activation des comptes |
+
+---
+
+## Point de concurrence : deux agents modifient le même dossier
+
+### Quoi
+Deux agents ouvrent la même fiche et la changent presque en même temps : l'un passe le statut à « capturé » pendant que l'autre corrige la description, ou deux superviseurs modifient le dossier chacun de leur côté. Sans protection, le second enregistrement écraserait le premier sans que personne le sache (« le dernier écrit gagne »). Le choix du verrouillage optimiste est expliqué dans la décision 2.
+
+### Comment
+1. **Une version par dossier.** La table `criminal` a une colonne `version`. Le déclencheur PostgreSQL `trg_bump_criminal_version` (fonction `bump_criminal_version`, `schema.sql`) l'augmente de 1 à **chaque** `UPDATE`, quelle que soit la route qui modifie le dossier.
+2. **Le client renvoie la version qu'il a lue.** `PATCH /api/criminals/:id/status` et `PUT /api/criminals/:id` exigent le champ `version` (400 s'il manque ou n'est pas un entier positif).
+3. **Le serveur n'écrit que si rien n'a changé.** La requête est `UPDATE criminal SET … WHERE id = $id AND version = $version`. Si un autre agent a enregistré entre-temps, la version ne correspond plus : aucune ligne n'est modifiée, rien n'est écrasé.
+4. **Réponse 409 avec l'état actuel.** Le service relit le dossier et répond `409` (« Conflit de version ») avec le dossier tel qu'il est maintenant en base (`criminal` dans le corps). Le contrôle et l'écriture sont une seule requête SQL : deux demandes simultanées ne peuvent pas réussir toutes les deux.
+5. **Seuls les champs envoyés sont modifiés** (#187) : un `PUT` partiel n'efface plus les autres champs.
+
+```mermaid
+sequenceDiagram
+    participant A as Agent A (version 3)
+    participant B as Agent B (version 3)
+    participant API as API
+    participant DB as PostgreSQL
+    B->>API: PUT /api/criminals/1 { …, version: 3 }
+    API->>DB: UPDATE … WHERE id = 1 AND version = 3
+    DB-->>API: 1 ligne (le déclencheur passe la version à 4)
+    API-->>B: 200, dossier version 4 (+ criminal:updated à tous)
+    A->>API: PUT /api/criminals/1 { …, version: 3 }
+    API->>DB: UPDATE … WHERE id = 1 AND version = 3
+    DB-->>API: 0 ligne (la version est 4)
+    API-->>A: 409, dossier actuel (version 4)
+```
+
+### Ce que voit l'agent qui perd
+- **Changement de statut** (fiche du dossier) : un message rouge dit que le dossier a été modifié entre-temps, par qui, et quel est son statut actuel ; la fiche affiche l'état réel, son changement n'est pas appliqué.
+- **Modification complète** (« Modifier le dossier », superviseur et direction) : la fiche affiche aussitôt les informations actuelles, un message dit qui a modifié et que ses changements n'ont pas été appliqués ; son **brouillon reste dans le formulaire** pour qu'il le vérifie et réessaie. Le formulaire envoie la version lue **à son ouverture** : comme la fiche se met à jour en direct (`criminal:updated`), envoyer la version affichée au moment du clic écraserait sans conflit le travail de l'autre agent.
+- Dans les deux cas, la fiche de chaque agent connecté se met à jour en temps réel dès qu'un enregistrement réussit.
+
+### Limite connue
+`PATCH /api/criminals/:id/address` n'exige pas encore la version : deux changements d'adresse simultanés se remplacent (le dernier gagne). Comme le déclencheur augmente quand même la version, un changement d'adresse fait bien échouer (409) un changement de statut ou une modification lancés en parallèle. Relevé dans la revue de #70.
+
+### Tests
+- Routes, base simulée : `backend/serveur/tests/routes/criminals.routes.test.js` (« 400 sans version », « 409 si quelqu'un a modifié le dossier entre-temps : rien n'est écrasé », tests #187).
+- Vraie base PostgreSQL : `backend/serveur/tests/integration/postgres.test.js` (« PUT avec une version périmée : 409 et le dossier reste intact », version périmée sur le changement de statut).
+- Interface : `frontend/src/tests/modifierDossier.test.jsx` (409 : état actuel affiché et brouillon gardé ; version lue à l'ouverture).
+- Deux écritures **simultanées** sur le même dossier, vraie base (récit R2, #205) : `backend/serveur/tests/integration/concurrence.test.js` (deux changements de statut, dix en même temps, deux modifications complètes, statut contre modification, nouvel essai du perdant).
 
 ---
 
