@@ -144,7 +144,9 @@ export async function reinitialiser(acteur, cibleId) {
   if (!compte) throw new Error('USER_NOT_FOUND');
   if (!compte.totp_active && !compte.totp_secret_attente) throw new Error('TOTP_INACTIVE');
   await db.query(`UPDATE app_user SET ${EFFACER} WHERE id = $1`, [cibleId]);
-  journal(acteur.id, 'TOTP_RESET', Number(cibleId), { badge_number: compte.badge_number });
+    // Attendu : la réponse part une fois l'action inscrite au journal (sinon le test, ou un auditeur
+  // qui consulte le journal juste après, ne la voit pas encore). journal() attrape déjà ses erreurs.
+  await journal(acteur.id, 'TOTP_RESET', Number(cibleId), { badge_number: compte.badge_number });
 }
 
 // La double authentification est-elle active ? (connexion par mot de passe ou par GitHub)
