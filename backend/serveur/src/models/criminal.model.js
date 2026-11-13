@@ -82,27 +82,37 @@ export const create = async ({
 // optimiste (#98) : rien n'est écrit si la version en base n'est plus celle que le client a lue.
 // effacer_photo retire la photo; sinon elle est gardée telle quelle.
 // Retourne null si le dossier n'existe pas ou si la version ne correspond plus.
-export const update = async (id, {
-  first_name, last_name, date_of_birth, nationality, description, crimes, effacer_photo, updated_by
-}, expectedVersion) => {
+// Colonnes qu'une modification complète peut changer (liste fixe : jamais un nom venu de la requête)
+const COLONNES_MODIFIABLES = ['first_name', 'last_name', 'date_of_birth', 'nationality', 'description', 'crimes'];
+
+// Modifier un dossier (#98, #187). « changes » ne contient que les champs envoyés par le client :
+// un champ absent n'est pas touché (avant, il était remis à NULL); un champ envoyé vide est effacé.
+// La version attendue protège contre l'écrasement par un autre agent (verrouillage optimiste).
+export const update = async (id, { changes, effacer_photo, updated_by }, expectedVersion) => {
+  const values = [];
+  const sets = [];
+  for (const colonne of COLONNES_MODIFIABLES) {
+    if (Object.hasOwn(changes, colonne)) {
+      values.push(changes[colonne] ?? null);
+      sets.push(`${colonne} = $${values.length}`);
+    }
+  }
+  values.push(Boolean(effacer_photo));
+  sets.push(`photo_url = CASE WHEN $${values.length} THEN NULL ELSE photo_url END`);
+  values.push(updated_by);
+  sets.push(`updated_by = $${values.length}`);
+  values.push(id);
+  const idParam = values.length;
+  values.push(expectedVersion);
+  const versionParam = values.length;
+
   const query = `
-    WITH before AS (SELECT status AS previous_status FROM criminal WHERE id = $9)
+    WITH before AS (SELECT status AS previous_status FROM criminal WHERE id = $${idParam})
     UPDATE criminal
-    SET first_name = $1,
-        last_name = $2,
-        date_of_birth = $3,
-        nationality = $4,
-        description = $5,
-        crimes = $6,
-        photo_url = CASE WHEN $7 THEN NULL ELSE photo_url END,
-        updated_by = $8
-    WHERE id = $9 AND version = $10
+    SET ${sets.join(',\n        ')}
+    WHERE id = $${idParam} AND version = $${versionParam}
     RETURNING criminal.*, (SELECT previous_status FROM before) AS previous_status
   `;
-  const values = [
-    first_name, last_name, date_of_birth || null, nationality || null,
-    description || null, crimes || null, Boolean(effacer_photo), updated_by, id, expectedVersion
-  ];
   const result = await pool.query(query, values);
   return result.rows[0] || null;
 };

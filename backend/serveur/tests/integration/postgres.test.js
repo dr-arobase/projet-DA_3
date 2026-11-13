@@ -263,6 +263,20 @@ describeDb('Intégration PostgreSQL', () => {
       expect(res.body.criminal).toMatchObject({ last_name: 'Modifié', updated_by: 'Test Jest', version: version + 1 });
     });
 
+    // #187 : un corps partiel ne doit pas effacer les champs absents, sur une vraie base
+    test('PUT avec seulement le prénom et le nom garde la description', async () => {
+      const { rows: [avant] } = await pool.query('SELECT version, description FROM criminal WHERE id = $1', [criminalId]);
+      expect(avant.description).toBe('Mis à jour');
+
+      const res = await request(app)
+        .put(`/api/criminals/${criminalId}`)
+        .set('Authorization', bearer('superviseur'))
+        .send({ first_name: 'Api', last_name: 'Partiel', version: avant.version });
+
+      expect(res.status).toBe(200);
+      expect(res.body.criminal).toMatchObject({ last_name: 'Partiel', description: 'Mis à jour', version: avant.version + 1 });
+    });
+
     // #98 : une version périmée ne doit rien écraser, sur une vraie base
     test('PUT avec une version périmée : 409 et le dossier reste intact', async () => {
       const { rows: [avant] } = await pool.query('SELECT version, last_name FROM criminal WHERE id = $1', [criminalId]);
