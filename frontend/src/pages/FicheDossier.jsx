@@ -7,9 +7,11 @@ import {
   STATUTS, LIBELLES_STATUT, peutRetirer, nomComplet, formaterDate, formaterJour,
 } from '../registre.js';
 import { urlApi } from '../config.js';
+import ModifierDossier from '../composants/ModifierDossier.jsx';
 import '../styles/registre.css';
 
-// Fiche complète d'un dossier (#5), changement de statut (#8) et retrait par un superviseur (#7)
+// Fiche complète d'un dossier (#5), changement de statut (#8), modification complète (#98, FC2)
+// et retrait par un superviseur (#7)
 export default function FicheDossier() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -187,6 +189,11 @@ export default function FicheDossier() {
                 <div className="complet"><dt>Description</dt><dd className="texte-long">{dossier.description || '—'}</dd></div>
               </dl>
             </div>
+            {peutRetirer(utilisateur) && (
+              <div className="fiche-corps">
+                <ModifierDossier dossier={dossier} onMisAJour={afficher} desactive={!modifiable} />
+              </div>
+            )}
           </section>
 
           <aside className="fiche-cote">

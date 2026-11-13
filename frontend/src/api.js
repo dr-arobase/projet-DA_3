@@ -96,6 +96,11 @@ export const creerCriminel = (dossier) => requete('/api/criminals', { method: 'P
 export const changerStatut = (id, status, version) =>
   requete(`/api/criminals/${id}/status`, { method: 'PATCH', body: { status, version } });
 
+// Modification complète (superviseur, direction) : mêmes règles de version (409 si périmée, #98).
+// Seuls les champs envoyés sont modifiés (#187).
+export const modifierCriminel = (id, champs, version) =>
+  requete(`/api/criminals/${id}`, { method: 'PUT', body: { ...champs, version } });
+
 // Photo du dossier : image brute JPG, PNG ou WebP (2 Mo). La retirer : superviseur ou direction
 export const envoyerPhotoDossier = (id, fichier) => requete(`/api/criminals/${id}/photo`, { method: 'PUT', body: fichier });
 
