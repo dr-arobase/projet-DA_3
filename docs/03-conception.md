@@ -311,7 +311,7 @@ sequenceDiagram
 - Routes, base simulée : `backend/serveur/tests/routes/criminals.routes.test.js` (« 400 sans version », « 409 si quelqu'un a modifié le dossier entre-temps : rien n'est écrasé », tests #187).
 - Vraie base PostgreSQL : `backend/serveur/tests/integration/postgres.test.js` (« PUT avec une version périmée : 409 et le dossier reste intact », version périmée sur le changement de statut).
 - Interface : `frontend/src/tests/modifierDossier.test.jsx` (409 : état actuel affiché et brouillon gardé ; version lue à l'ouverture).
-- Deux écritures **simultanées** sur le même dossier (un 200, un 409) : test du récit R2, tâche FC1, à venir.
+- Deux écritures **simultanées** sur le même dossier, vraie base (récit R2, #205) : `backend/serveur/tests/integration/concurrence.test.js` (deux changements de statut, dix en même temps, deux modifications complètes, statut contre modification, nouvel essai du perdant).
 
 ---
 
