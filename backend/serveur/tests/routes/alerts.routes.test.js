@@ -1,5 +1,7 @@
 /**
  * Tests des routes /api/alerts avec Supertest (#12 : diffuser une alerte urgente).
+ * #202 : un policier diffuse une alerte (urgent); un communiqué (info) reste réservé
+ * au superviseur et à la direction.
  * La base de données est simulée : aucun PostgreSQL requis.
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
@@ -75,17 +77,35 @@ describe('POST /api/alerts : permissions', () => {
     expect(query).not.toHaveBeenCalled();
   });
 
-  test('403 pour un policier', async () => {
-    const res = await post({ message: 'Suspect armé' }, 'policier');
+  test.each(['policier', 'superviseur', 'direction'])('alerte (urgent) : 201 pour un %s', async (role) => {
+    mockDb();
+    const res = await post({ message: 'Suspect armé', severity: 'urgent' }, role);
+    expect(res.status).toBe(201);
+    expect(insertCall()[1][3]).toBe('urgent');
+    expect(emitEvent).toHaveBeenCalled();
+  });
+
+  test.each([
+    ['explicite', { message: 'Réunion à 8 h', severity: 'info' }],
+    ['par défaut (sans severity)', { message: 'Réunion à 8 h' }],
+  ])('communiqué %s : 403 pour un policier, sans rien enregistrer ni diffuser', async (_cas, body) => {
+    const res = await post(body, 'policier');
     expect(res.status).toBe(403);
+    expect(res.body.message).toMatch(/communiqué/);
     expect(query).not.toHaveBeenCalled();
     expect(emitEvent).not.toHaveBeenCalled();
   });
 
-  test.each(['superviseur', 'direction'])('201 pour %s', async (role) => {
+  test('un policier sans droit au communiqué n\'apprend rien du message (403 avant le 400)', async () => {
+    const res = await post({ message: '', severity: 'info' }, 'policier');
+    expect(res.status).toBe(403);
+  });
+
+  test.each(['superviseur', 'direction'])('communiqué (info) : 201 pour un %s', async (role) => {
     mockDb();
-    const res = await post({ message: 'Suspect armé', severity: 'urgent' }, role);
+    const res = await post({ message: 'Réunion à 8 h', severity: 'info' }, role);
     expect(res.status).toBe(201);
+    expect(insertCall()[1][3]).toBe('info');
   });
 });
 
@@ -94,6 +114,7 @@ describe('POST /api/alerts : message', () => {
     ['absent', {}],
     ['vide', { message: '' }],
     ['fait seulement d\'espaces', { message: '   \n\t ' }],
+    ['fait seulement de caractères invisibles', { message: '\u200B\u200B\u2800' }],
     ['qui n\'est pas du texte', { message: 42 }],
   ])('400 si le message est %s', async (_cas, body) => {
     const res = await post(body);

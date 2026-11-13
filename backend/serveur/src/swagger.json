@@ -1058,7 +1058,7 @@
       "post": {
         "tags": ["Alerts"],
         "summary": "Diffuser une alerte",
-        "description": "Enregistre l'alerte, l'inscrit au journal d'audit et la diffuse à tous les agents connectés (`alert:broadcast`).\n\n**Rôle requis :** `superviseur`",
+        "description": "Enregistre l'alerte, l'inscrit au journal d'audit et la diffuse à tous les agents connectés (`alert:broadcast`).\n\n**Rôle requis :** tout agent pour une alerte (`severity: urgent`); `superviseur` ou `direction` pour un communiqué (`severity: info`, la valeur par défaut) : 403 pour un policier (#202).",
         "requestBody": {
           "required": true,
           "content": {

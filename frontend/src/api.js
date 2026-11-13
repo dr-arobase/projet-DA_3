@@ -120,7 +120,7 @@ export const localiser = (adresse) => requete(`/api/geocode?${qs({ q: adresse })
 
 export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}`);
 
-// severity : 'urgent' (alerte) ou 'info' (communiqué) ; réservé aux superviseurs et à la direction
+// severity : 'urgent' (alerte, tout agent) ou 'info' (communiqué, superviseur et direction, #202)
 export const diffuserAlerte = (message, severity, criminal_id) =>
   requete('/api/alerts', { method: 'POST', body: { message, severity, criminal_id } });
 
