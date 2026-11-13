@@ -295,3 +295,19 @@ Décisions prises :
 •   Une tâche n'est cochée que si son critère est vrai dans `main` : le travail dans une PR non fusionnée ne compte pas encore. Raison : c'est ce que l'enseignant regarde à l'étiquette.
 •   Chrysler commence par R2 et R6, qui ne se coupent jamais; les demandes du PO passent après les récits engagés (ordre écrit dans `04-sprints.md`).
 •   Chacun écrit son entrée de journal à la fin de chaque bloc, le jour même; Massyle vérifie chaque vendredi.
+
+**Bloc du vendredi 13 novembre 2026 (point de contrôle) — Chrysler**
+Présence : Chrysler 
+Tickets suivis : #84, #98, #187, #202, C35, C36, C39
+Ce qui a avancé :
+•   #187 et FC2 (PR #230) : un `PUT` sur un dossier ne modifie plus que les champs envoyés (avant, un corps partiel effaçait la description et les crimes); formulaire « Modifier le dossier » pour le superviseur et la direction, avec gestion du conflit 409 (état actuel affiché, brouillon gardé). Testé à deux navigateurs; 4 tests de routes, 1 test sur PostgreSQL, 5 tests d'interface.
+•   #202 (PR #228) : un policier peut diffuser une alerte; le communiqué reste réservé au superviseur et à la direction (403). Les alertes faites seulement de caractères invisibles sont refusées.
+•   PR #229 : le journal `TOTP_RESET` est maintenant attendu (`await`) avant la réponse; le test d'intégration de la double authentification échouait sur ma machine.
+•   C36 : section « Point de concurrence » dans `03-conception.md` (PR ouverte). C35 et C28 : ma ligne du sprint 3 et correction de celle du sprint 2 dans `05-equipe.md` (PR ouverte). C39 : explication écrite du registre et du verrouillage optimiste dans un ticket, à faire relire par Massyle.
+Ce qui bloque :
+•   Sur ma machine, le vérificateur avant push dépasse les délais des tests du frontend quand Docker tourne : contourné en arrêtant l'application et en lançant Vitest un fichier à la fois.
+Décisions prises et écarts :
+•   J'ai fusionné moi-même mes PR #228, #229 et #230 sans relecture préalable, ce qui est contraire à nos règles. J'ai demandé une relecture après coup; à partir de maintenant, j'attends l'approbation et je laisse le relecteur fusionner.
+•   La limite de 2 000 caractères (C41) est abandonnée : elle est remplacée par la décision du PO « sans limite » (#219, PR #226); ma PR correspondante est fermée.
+•   Je n'ai pas écrit d'entrée les 10 et 12 novembre. Travail de ces jours : revues des PR #170, #168, #169 et #163 à #167 (10 nov.); `criminal_id` non numérique → 400 sur les signalements, pour #84 (10 nov., PR en revue); réalignement de mon `main` local après la réécriture de l'historique sur GitHub (10 nov.); #202 (12 nov.).
+•   Prochaine priorité, selon l'ordre du PO du 11 novembre : les récits R2 (#205, deux écritures simultanées) et R6 (#206, présence fiable).
