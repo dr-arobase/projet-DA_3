@@ -244,6 +244,15 @@ describe('POST /api/criminals', () => {
 describe('PUT /api/criminals/:id', () => {
   const body = { first_name: 'Jean', last_name: 'Dupont', description: 'Modifié', version: 1 };
 
+  // La requête UPDATE ne contient que les colonnes envoyées (#187) : on lit la valeur d'une colonne
+  // d'après son paramètre ($n), sans dépendre de sa position
+  const sqlUpdate = () => query.mock.calls.find(([sql]) => sql.includes('UPDATE criminal'));
+  const valeur = (motif) => {
+    const [sql, params] = sqlUpdate();
+    const trouve = new RegExp(`${motif} \\$(\\d+)`).exec(sql);
+    return trouve ? params[Number(trouve[1]) - 1] : undefined;
+  };
+
   test('403 pour un policier', async () => {
     const res = await request(app).put('/api/criminals/1').set('Authorization', bearer()).send(body);
 
@@ -259,7 +268,7 @@ describe('PUT /api/criminals/:id', () => {
     const res = await request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(body);
 
     expect(res.status).toBe(200);
-    expect(query.mock.calls[0][1][7]).toBe(7); // updated_by
+    expect(valeur('updated_by =')).toBe(7);
     expect(emitEvent).toHaveBeenCalledWith('criminal:updated', dossier);
   });
 
@@ -291,8 +300,7 @@ describe('PUT /api/criminals/:id', () => {
 
     expect(res.status).toBe(409);
     expect(res.body.criminal).toEqual(actuel);
-    expect(query.mock.calls[0][0]).toMatch(/version = \$10/);
-    expect(query.mock.calls[0][1][9]).toBe(1);
+    expect(valeur('AND version =')).toBe(1);
     expect(emitEvent).not.toHaveBeenCalled();
   });
 
@@ -301,11 +309,63 @@ describe('PUT /api/criminals/:id', () => {
     const envoyer = (corps) => request(app).put('/api/criminals/1').set('Authorization', bearer('superviseur')).send(corps);
 
     await envoyer({ ...body, photo_url: null });
-    expect(query.mock.calls[0][1][6]).toBe(true);
+    expect(valeur('CASE WHEN')).toBe(true);
 
     query.mockClear();
     await envoyer(body);
-    expect(query.mock.calls[0][1][6]).toBe(false);
+    expect(valeur('CASE WHEN')).toBe(false);
+  });
+
+  // #187 : un corps partiel effaçait les autres champs (description || null)
+  test('#187 : avec seulement le prénom et le nom, la description et les crimes restent intacts', async () => {
+    query.mockResolvedValue({ rows: [dossier] });
+
+    const res = await request(app)
+      .put('/api/criminals/1')
+      .set('Authorization', bearer('superviseur'))
+      .send({ first_name: 'Jean', last_name: 'Dupont', version: 1 });
+
+    expect(res.status).toBe(200);
+    const [sql] = sqlUpdate();
+    expect(sql).toMatch(/first_name = \$/);
+    expect(sql).toMatch(/last_name = \$/);
+    for (const colonne of ['description', 'crimes', 'nationality', 'date_of_birth']) {
+      expect(sql).not.toMatch(new RegExp(`${colonne} = `));
+    }
+  });
+
+  test('#187 : un champ envoyé vide est effacé, les autres absents ne bougent pas', async () => {
+    query.mockResolvedValue({ rows: [dossier] });
+
+    await request(app)
+      .put('/api/criminals/1')
+      .set('Authorization', bearer('superviseur'))
+      .send({ first_name: 'Jean', last_name: 'Dupont', description: '', version: 1 });
+
+    expect(valeur('description =')).toBeNull();
+    expect(sqlUpdate()[0]).not.toMatch(/crimes = /);
+  });
+
+  test('#187 : les champs envoyés sont enregistrés tels quels (sans les espaces autour)', async () => {
+    query.mockResolvedValue({ rows: [dossier] });
+
+    await request(app)
+      .put('/api/criminals/1')
+      .set('Authorization', bearer('superviseur'))
+      .send({ first_name: 'Jean', last_name: 'Dupont', crimes: '  Vol  ', nationality: 'Canadienne', version: 1 });
+
+    expect(valeur('crimes =')).toBe('Vol');
+    expect(valeur('nationality =')).toBe('Canadienne');
+  });
+
+  test('#187 : le prénom et le nom restent obligatoires (400)', async () => {
+    const res = await request(app)
+      .put('/api/criminals/1')
+      .set('Authorization', bearer('superviseur'))
+      .send({ description: 'Seulement la description', version: 1 });
+
+    expect(res.status).toBe(400);
+    expect(query).not.toHaveBeenCalled();
   });
 });
 

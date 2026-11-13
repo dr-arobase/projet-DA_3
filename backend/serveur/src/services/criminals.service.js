@@ -167,8 +167,11 @@ export const updateCriminal = async (id, data, userId) => {
   const fields = checkCriminalFields(data);
   const expectedVersion = checkVersion(data.version);
   const effacer_photo = Object.hasOwn(data, 'photo_url');
+  // #187 : seuls les champs présents dans le corps sont modifiés. Le prénom et le nom sont
+  // obligatoires (donc toujours présents); un champ facultatif absent garde sa valeur.
+  const changes = Object.fromEntries(Object.entries(fields).filter(([champ]) => Object.hasOwn(data, champ)));
 
-  const updated = await criminalModel.update(id, { ...fields, effacer_photo, updated_by: userId }, expectedVersion);
+  const updated = await criminalModel.update(id, { changes, effacer_photo, updated_by: userId }, expectedVersion);
   if (!updated) {
     const current = await criminalModel.findById(id);
     if (!current) throw notFound();
