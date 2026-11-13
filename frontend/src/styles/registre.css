@@ -291,3 +291,7 @@
   .registre-cartes-mobile .registre-tableau td:nth-child(5) { grid-column: span 1; }
   .registre-cartes-mobile .registre-tableau td:nth-child(5) { grid-column: 2; }
 }
+
+/* Modification complète d'un dossier (FC2) */
+.fiche-modifier { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.fiche-modifier .registre-lien { align-self: flex-start; }
