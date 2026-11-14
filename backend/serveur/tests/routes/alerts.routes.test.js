@@ -2,6 +2,7 @@
  * Tests des routes /api/alerts avec Supertest (#12 : diffuser une alerte urgente).
  * #202 : un policier diffuse une alerte (urgent); un communiqué (info) reste réservé
  * au superviseur et à la direction.
+ * #220 : modifier, retirer (archiver) et remettre une diffusion, pour son auteur ou la direction.
  * La base de données est simulée : aucun PostgreSQL requis.
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
@@ -281,5 +282,243 @@ describe('GET /api/alerts : filtres (#84)', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ page: 1, limit: 20, data: [alerte] });
     expect(sqlListe()[1]).toEqual([20, 0]);
+  });
+});
+
+// #220 (demande du PO) : modifier, retirer et remettre une alerte ou un communiqué.
+// Règle : l'auteur de la diffusion ou la direction. Retirer = archiver, jamais de DELETE.
+describe('Modifier, retirer et remettre une diffusion (#220)', () => {
+  const AUTEUR = 7; // l'agent connecté dans ces tests (voir bearer)
+  const AUTRE = 8;
+  let etat; // la ligne de la table alert, telle que la « base » simulée la garde
+
+  const diffusion = (champs = {}) => ({
+    id: 3, criminal_id: null, message: 'Suspect armé', severity: 'urgent',
+    created_at: '2026-11-14T12:00:00Z', issued_by_id: AUTEUR, issued_by: 'Jean Tremblay',
+    criminal_name: null, edited_at: null, edited_by: null, archived_at: null, archived_by: null,
+    ...champs,
+  });
+
+  // Base simulée : les UPDATE modifient « etat », comme le feraient les requêtes du modèle
+  const mockDiffusion = (champs = {}) => {
+    etat = champs === null ? null : diffusion(champs);
+    query.mockImplementation(async (sql, params) => {
+      if (sql.includes('UPDATE alert SET message')) {
+        if (!etat || etat.archived_at) return { rows: [] };
+        etat = { ...etat, message: params[0], edited_at: '2026-11-14T17:00:00Z', edited_by: 'Jean Tremblay' };
+        return { rows: [{ id: etat.id }] };
+      }
+      if (sql.includes('archived_at = now()')) {
+        if (!etat || etat.archived_at) return { rows: [] };
+        etat = { ...etat, archived_at: '2026-11-14T18:00:00Z', archived_by: 'Jean Tremblay' };
+        return { rows: [{ id: etat.id }] };
+      }
+      if (sql.includes('archived_at = NULL')) {
+        if (!etat || !etat.archived_at) return { rows: [] };
+        etat = { ...etat, archived_at: null, archived_by: null };
+        return { rows: [{ id: etat.id }] };
+      }
+      if (sql.includes('COUNT(*)')) return { rows: [{ count: '1' }] };
+      if (sql.includes('FROM alert')) return { rows: etat ? [etat] : [] };
+      if (sql.includes('INSERT INTO audit_log')) return { rows: [{ id: 99 }] };
+      throw new Error(`Requête inattendue : ${sql}`);
+    });
+  };
+
+  const envoyer = (method, url, role = 'policier', body) => {
+    authenticatedRole = role;
+    const req = request(app)[method](url).set('Authorization', bearer(role));
+    return body ? req.send(body) : req;
+  };
+  const modifier = (body, role) => envoyer('patch', '/api/alerts/3', role, body);
+  const retirer = (role) => envoyer('post', '/api/alerts/3/archive', role);
+  const remettre = (role) => envoyer('post', '/api/alerts/3/restore', role);
+
+  const ecritures = () => query.mock.calls.filter(([sql]) => /UPDATE|DELETE/.test(sql));
+  const audit = () => query.mock.calls.find(([sql]) => sql.includes('INSERT INTO audit_log'));
+  const details = () => JSON.parse(audit()[1][4]);
+
+  describe('PATCH /api/alerts/:id : modifier', () => {
+    test('l\'auteur modifie le texte : mention « modifié », diffusée en direct et journalisée', async () => {
+      mockDiffusion();
+      const res = await modifier({ message: '  Suspect armé, direction est  ' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.alert).toMatchObject({
+        id: 3, message: 'Suspect armé, direction est', severity: 'urgent',
+        edited_at: '2026-11-14T17:00:00Z', edited_by: 'Jean Tremblay',
+      });
+      expect(emitEvent).toHaveBeenCalledWith('alert:updated', res.body.alert);
+      expect(audit()[1].slice(0, 4)).toEqual([AUTEUR, 'ALERT_EDITED', 'alert', 3]);
+      expect(details()).toEqual({ severity: 'urgent', ancien_message: 'Suspect armé' });
+    });
+
+    test('la direction modifie la diffusion d\'un autre agent', async () => {
+      mockDiffusion({ issued_by_id: AUTRE, severity: 'info' });
+      const res = await modifier({ message: 'Réunion déplacée à 9 h' }, 'direction');
+
+      expect(res.status).toBe(200);
+      expect(res.body.alert.message).toBe('Réunion déplacée à 9 h');
+    });
+
+    test.each(['policier', 'superviseur'])('403 pour un %s qui n\'en est pas l\'auteur, sans rien écrire', async (role) => {
+      mockDiffusion({ issued_by_id: AUTRE });
+      const res = await modifier({ message: 'Texte changé' }, role);
+
+      expect(res.status).toBe(403);
+      expect(res.body.message).toMatch(/auteur de la diffusion ou la direction/);
+      expect(ecritures()).toEqual([]);
+      expect(emitEvent).not.toHaveBeenCalled();
+    });
+
+    test('404 si la diffusion n\'existe pas', async () => {
+      mockDiffusion(null);
+      const res = await modifier({ message: 'Texte changé' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.message).toBe('Diffusion introuvable');
+    });
+
+    test.each([
+      ['vide', ''],
+      ['fait d\'espaces', '   '],
+      ['fait de caractères invisibles', '\u200B\u200B'],
+      ['qui n\'est pas du texte', 42],
+    ])('400 pour un message %s, sans rien écrire', async (_cas, message) => {
+      mockDiffusion();
+      const res = await modifier({ message });
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toBe('Le champ message est obligatoire');
+      expect(ecritures()).toEqual([]);
+    });
+
+    test('409 si la diffusion est retirée', async () => {
+      mockDiffusion({ archived_at: '2026-11-14T18:00:00Z' });
+      const res = await modifier({ message: 'Texte changé' });
+
+      expect(res.status).toBe(409);
+      expect(ecritures()).toEqual([]);
+    });
+
+    test('même texte : rien n\'est écrit, pas de mention « modifié »', async () => {
+      mockDiffusion();
+      const res = await modifier({ message: 'Suspect armé ' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.alert.edited_at).toBeNull();
+      expect(ecritures()).toEqual([]);
+      expect(emitEvent).not.toHaveBeenCalled();
+    });
+
+    test('400 pour un identifiant invalide, sans requête SQL', async () => {
+      const res = await envoyer('patch', '/api/alerts/abc', 'policier', { message: 'x' });
+
+      expect(res.status).toBe(400);
+      expect(query).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /api/alerts/:id/archive : retirer', () => {
+    test('l\'auteur retire sa diffusion : archivée (aucun DELETE), diffusée en direct et journalisée', async () => {
+      mockDiffusion();
+      const res = await retirer();
+
+      expect(res.status).toBe(200);
+      expect(res.body.alert).toMatchObject({ id: 3, archived_at: '2026-11-14T18:00:00Z' });
+      expect(query.mock.calls.some(([sql]) => sql.includes('DELETE'))).toBe(false);
+      expect(emitEvent).toHaveBeenCalledWith('alert:archived', res.body.alert);
+      expect(audit()[1].slice(0, 4)).toEqual([AUTEUR, 'ALERT_ARCHIVED', 'alert', 3]);
+    });
+
+    test('la direction retire la diffusion d\'un autre agent', async () => {
+      mockDiffusion({ issued_by_id: AUTRE });
+      expect((await retirer('direction')).status).toBe(200);
+    });
+
+    test.each(['policier', 'superviseur'])('403 pour un %s qui n\'en est pas l\'auteur', async (role) => {
+      mockDiffusion({ issued_by_id: AUTRE });
+      const res = await retirer(role);
+
+      expect(res.status).toBe(403);
+      expect(ecritures()).toEqual([]);
+      expect(emitEvent).not.toHaveBeenCalled();
+    });
+
+    test('409 si elle est déjà retirée', async () => {
+      mockDiffusion({ archived_at: '2026-11-14T18:00:00Z' });
+      const res = await retirer();
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe('Cette diffusion est déjà retirée');
+    });
+
+    test('404 si la diffusion n\'existe pas', async () => {
+      mockDiffusion(null);
+      expect((await retirer()).status).toBe(404);
+    });
+  });
+
+  describe('POST /api/alerts/:id/restore : remettre', () => {
+    test('la direction remet une diffusion retirée : diffusée en direct et journalisée', async () => {
+      mockDiffusion({ issued_by_id: AUTRE, archived_at: '2026-11-14T18:00:00Z', archived_by: 'Marie Roy' });
+      const res = await remettre('direction');
+
+      expect(res.status).toBe(200);
+      expect(res.body.alert).toMatchObject({ id: 3, archived_at: null, archived_by: null });
+      expect(emitEvent).toHaveBeenCalledWith('alert:restored', res.body.alert);
+      expect(audit()[1].slice(0, 4)).toEqual([AUTEUR, 'ALERT_RESTORED', 'alert', 3]);
+    });
+
+    test('l\'auteur remet sa propre diffusion', async () => {
+      mockDiffusion({ archived_at: '2026-11-14T18:00:00Z' });
+      expect((await remettre()).status).toBe(200);
+    });
+
+    test('403 pour un agent qui n\'en est pas l\'auteur', async () => {
+      mockDiffusion({ issued_by_id: AUTRE, archived_at: '2026-11-14T18:00:00Z' });
+      const res = await remettre('superviseur');
+
+      expect(res.status).toBe(403);
+      expect(ecritures()).toEqual([]);
+    });
+
+    test('409 si elle n\'est pas retirée', async () => {
+      mockDiffusion();
+      const res = await remettre();
+
+      expect(res.status).toBe(409);
+      expect(res.body.message).toBe('Cette diffusion n\'est pas retirée');
+    });
+  });
+
+  describe('GET /api/alerts : diffusions retirées', () => {
+    const sqlListe = () => query.mock.calls.find(([sql]) => sql.includes('ORDER BY'))[0];
+
+    test('par défaut, les diffusions retirées ne sont pas dans la liste', async () => {
+      mockDiffusion();
+      const res = await envoyer('get', '/api/alerts?severity=urgent');
+
+      expect(res.status).toBe(200);
+      expect(sqlListe()).toContain('a.archived_at IS NULL');
+    });
+
+    test('?archived=true : seulement les retirées, les dernières retirées en premier, avec le total', async () => {
+      mockDiffusion({ archived_at: '2026-11-14T18:00:00Z' });
+      const res = await envoyer('get', '/api/alerts?archived=true');
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({ total: 1, data: [etat] });
+      expect(sqlListe()).toContain('a.archived_at IS NOT NULL');
+      expect(sqlListe()).toContain('ORDER BY a.archived_at DESC');
+    });
+
+    test('400 pour une valeur d\'archived inconnue', async () => {
+      const res = await envoyer('get', '/api/alerts?archived=oui');
+
+      expect(res.status).toBe(400);
+      expect(res.body.message).toContain('Filtre archived invalide');
+      expect(query).not.toHaveBeenCalled();
+    });
   });
 });

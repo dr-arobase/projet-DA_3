@@ -86,6 +86,10 @@ const ROUTES = [
   ['get', '/api/alerts', null],
   // Tout agent diffuse une alerte; le refus d'un communiqué à un policier (403) dépend du corps : alerts.routes.test.js (#202)
   ['post', '/api/alerts', null],
+  // Modifier, retirer et remettre : l'auteur ou la direction, vérifié selon la diffusion (alerts.routes.test.js, #220)
+  ['patch', '/api/alerts/1', null],
+  ['post', '/api/alerts/1/archive', null],
+  ['post', '/api/alerts/1/restore', null],
   // Comptes
   ['get', '/api/users', 'superviseur'],
   ['get', '/api/users/5', 'superviseur'],

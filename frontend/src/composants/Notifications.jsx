@@ -52,6 +52,12 @@ export default function Notifications() {
     }
   }, [utilisateur.id, navigate]));
 
+  // Une diffusion modifiée ou retirée par son auteur (#220) : la notification suit
+  useEvenement('alert:updated', useCallback((a) => {
+    setListe((enCours) => enCours.map((n) => (n.id === a.id ? a : n)));
+  }, []));
+  useEvenement('alert:archived', useCallback((a) => fermer(a.id), [fermer]));
+
   // Les communiqués se ferment seuls
   useEffect(() => {
     const minuteries = liste
