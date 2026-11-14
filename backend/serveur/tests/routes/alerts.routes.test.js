@@ -219,3 +219,67 @@ describe('POST /api/alerts : diffusion', () => {
     spy.mockRestore();
   });
 });
+
+// #84 : des filtres mal formés donnaient une panne serveur (500) au lieu d'un 400
+describe('GET /api/alerts : filtres (#84)', () => {
+  const get = (url) => {
+    authenticatedRole = 'policier';
+    return request(app).get(url).set('Authorization', bearer('policier'));
+  };
+  const mockListe = () => query.mockImplementation(async (sql) => {
+    if (sql.includes('COUNT(*)')) return { rows: [{ count: '1' }] };
+    if (sql.includes('FROM alert')) return { rows: [alerte] };
+    throw new Error(`Requête inattendue : ${sql}`);
+  });
+  const sqlListe = () => query.mock.calls.find(([sql]) => sql.includes('ORDER BY'));
+
+  test.each([
+    ['gravité inconnue', '?severity=critique', 'severity'],
+    ['gravité en majuscules', '?severity=URGENT', 'severity'],
+    ['gravité répétée', '?severity=urgent&severity=info', 'severity'],
+    ['gravité en tableau', '?severity[]=urgent', 'severity'],
+    ['gravité en objet', '?severity[a]=urgent', 'severity'],
+    ['date qui n\'en est pas une', '?since=hier', 'since'],
+    ['jour qui n\'existe pas', '?since=2026-02-30', 'since'],
+    ['heure impossible', '?since=2026-11-14T25:00:00Z', 'since'],
+    ['an 0, refusé par PostgreSQL', '?since=0000-01-01', 'since'],
+    ['date seulement en chiffres', '?since=1', 'since'],
+    ['date répétée', '?since=2026-11-14&since=2026-11-15', 'since'],
+  ])('400 pour une %s, sans requête SQL', async (_cas, filtres, champ) => {
+    const res = await get(`/api/alerts${filtres}`);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toContain(`Filtre ${champ} invalide`);
+    expect(query).not.toHaveBeenCalled();
+  });
+
+  test('filtres valides : envoyés à la base et total renvoyé', async () => {
+    mockListe();
+    const depuis = '2026-11-14T05:00:00.000Z';
+    const res = await get(`/api/alerts?severity=urgent&since=${depuis}&limit=1`);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ page: 1, limit: 1, total: 1, totalPages: 1, data: [alerte] });
+    expect(sqlListe()[1]).toEqual(['urgent', depuis, 1, 0]);
+  });
+
+  test('une date sans heure est lue en UTC et envoyée sous une seule forme', async () => {
+    mockListe();
+    const res = await get('/api/alerts?since=2026-11-14');
+    expect(res.status).toBe(200);
+    expect(sqlListe()[1]).toEqual(['2026-11-14T00:00:00.000Z', 20, 0]);
+  });
+
+  test('une date avec un décalage horaire est acceptée', async () => {
+    mockListe();
+    const res = await get(`/api/alerts?since=${encodeURIComponent('2026-11-14T08:00:00-05:00')}`);
+    expect(res.status).toBe(200);
+    expect(sqlListe()[1]).toEqual(['2026-11-14T13:00:00.000Z', 20, 0]);
+  });
+
+  test('un filtre vide n\'est pas appliqué, comme avant', async () => {
+    mockListe();
+    const res = await get('/api/alerts?severity=&since=');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ page: 1, limit: 20, data: [alerte] });
+    expect(sqlListe()[1]).toEqual([20, 0]);
+  });
+});

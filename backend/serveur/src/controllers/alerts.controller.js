@@ -26,8 +26,8 @@ export const createAlert = async (req, res) => {
 export const getAlerts = async (req, res) => {
   try {
     const { page, limit, offset } = readPagination(req.query, 20);
-    const severity = req.query.severity || undefined;
-    const since = req.query.since || undefined;
+    // 400 si un filtre est mal formé (#84)
+    const { severity, since } = alertService.readFilters(req.query);
 
     const alerts = await alertService.listAlerts({ limit, offset, severity, since });
     if (!severity && !since) return res.json({ page, limit, data: alerts });
