@@ -33,6 +33,29 @@
 .pages-diffusion.urgent { border-left-color: var(--danger); }
 .pages-diffusion p { white-space: pre-line; overflow-wrap: anywhere; }
 .pages-diffusion small { color: var(--texte-doux); font-size: 12px; }
+/* Modifier, retirer et remettre une diffusion (#220) */
+.diffusion-modifiee { font-style: italic; }
+.diffusion-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
+.diffusion-bouton {
+  padding: 6px 12px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--texte);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.diffusion-bouton:hover:not(:disabled) { border-color: var(--marine-600); color: var(--marine-700); }
+.diffusion-bouton.retirer { color: var(--danger); }
+.diffusion-bouton.retirer:hover:not(:disabled) { border-color: var(--danger); color: var(--danger); }
+.diffusion-bouton:disabled { opacity: 0.6; cursor: not-allowed; }
+.diffusion-edition { display: grid; gap: 8px; }
+.diffusion-edition textarea { width: 100%; padding: 10px; border: 1px solid var(--bordure); border-radius: 8px; font: inherit; resize: vertical; }
+.diffusion-vues { display: flex; gap: 6px; }
+.diffusion-vues button { padding: 6px 14px; border: 1px solid var(--bordure); border-radius: 999px; background: var(--surface); color: var(--texte-doux); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.diffusion-vues button[aria-pressed='true'] { border-color: var(--marine-700); background: var(--marine-700); color: #fff; }
 .pages-sur-titre { color: var(--texte-doux); font-size: 12px; font-weight: 700; letter-spacing: .08em; }
 .diffusion-gravite { justify-self: start; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
 .diffusion-gravite.urgent { background: var(--danger-fond); color: var(--danger); }

@@ -124,6 +124,15 @@ export const listerAlertes = (params = {}) => requete(`/api/alerts?${qs(params)}
 export const diffuserAlerte = (message, severity, criminal_id) =>
   requete('/api/alerts', { method: 'POST', body: { message, severity, criminal_id } });
 
+// Modifier, retirer (archiver) et remettre une diffusion : son auteur ou la direction (#220).
+// Les diffusions retirées : listerAlertes({ archived: true }).
+export const modifierAlerte = (id, message) =>
+  requete(`/api/alerts/${id}`, { method: 'PATCH', body: { message } });
+
+export const retirerAlerte = (id) => requete(`/api/alerts/${id}/archive`, { method: 'POST' });
+
+export const remettreAlerte = (id) => requete(`/api/alerts/${id}/restore`, { method: 'POST' });
+
 // Comptes des agents : superviseur ou direction (promouvoir : direction seulement)
 export const listerUtilisateurs = () => requete('/api/users');
 

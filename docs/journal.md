@@ -311,3 +311,20 @@ Décisions prises et écarts :
 •   La limite de 2 000 caractères (C41) est abandonnée : elle est remplacée par la décision du PO « sans limite » (#219, PR #226); ma PR correspondante est fermée.
 •   Je n'ai pas écrit d'entrée les 10 et 12 novembre. Travail de ces jours : revues des PR #170, #168, #169 et #163 à #167 (10 nov.); `criminal_id` non numérique → 400 sur les signalements, pour #84 (10 nov., PR en revue); réalignement de mon `main` local après la réécriture de l'historique sur GitHub (10 nov.); #202 (12 nov.).
 •   Prochaine priorité, selon l'ordre du PO du 11 novembre : les récits R2 (#205, deux écritures simultanées) et R6 (#206, présence fiable).
+
+
+**Bloc du samedi 14 novembre 2026 — Chrysler**
+Présence : Chrysler
+Tickets suivis : #84, #205, #206, #220
+Ce qui a avancé :
+•   #205 (R2, PR #235 fusionnée) : test d'intégration sur PostgreSQL de deux écritures simultanées sur le même dossier : une seule réussit (200), l'autre reçoit 409 avec l'état du gagnant; dix requêtes en même temps donnent un succès et neuf conflits; le perdant qui réessaie avec la version reçue réussit. La section « Point de concurrence » de `03-conception.md` pointe vers ce test (PR #232).
+•   #206 (R6, PR ouverte) : un agent compte pour une seule présence, quel que soit son nombre d'onglets; fermer un onglet parmi plusieurs ne le retire pas, fermer le dernier le retire tout de suite. Si la connexion tombe sans fermeture (navigateur planté, réseau perdu), il disparaît en 20 s au plus (ping 10 s + attente 5 s, au lieu de 45 s avec les réglages par défaut de Socket.IO). 5 nouveaux tests de sockets.
+•   #84, partie 2 (PR ouverte) : les filtres de `GET /api/alerts` mal formés (`severity` inconnue ou répétée, `since` qui n'est pas une date ou une date impossible) donnent 400 au lieu de 500. 15 nouveaux tests.
+•   #220, demande du PO C42 (PR ouverte) : l'auteur d'une alerte ou d'un communiqué, ou la direction, peut la modifier (mention « modifié le … par … ») et la retirer. Retirer = archiver : la diffusion quitte les listes, passe dans « Retirées » et peut être remise. Tout se voit en direct chez les autres agents et chaque action est inscrite au journal d'audit. Tests des refus (403, 404, 409), test sur PostgreSQL et tests d'interface.
+Ce qui bloque :
+•   Le vérificateur avant push échoue encore sur ma machine (délais des tests du frontend, `connexion.test.jsx`) quand Docker tourne : contourné en arrêtant `api` et `client` avant le push.
+•   La page « Archives » commune (#222) n'existe pas encore : en attendant, les diffusions retirées se consultent et se remettent depuis le bouton « Retirées » des pages Alertes et Communiqués. Eric peut utiliser `GET /api/alerts?archived=true` pour sa page.
+Décisions prises :
+•   Les PR de #84 partie 2 et de #220 touchent les mêmes fichiers d'alertes : la branche de #220 part de celle de #84, qui doit être fusionnée d'abord.
+•   J'attends l'approbation d'un coéquipier et je laisse le relecteur fusionner chacune de ces PR.
+•   Prochaine priorité : C37 (retirer le code mort du backend).
