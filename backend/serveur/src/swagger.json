@@ -3,7 +3,7 @@
   "info": {
     "title": "CrimeTracker API",
     "version": "1.0.0",
-    "description": "API REST du registre national des personnes recherchées.\n\nLes routes sont basées sur `docs/03-conception.md`. Les routes marquées **[À implémenter]** sont prévues dans la conception mais pas encore codées.\n\n### Authentification\nObtenir un jeton via `POST /api/auth/login`, puis cliquer sur **Authorize** et coller le jeton.\n\n### Rôles\n- `policier` : grade `sergent_autres_fonctions`\n- `superviseur` : grades `sergent_gestionnaire` à `inspecteur_chef`\n- `direction` : grades `directeur_general_adjoint` et `directeur_general`\n\n### Événements Socket.IO (sprints 2–3)\n| Direction | Événement | Payload | Déclencheur |\n|---|---|---|---|\n| Serveur → clients | `criminal:added` | `{ criminal }` | Nouveau dossier créé |\n| Serveur → clients | `criminal:updated` | `{ id, status, updated_by, updated_at }` | Statut modifié |\n| Serveur → clients | `criminal:removed` | `{ id }` | Dossier retiré |\n| Serveur → clients | `alert:broadcast` | `{ id, message, severity, issued_by, created_at }` | Alerte urgente émise |\n| Serveur → clients | `presence:update` | `{ online_users[] }` | Connexion / déconnexion |\n| Client → serveur | `alert:send` | `{ message, severity, criminal_id? }` | Superviseur diffuse une alerte |"
+    "description": "API REST du registre national des personnes recherchées.\n\nLes routes sont basées sur `docs/03-conception.md`. Les routes marquées **[À implémenter]** sont prévues dans la conception mais pas encore codées.\n\n### Authentification\nObtenir un jeton via `POST /api/auth/login`, puis cliquer sur **Authorize** et coller le jeton.\n\n### Rôles\n- `policier` : grade `sergent_autres_fonctions`\n- `superviseur` : grades `sergent_gestionnaire` à `inspecteur_chef`\n- `direction` : grades `directeur_general_adjoint` et `directeur_general`\n\n### Événements Socket.IO (sprints 2–3)\n| Direction | Événement | Payload | Déclencheur |\n|---|---|---|---|\n| Serveur → clients | `criminal:added` | `{ criminal }` | Nouveau dossier créé |\n| Serveur → clients | `criminal:updated` | `{ id, status, updated_by, updated_at }` | Statut modifié |\n| Serveur → clients | `criminal:removed` | `{ id }` | Dossier retiré |\n| Serveur → clients | `alert:broadcast` | `{ id, message, severity, issued_by, created_at }` | Alerte urgente émise |\n| Serveur → clients | `alert:updated` | l'alerte modifiée | Diffusion modifiée (#220) |\n| Serveur → clients | `alert:archived` | l'alerte retirée | Diffusion retirée (archivée) |\n| Serveur → clients | `alert:restored` | l'alerte remise | Diffusion remise |\n| Serveur → clients | `presence:update` | `{ online_users[] }` | Connexion / déconnexion |\n| Client → serveur | `alert:send` | `{ message, severity, criminal_id? }` | Superviseur diffuse une alerte |"
   },
   "servers": [{ "url": "http://localhost:3000", "description": "Serveur local" }],
   "tags": [
@@ -1027,10 +1027,13 @@
       "get": {
         "tags": ["Alerts"],
         "summary": "Liste des alertes",
-        "description": "Les plus récentes en premier (20 par page par défaut).\n\n**Rôle requis :** `policier`",
+        "description": "Les plus récentes en premier (20 par page par défaut). Les diffusions retirées n'y sont pas, sauf avec `archived=true` (Archives, #220). Un filtre mal formé donne 400 (#84).\n\n**Rôle requis :** `policier`",
         "parameters": [
           { "$ref": "#/components/parameters/Page" },
-          { "$ref": "#/components/parameters/Limit" }
+          { "$ref": "#/components/parameters/Limit" },
+          { "name": "severity", "in": "query", "schema": { "type": "string", "enum": ["info", "urgent"] }, "description": "Seulement les communiqués (info) ou les alertes (urgent)" },
+          { "name": "since", "in": "query", "schema": { "type": "string", "format": "date-time" }, "description": "Date ISO 8601 : diffusions créées à partir de ce moment", "example": "2026-11-14T05:00:00Z" },
+          { "name": "archived", "in": "query", "schema": { "type": "string", "enum": ["true", "false"] }, "description": "true : seulement les diffusions retirées, les dernières retirées en premier" }
         ],
         "responses": {
           "200": {
@@ -1086,6 +1089,108 @@
           "401": { "$ref": "#/components/responses/Unauthorized" },
           "403": { "$ref": "#/components/responses/Forbidden" },
           "404": { "$ref": "#/components/responses/NotFound" },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/alerts/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "patch": {
+        "tags": ["Alerts"],
+        "summary": "Modifier une alerte ou un communiqué",
+        "description": "Change le texte; la gravité ne change pas. La diffusion porte ensuite la mention « modifié le … par … » (`edited_at`, `edited_by`). Inscrit `ALERT_EDITED` au journal d'audit (avec l'ancien texte) et diffuse `alert:updated`.\n\n**Rôle requis :** l'auteur de la diffusion ou la `direction` (403 pour les autres agents, #220).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["message"],
+                "properties": { "message": { "type": "string", "example": "Suspect vu rue Sainte-Catherine, direction est" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Diffusion modifiée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "alert": { "$ref": "#/components/schemas/Alert" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "La diffusion est retirée (archivée) : la remettre avant de la modifier", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/alerts/{id}/archive": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "post": {
+        "tags": ["Alerts"],
+        "summary": "Retirer une alerte ou un communiqué (archiver)",
+        "description": "Retirer = archiver : la diffusion quitte les listes mais reste en base (aucun DELETE) et peut être remise. Inscrit `ALERT_ARCHIVED` au journal d'audit et diffuse `alert:archived`. Les diffusions retirées : `GET /api/alerts?archived=true`.\n\n**Rôle requis :** l'auteur de la diffusion ou la `direction` (403 pour les autres agents, #220).",
+        "responses": {
+          "200": {
+            "description": "Diffusion retirée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "alert": { "$ref": "#/components/schemas/Alert" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "La diffusion est déjà retirée", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
+          "500": { "$ref": "#/components/responses/ServerError" }
+        }
+      }
+    },
+    "/api/alerts/{id}/restore": {
+      "parameters": [{ "$ref": "#/components/parameters/Id" }],
+      "post": {
+        "tags": ["Alerts"],
+        "summary": "Remettre une diffusion retirée",
+        "description": "La diffusion revient dans les listes, à sa date d'origine, sans nouvelle notification. Inscrit `ALERT_RESTORED` au journal d'audit et diffuse `alert:restored`.\n\n**Rôle requis :** l'auteur de la diffusion ou la `direction` (403 pour les autres agents, #220).",
+        "responses": {
+          "200": {
+            "description": "Diffusion remise",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "alert": { "$ref": "#/components/schemas/Alert" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "La diffusion n'est pas retirée", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } } },
           "500": { "$ref": "#/components/responses/ServerError" }
         }
       }
@@ -2479,8 +2584,14 @@
           "criminal_id": { "type": "integer", "nullable": true, "example": 1 },
           "message": { "type": "string", "example": "Individu dangereux aperçu au centre-ville" },
           "severity": { "$ref": "#/components/schemas/Severity" },
+          "issued_by_id": { "type": "integer", "example": 3 },
           "issued_by": { "type": "string", "example": "Marie Tremblay" },
-          "created_at": { "type": "string", "format": "date-time" }
+          "criminal_name": { "type": "string", "nullable": true, "example": "Jean Dupont" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "edited_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Dernière modification (#220)" },
+          "edited_by": { "type": "string", "nullable": true, "example": "Marie Tremblay" },
+          "archived_at": { "type": "string", "format": "date-time", "nullable": true, "description": "Retirée (archivée) à cette date; null si en cours" },
+          "archived_by": { "type": "string", "nullable": true }
         }
       },
       "AlertCreate": {

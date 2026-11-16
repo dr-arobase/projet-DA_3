@@ -191,7 +191,10 @@ Toutes les routes sauf `POST /api/auth/login` et les deux routes `/api/auth/gith
 | `GET` | `/api/sightings?criminal_id=` | Historique des signalements d'un dossier | `superviseur` |
 | `GET` | `/api/sightings/recent?limit=` | Derniers signalements, tous dossiers, avec leur position (carte; 500 au plus) | `policier` |
 | `POST` | `/api/alerts` | Diffuser une alerte (`urgent`) ou un communiqué (`info`), enregistré puis diffusé par Socket.IO | alerte : `policier`; communiqué : `superviseur` (403 pour un policier, #202) |
-| `GET` | `/api/alerts` | Liste des alertes | `policier` |
+| `GET` | `/api/alerts` | Liste des alertes en cours (filtres `severity`, `since`; `archived=true` : les diffusions retirées, #220) | `policier` |
+| `PATCH` | `/api/alerts/:id` | Modifier le texte d'une alerte ou d'un communiqué : mention « modifié le … par … » (#220) | l'auteur ou `direction` (403 sinon) |
+| `POST` | `/api/alerts/:id/archive` | Retirer une diffusion = l'archiver (aucun `DELETE`) : elle quitte les listes (#220) | l'auteur ou `direction` (403 sinon) |
+| `POST` | `/api/alerts/:id/restore` | Remettre une diffusion retirée dans les listes (#220) | l'auteur ou `direction` (403 sinon) |
 | `GET` | `/api/users` | Liste des comptes | `superviseur` |
 | `GET` | `/api/users/:id` | Détail d'un compte | `superviseur` |
 | `POST` | `/api/users` | Créer un compte policier (un superviseur) ou tout type de compte (direction) | `superviseur` (direction pour les rôles superviseur et direction) |
@@ -237,6 +240,9 @@ La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de
 | Serveur → clients | `criminal:updated` | le dossier complet, avec sa nouvelle `version` | `PATCH …/status` ou `PUT /api/criminals/:id` |
 | Serveur → clients | `criminal:removed` | `{ id }` | `DELETE /api/criminals/:id` |
 | Serveur → clients | `alert:broadcast` | l'alerte enregistrée (`id, message, severity, issued_by, created_at…`) et `issued_by_id`; chaque agent, sauf l'émetteur, en reçoit une notification sur n'importe quelle page (#63) | `POST /api/alerts` |
+| Serveur → clients | `alert:updated` | l'alerte modifiée; chaque agent la remplace sur place (liste, notification) (#220) | `PATCH /api/alerts/:id` |
+| Serveur → clients | `alert:archived` | l'alerte retirée; elle quitte les listes et passe dans « Retirées » (#220) | `POST /api/alerts/:id/archive` |
+| Serveur → clients | `alert:restored` | l'alerte remise; elle revient à sa place, sans nouvelle notification (#220) | `POST /api/alerts/:id/restore` |
 | Serveur → clients | `presence:update` | liste des connexions : `[{ id, badge_number, role, grade }]` | Connexion ou déconnexion d'un agent |
 | Serveur → clients | `sighting:added` | le signalement, avec le nom du dossier et la position | `POST /api/sightings` |
 | Serveur → **deux agents** | `message:new` | le message enregistré | `POST /api/messages` (au destinataire et aux autres onglets de l'expéditeur) |

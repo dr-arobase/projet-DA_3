@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { useEvenement } from '../composants/TempsReelContext.js';
 import { IconeMegaphone, IconeSirene } from '../composants/Icones.jsx';
 import { estAuMoins } from '../agents.js';
-import { formaterDate } from '../registre.js';
 import RechercheDossier from '../composants/RechercheDossier.jsx';
+import ElementDiffusion from '../composants/ElementDiffusion.jsx';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
@@ -18,6 +18,7 @@ const TYPES = {
     sousTitre: 'Alertes urgentes diffusées à tous les agents',
     action: 'Diffuser une alerte',
     vide: 'Aucune alerte diffusée.',
+    videRetirees: 'Aucune alerte retirée.',
     Icone: IconeSirene,
   },
   info: {
@@ -25,18 +26,29 @@ const TYPES = {
     sousTitre: 'Informations diffusées à tous les agents',
     action: 'Diffuser un communiqué',
     vide: 'Aucun communiqué diffusé.',
+    videRetirees: 'Aucun communiqué retiré.',
     Icone: IconeMegaphone,
   },
 };
 
 // Alertes (#12) et communiqués : liste en temps réel. Tout agent diffuse une alerte;
-// un communiqué est réservé au superviseur et à la direction (#202 : l'API refuse aussi, 403)
+// un communiqué est réservé au superviseur et à la direction (#202 : l'API refuse aussi, 403).
+// #220 : l'auteur ou la direction modifie et retire une diffusion. Retirer = archiver :
+// elle passe dans « Retirées », d'où on peut la remettre. Tout se voit en direct chez tous les agents.
 export default function Diffusions({ severite }) {
   const type = TYPES[severite];
   const { utilisateur } = useAuth();
   const peutDiffuser = severite === 'urgent' || estAuMoins(utilisateur, 'superviseur');
 
   const [diffusions, setDiffusions] = useState([]);
+  // Copie synchrone de la liste : un même changement reçu deux fois (sa propre action,
+  // puis l'événement en direct) n'est appliqué qu'une fois, et le total reste juste
+  const liste = useRef([]);
+  const majListe = useCallback((changer) => {
+    liste.current = changer(liste.current);
+    setDiffusions(liste.current);
+  }, []);
+  const [retirees, setRetirees] = useState(false); // false : en cours; true : retirées (archives)
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [nouvelles, setNouvelles] = useState(0); // arrivées en direct pendant qu'on lit une page plus ancienne
@@ -49,37 +61,72 @@ export default function Diffusions({ severite }) {
   useEffect(() => {
     let actif = true;
     setChargement(true);
-    api.listerAlertes({ severity: severite, page, limit: PAR_PAGE })
+    api.listerAlertes({ severity: severite, page, limit: PAR_PAGE, archived: retirees ? 'true' : undefined })
       .then((resultat) => {
         if (!actif) return;
-        setDiffusions(resultat.data);
+        majListe(() => resultat.data);
         setTotal(resultat.total ?? resultat.data.length);
         if (page === 1) setNouvelles(0);
       })
       .catch((err) => actif && setErreur(err.message))
       .finally(() => actif && setChargement(false));
     return () => { actif = false; };
-  }, [severite, page]);
+  }, [severite, page, retirees, majListe]);
 
-  useEffect(() => setPage(1), [severite]);
+  useEffect(() => setPage(1), [severite, retirees]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAR_PAGE));
 
   // Une nouvelle diffusion va en tête de la page 1 (la plus récente). Sur une page plus ancienne,
   // on ne la glisse pas au milieu : un bandeau propose de revenir à la page 1.
   const recevoir = useCallback((a) => {
+    if (liste.current.some((x) => x.id === a.id)) return;
     setTotal((t) => t + 1);
     if (page === 1) {
-      setDiffusions((enCours) => [a, ...enCours.filter((x) => x.id !== a.id)].slice(0, PAR_PAGE));
+      majListe((enCours) => [a, ...enCours].slice(0, PAR_PAGE));
     } else {
       setNouvelles((n) => n + 1);
     }
-  }, [page]);
+  }, [page, majListe]);
 
-  // Une diffusion faite ailleurs (autre agent, autre onglet) apparaît sans recharger
+  // Une diffusion modifiée : remplacée sur place si elle est affichée
+  const remplacer = useCallback((a) => {
+    majListe((enCours) => enCours.map((x) => (x.id === a.id ? a : x)));
+  }, [majListe]);
+
+  // Une diffusion qui quitte la vue (retirée, ou remise depuis les retirées)
+  const enlever = useCallback((a) => {
+    if (!liste.current.some((x) => x.id === a.id)) return;
+    majListe((enCours) => enCours.filter((x) => x.id !== a.id));
+    setTotal((t) => Math.max(0, t - 1));
+  }, [majListe]);
+
+  // Une diffusion qui arrive dans la vue (remise, ou retirée pour la vue des retirées) :
+  // à sa place dans l'ordre de la liste, si elle tombe dans la page affichée
+  const inserer = useCallback((a) => {
+    if (liste.current.some((x) => x.id === a.id)) return;
+    setTotal((t) => t + 1);
+    const cle = retirees ? 'archived_at' : 'created_at';
+    const enCours = liste.current;
+    const dernier = enCours[enCours.length - 1];
+    const dansLaPage = page === 1 || (dernier && a[cle] >= dernier[cle]);
+    if (!dansLaPage) return;
+    majListe(() => [...enCours, a].sort((x, y) => (y[cle] > x[cle] ? 1 : -1)).slice(0, PAR_PAGE));
+  }, [page, retirees, majListe]);
+
+  // Ce qui est fait ailleurs (autre agent, autre onglet) apparaît sans recharger
   useEvenement('alert:broadcast', useCallback((a) => {
-    if (a.severity === severite) recevoir(a);
-  }, [severite, recevoir]));
+    if (a.severity === severite && !retirees) recevoir(a);
+  }, [severite, retirees, recevoir]));
+  useEvenement('alert:updated', remplacer);
+  useEvenement('alert:archived', useCallback((a) => {
+    if (a.severity !== severite) return;
+    if (retirees) inserer(a); else enlever(a);
+  }, [severite, retirees, inserer, enlever]));
+  useEvenement('alert:restored', useCallback((a) => {
+    if (a.severity !== severite) return;
+    if (retirees) enlever(a); else inserer(a);
+  }, [severite, retirees, inserer, enlever]));
 
   async function diffuser(e) {
     e.preventDefault();
@@ -91,8 +138,9 @@ export default function Diffusions({ severite }) {
     setEnvoi({ enCours: true, erreur: '', succes: '' });
     try {
       const { alert } = await api.diffuserAlerte(texte, severite, dossier?.id);
-      // Sa propre diffusion : on revient en page 1 pour la voir en tête
-      if (page === 1) recevoir(alert); else setPage(1);
+      // Sa propre diffusion : on revient aux diffusions en cours, page 1, pour la voir en tête
+      if (page === 1 && !retirees) recevoir(alert);
+      else { setRetirees(false); setPage(1); }
       setMessage('');
       setDossier(null);
       setEnvoi({ enCours: false, erreur: '', succes: 'Diffusé à tous les agents connectés.' });
@@ -145,7 +193,12 @@ export default function Diffusions({ severite }) {
 
         {erreur && <p className="registre-message erreur" role="alert">{erreur}</p>}
 
-        {nouvelles > 0 && (
+        <div className="diffusion-vues" role="group" aria-label="Diffusions affichées">
+          <button type="button" aria-pressed={!retirees} onClick={() => setRetirees(false)}>En cours</button>
+          <button type="button" aria-pressed={retirees} onClick={() => setRetirees(true)}>Retirées</button>
+        </div>
+
+        {nouvelles > 0 && !retirees && (
           <button type="button" className="pages-nouvelles" onClick={() => setPage(1)}>
             {nouvelles} {nouvelles > 1 ? 'nouvelles diffusions' : 'nouvelle diffusion'} : revenir à la page 1
           </button>
@@ -153,14 +206,18 @@ export default function Diffusions({ severite }) {
 
         <ul className="pages-fil">
           {diffusions.map((a) => (
-            <li key={a.id} className={`carte pages-diffusion${severite === 'urgent' ? ' urgent' : ''}`}>
-              <span className={`diffusion-gravite ${severite}`}>{severite === 'urgent' ? 'Urgent' : 'Info'}</span>
-              <p>{a.message}</p>
-              {a.criminal_id && <small>Dossier : {a.criminal_name ?? `n° ${a.criminal_id}`}</small>}
-              <small>{a.issued_by ?? '—'} · {formaterDate(a.created_at, true)}</small>
-            </li>
+            <ElementDiffusion
+              key={a.id}
+              diffusion={a}
+              utilisateur={utilisateur}
+              onChange={remplacer}
+              onRetiree={enlever}
+              onRemise={enlever}
+            />
           ))}
-          {!chargement && diffusions.length === 0 && <li className="carte pages-vide">{type.vide}</li>}
+          {!chargement && diffusions.length === 0 && (
+            <li className="carte pages-vide">{retirees ? type.videRetirees : type.vide}</li>
+          )}
           {chargement && diffusions.length === 0 && <li className="carte pages-vide">Chargement…</li>}
         </ul>
         {totalPages > 1 && (

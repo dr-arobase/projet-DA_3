@@ -131,3 +131,13 @@ ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_dernier_pas BIGINT;          
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_codes_secours TEXT[];
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_echecs INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS totp_bloque_jusqua TIMESTAMPTZ;
+
+-- Modifier et retirer une alerte ou un communiqué (demande du Product Owner, #220).
+-- « Modifié le … par … » : edited_at et edited_by. Retirer = archiver (archived_at, archived_by) :
+-- la ligne reste en base, quitte les listes et peut être remise. Aucun DELETE.
+-- ON DELETE SET NULL : supprimer un compte ne bloque pas sur les diffusions qu'il a modifiées ou retirées.
+ALTER TABLE alert ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+ALTER TABLE alert ADD COLUMN IF NOT EXISTS edited_by INTEGER REFERENCES app_user(id) ON DELETE SET NULL;
+ALTER TABLE alert ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+ALTER TABLE alert ADD COLUMN IF NOT EXISTS archived_by INTEGER REFERENCES app_user(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_alert_archived_at ON alert(archived_at);
