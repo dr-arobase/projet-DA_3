@@ -6,8 +6,8 @@
 // Appeler un agent hors ligne : l'invitation attend DUREE_SONNERIE ; s'il se connecte entre-temps,
 // ça sonne chez lui. Un appel qui finit sans réponse laisse un message « Appel manqué » (laisserAppelManque).
 
-const MAX_SDP = 20000; // une description de session fait quelques milliers de caractères
-const MAX_CANDIDAT = 1000;
+import { lireObjet, lireId, lireCallId, nettoyerSignal } from './valider.js';
+
 const RAISONS_REFUS = ['refuse', 'occupe', 'sans-reponse'];
 export const DUREE_SONNERIE = 30 * 1000; // comme la sonnerie côté navigateur
 
@@ -25,33 +25,13 @@ export function livrerAppelsEnAttente(userId, envoyerA, maintenant = Date.now())
 // Pour les tests
 export function oublierInvitations() { invitations.clear(); }
 
-const lireId = (valeur) => {
-  const id = Number(valeur);
-  return Number.isInteger(id) && id > 0 ? id : null;
-};
+// Les vérifications (identifiants, numéro d'appel, signal WebRTC) sont dans valider.js (FC4).
+// nettoyerSignal y vit aussi; il reste exporté ici pour les tests existants.
+export { nettoyerSignal };
 
-// Identifiant d'appel choisi par l'appelant (crypto.randomUUID côté navigateur)
-const lireCallId = (valeur) => (typeof valeur === 'string' && /^[\w-]{8,64}$/.test(valeur) ? valeur : null);
-
-// Ne garde d'un message de signalisation que ce que WebRTC attend ; null s'il est invalide
-export function nettoyerSignal(data) {
-  if (!data || typeof data !== 'object') return null;
-  if (data.type === 'offer' || data.type === 'answer') {
-    if (typeof data.sdp !== 'string' || data.sdp.length === 0 || data.sdp.length > MAX_SDP) return null;
-    return { type: data.type, sdp: data.sdp };
-  }
-  const c = data.candidate;
-  if (c && typeof c === 'object' && typeof c.candidate === 'string' && c.candidate.length <= MAX_CANDIDAT) {
-    return {
-      candidate: {
-        candidate: c.candidate,
-        sdpMid: typeof c.sdpMid === 'string' ? c.sdpMid.slice(0, 64) : null,
-        sdpMLineIndex: Number.isInteger(c.sdpMLineIndex) ? c.sdpMLineIndex : null,
-      },
-    };
-  }
-  return null;
-}
+// Une personne qui sonne chez plusieurs agents à la fois : au plus MAX_INVITATIONS appels
+// qui sonnent en même temps, pour ne pas laisser une rafale d'« appels manqués » (FC4)
+export const MAX_INVITATIONS = 3;
 
 // estConnecte(id) : l'agent a au moins un onglet ouvert ; envoyerA(id, événement, données) : à tous ses onglets
 export function registerCallHandlers(socket, { estConnecte, envoyerA, laisserAppelManque = () => {} }) {
@@ -76,15 +56,21 @@ export function registerCallHandlers(socket, { estConnecte, envoyerA, laisserApp
     }
   };
 
-  socket.on('call:invite', (payload, ack) => {
+  socket.on('call:invite', (donnees, ack) => {
+    const payload = lireObjet(donnees);
     const callId = lireCallId(payload?.callId);
     const to = lireId(payload?.to);
     if (!callId || !to || to === moi.id) return repondre(ack, { error: 'Appel invalide' });
 
     // Une invitation à la fois vers le même agent : pas de rafale d'« appels manqués »
     const maintenant = Date.now();
-    const dejaEnCours = [...invitations.values()].some((i) => i.from.id === moi.id && i.to === to && i.expire > maintenant);
-    if (dejaEnCours || invitations.has(callId)) return repondre(ack, { error: 'Un appel vers cet agent est déjà en cours' });
+    const miennes = [...invitations.values()].filter((i) => i.from.id === moi.id && i.expire > maintenant);
+    if (miennes.some((i) => i.to === to) || invitations.has(callId)) {
+      return repondre(ack, { error: 'Un appel vers cet agent est déjà en cours' });
+    }
+    if (miennes.length >= MAX_INVITATIONS) {
+      return repondre(ack, { error: `Au plus ${MAX_INVITATIONS} appels peuvent sonner en même temps` });
+    }
 
     const video = payload.video === true;
     const from = { id: moi.id, badge_number: moi.badge_number };
@@ -100,7 +86,8 @@ export function registerCallHandlers(socket, { estConnecte, envoyerA, laisserApp
 
   // Réponse de l'appelé, ou fin de l'appel par l'un des deux
   for (const evenement of ['call:accept', 'call:refuse', 'call:end']) {
-    socket.on(evenement, (payload) => {
+    socket.on(evenement, (recu) => {
+      const payload = lireObjet(recu);
       const callId = lireCallId(payload?.callId);
       // Seuls les deux agents de l'appel peuvent le clore. Décroché : plus un appel manqué.
       // Refusé exprès : rien à laisser. Fin ou « sans réponse » avant de décrocher : appel manqué.
@@ -122,7 +109,8 @@ export function registerCallHandlers(socket, { estConnecte, envoyerA, laisserApp
   }
 
   // Offre, réponse et candidats ICE, validés puis relayés tels quels à l'autre agent
-  socket.on('call:signal', (payload) => {
+  socket.on('call:signal', (donnees) => {
+    const payload = lireObjet(donnees);
     const callId = lireCallId(payload?.callId);
     const to = destinataire(payload);
     const data = nettoyerSignal(payload?.data);

@@ -234,6 +234,8 @@ La route de promotion vérifie que le rôle et le grade existent, puis ajoute un
 
 La connexion Socket.IO est authentifiée par le même jeton que l'API (cookie de session dans le navigateur). Les événements sont émis **après** l'écriture en base : un changement qui échoue n'est jamais diffusé.
 
+**Ce que le serveur reçoit est vérifié (FC4).** Un événement WebSocket ne passe pas par les contrôleurs : `backend/serveur/src/sockets/valider.js` vérifie chaque champ avant usage. Les données doivent être un objet; un identifiant d'agent ou de groupe est un entier positif en nombre ou en chiffres seulement (`true`, `[2]`, `"0x10"` ou `"1e1"` sont refusés); un numéro d'appel fait 8 à 64 caractères `[A-Za-z0-9_-]`; un signal WebRTC ne garde que `type` + `sdp` (20 000 caractères au plus) ou un candidat ICE (1 000 caractères au plus). Une donnée invalide n'est ni relayée ni enregistrée; un événement avec réponse (`call:invite`, `group-call:join`, `group-call:status`) répond par une erreur. Un agent fait sonner au plus 3 appels à la fois. Tests : `tests/unit/sockets-validation.test.js` (un test par événement).
+
 | Direction | Événement | Payload | Déclencheur |
 |---|---|---|---|
 | Serveur → clients | `criminal:added` | le dossier créé | `POST /api/criminals` |
