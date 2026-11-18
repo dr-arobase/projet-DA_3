@@ -16,12 +16,6 @@ export async function getAccountAuthInfo(id) {
   };
 }
 
-export async function isAccountActive(id) {
-  const result = await pool.query('SELECT is_active FROM app_user WHERE id = $1', [id]);
-  const isActive = result.rows[0]?.is_active;
-  return isActive === true || isActive === 1;
-}
-
 export async function publishAccountDeactivated(id) {
   if (!USE_POSTGRES) return;
   await pool.query('SELECT pg_notify($1, $2)', [CHANNEL, String(id)]);

@@ -33,7 +33,6 @@ jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   getAccountAuthInfo: jest.fn(async (id) => ({
     id, badge_number: 'AG-001', grade: 'lieutenant', ...compte,
   })),
-  isAccountActive: jest.fn(async () => compte.is_active),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));

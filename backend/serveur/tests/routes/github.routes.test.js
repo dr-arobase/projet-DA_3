@@ -29,7 +29,6 @@ const github = {
 jest.unstable_mockModule('../../src/services/github.service.js', () => github);
 
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
-  isAccountActive: jest.fn(async () => true),
   getAccountAuthInfo: jest.fn(async (id) => ({
     id, badge_number: 'GH-4242', role: 'policier', grade: 'sergent_autres_fonctions', is_active: true,
   })),
