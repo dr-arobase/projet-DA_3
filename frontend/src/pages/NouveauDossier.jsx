@@ -54,7 +54,7 @@ export default function NouveauDossier() {
     <div className={`champ-registre${props.complet ? ' complet' : ''}`}>
       <label htmlFor={nom}>{libelle}{props.requis && <span className="requis" aria-hidden="true"> *</span>}</label>
       {props.multiligne ? (
-        <textarea id={nom} rows={4} value={champs[nom]} onChange={modifier(nom)} />
+        <textarea id={nom} rows={4} maxLength={10000} value={champs[nom]} onChange={modifier(nom)} />
       ) : (
         <input
           id={nom}
