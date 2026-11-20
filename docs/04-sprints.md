@@ -343,6 +343,9 @@ Mis à jour à chaque bloc (mercredi et vendredi). La décision prise est aussi 
 |---|---|---|---|
 | Mar. 3 novembre | 26 | — | Engagement écrit; les PR #161 à #170 du plan de corrections sont fusionnées |
 | Mer. 11 novembre | 26 | — | R1 : le bandeau et le rattrapage sont dans `main` (PR #204), mais le récit attend son test automatisé avant d'être compté terminé. R2, R3 et R6 n'avaient pas de ticket de récit : créés (#205, #206, #207). La PR #197 (expérience mobile, R4 hors engagement) est fusionnée après revue d'Eric. Décision : Chrysler commence par R2 et R6, qui ne se coupent pas; les demandes du PO attendent les récits engagés. |
+| Ven. 13 novembre | 21 | R2 (5 points, PR #235) | Le test de deux écritures simultanées est dans `main` : R2 est terminé. Demandes du PO #202 (les policiers diffusent des alertes) et #219 (sans limite de caractères, PR #226) livrées, hors vélocité. |
+| Mer. 18 novembre | 18 | R6 (3 points, PR #236) | Présence fiable dans `main` avec ses tests. #220 (modifier et retirer une diffusion, PR #238) livrée, hors vélocité. La restructuration du dépôt (#200) est reportée : des PR étaient encore ouvertes. |
+| Ven. 20 novembre | 10 | R1 (8 points) | Le test automatisé de la reconnexion (PR #243) complète R1, dans `main` depuis le 11 novembre (PR #204) : R1 est compté terminé. Restent R3 (site final, Massyle) et R5 (test à deux navigateurs, Eric). Si R5 n'est pas dans `main` au gel du 27 novembre, il est coupé selon l'ordre d'abandon. #221, #222 et #223 passent après R3 et R5. |
 
 ---
 
