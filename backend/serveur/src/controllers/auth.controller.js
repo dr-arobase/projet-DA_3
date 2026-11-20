@@ -8,6 +8,7 @@ import * as auditLogModel from '../models/auditLog.model.js';
 import * as deuxFacteurs from '../services/deuxFacteurs.service.js';
 import { signToken, signDeuxiemeEtape, verifyDeuxiemeEtape } from '../utils/jwt.js';
 import * as userModel from '../models/user.model.js';
+import { PASSWORD_MAX_BYTES } from '../services/users.service.js';
 
 // Deuxième étape de connexion (double authentification) : un cookie httpOnly de 5 minutes, limité aux
 // routes /api/auth, prouve que le mot de passe (ou GitHub) est vérifié. La session n'est posée qu'après le code.
@@ -47,8 +48,9 @@ function erreurCode(res, error) {
 export const login = async (req, res) => {
   const { badge_number, password, se_souvenir } = req.body || {};
 
-  // Validation basique des entrées
-  if (!badge_number || !password) {
+  // Validation basique des entrées. Un mot de passe qui n'est pas du texte (objet, nombre)
+  // faisait planter bcrypt : 500 au lieu de 400 (C38).
+  if (!badge_number || !password || typeof badge_number !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ message: 'Le matricule et le mot de passe sont requis' });
   }
 
@@ -281,11 +283,18 @@ export const MIN_PASSWORD_LENGTH = 8;
 export const changePassword = async (req, res) => {
   const { old_password, new_password } = req.body;
 
-  if (!old_password || !new_password) {
+  // Du texte seulement : un objet faisait planter bcrypt (500 au lieu de 400, C38)
+  if (!old_password || !new_password || typeof old_password !== 'string' || typeof new_password !== 'string') {
     return res.status(400).json({ message: "L'ancien et le nouveau mot de passe sont requis" });
   }
   if (new_password.length < MIN_PASSWORD_LENGTH) {
     return res.status(400).json({ message: `Le nouveau mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères` });
+  }
+  // bcrypt ignore ce qui dépasse 72 octets : la fin du mot de passe ne compterait pas
+  if (Buffer.byteLength(new_password) > PASSWORD_MAX_BYTES) {
+    return res.status(400).json({
+      message: `Le nouveau mot de passe est trop long (${PASSWORD_MAX_BYTES} octets au plus, soit ${PASSWORD_MAX_BYTES} caractères sans accents)`,
+    });
   }
   if (old_password === new_password) {
     return res.status(400).json({ message: "Le nouveau mot de passe doit être différent de l'ancien" });

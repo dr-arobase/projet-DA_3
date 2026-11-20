@@ -24,14 +24,12 @@ jest.unstable_mockModule('../../src/sockets/index.js', () => ({
   disconnectUser,
 }));
 
-const isAccountActive = jest.fn(async () => true);
 let authenticatedRole = 'policier';
 const getAccountAuthInfo = jest.fn(async (id) => ({
   id, badge_number: 'SUP-001', role: authenticatedRole, grade: 'lieutenant', is_active: true,
 }));
 const publishAccountDeactivated = jest.fn();
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
-  isAccountActive,
   getAccountAuthInfo,
   publishAccountDeactivated,
   listenForAccountDeactivations: jest.fn(),
@@ -47,7 +45,6 @@ const agent = { id: 5, first_name: 'Marc', last_name: 'Roy', badge_number: 'PL-0
 beforeEach(() => {
   query.mockReset();
   disconnectUser.mockReset();
-  isAccountActive.mockResolvedValue(true);
   authenticatedRole = 'policier';
   getAccountAuthInfo.mockClear();
   publishAccountDeactivated.mockReset();

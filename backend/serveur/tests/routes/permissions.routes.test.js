@@ -33,7 +33,6 @@ jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
   getAccountAuthInfo: jest.fn(async (id) => ({
     id, badge_number: 'AG-001', grade: 'lieutenant', ...compte,
   })),
-  isAccountActive: jest.fn(async () => compte.is_active),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),
 }));
@@ -69,12 +68,18 @@ const ROUTES = [
   ['put', '/api/auth/avatar', null],
   ['delete', '/api/auth/avatar', null],
   ['get', '/api/uploads/avatars/1-1.png', null],
+  ['post', '/api/auth/2fa/preparer', null],
+  ['post', '/api/auth/2fa/activer', null],
+  ['post', '/api/auth/2fa/desactiver', null],
+  ['get', '/api/turn', null],
   // Registre des dossiers
   ['get', '/api/criminals', null],
   ['get', '/api/criminals/1', null],
   ['post', '/api/criminals', null],
   ['patch', '/api/criminals/1/status', null],
   ['patch', '/api/criminals/1/address', null],
+  ['put', '/api/criminals/1/photo', null],
+  ['delete', '/api/criminals/1/photo', 'superviseur'],
   ['put', '/api/criminals/1', 'superviseur'],
   ['delete', '/api/criminals/1', 'superviseur'],
   ['get', '/api/geocode?q=Montreal', null],
@@ -97,6 +102,7 @@ const ROUTES = [
   ['patch', '/api/users/5/deactivate', 'superviseur'],
   ['patch', '/api/users/5/reactivate', 'superviseur'],
   ['patch', '/api/users/5/promote', 'direction'],
+  ['post', '/api/users/5/2fa/reinitialiser', 'direction'],
   // Journal d'audit
   ['get', '/api/audit-logs', 'direction'],
   // Messagerie privée
@@ -106,6 +112,7 @@ const ROUTES = [
   ['post', '/api/messages', null],
   ['patch', '/api/messages/1', null],
   ['delete', '/api/messages/1', null],
+  ['post', '/api/messages/1/reactions', null],
   ['post', '/api/messages/attachments', null],
   ['get', '/api/messages/1/attachment', null],
   // Groupes
@@ -115,6 +122,8 @@ const ROUTES = [
   ['post', '/api/messages/groups/1/messages', null],
   ['post', '/api/messages/groups/1/members', null],
   ['delete', '/api/messages/groups/1/members/2', null],
+  ['put', '/api/messages/groups/1/avatar', null],
+  ['delete', '/api/messages/groups/1/avatar', null],
 ];
 
 const send = (method, url, auth) => {

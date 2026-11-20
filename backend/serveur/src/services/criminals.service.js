@@ -5,6 +5,7 @@ import { geocodeOrNull } from './geocoding.service.js';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { AVATAR_TYPES, PHOTOS_DIR, PHOTOS_URL, isImage } from '../middleware/upload.middleware.js';
+import { estVisible } from '../utils/texte.js';
 
 // Statuts autorisés (alignés sur le type criminal_status du schéma SQL)
 export const VALID_STATUSES = ['recherche', 'capture', 'libere'];
@@ -40,15 +41,19 @@ const checkStatus = (status) => {
 };
 
 export const MAX_NAME = 100; // first_name, last_name, nationality : VARCHAR(100)
+// description et crimes sont des TEXT : sans limite, 90 000 caractères passaient (#94, C38).
+// 10 000 caractères laissent environ quatre pages de texte, bien plus que ce qu'un dossier affiche.
+export const MAX_LONG_TEXT = 10000;
 export const INITIAL_STATUS = 'recherche';
 
-// Texte facultatif : null si absent ou vide, 400 si ce n'est pas du texte ou s'il est trop long
+// Texte facultatif : null si absent, vide ou fait seulement de caractères invisibles (U+200B…);
+// 400 si ce n'est pas du texte ou s'il est trop long
 function optionalText(value, label, max) {
   if (value === undefined || value === null || value === '') return null;
   if (typeof value !== 'string') throw httpError(400, `Le champ ${label} doit être un texte`);
   const texte = value.trim();
-  if (max && texte.length > max) throw httpError(400, `Le champ ${label} dépasse ${max} caractères`);
-  return texte || null;
+  if (texte.length > max) throw httpError(400, `Le champ ${label} dépasse ${max} caractères`);
+  return texte && estVisible(texte) ? texte : null;
 }
 
 function requiredText(value, label, max) {
@@ -82,8 +87,8 @@ function checkCriminalFields(data) {
     last_name: requiredText(data.last_name, 'nom', MAX_NAME),
     nationality: optionalText(data.nationality, 'nationalité', MAX_NAME),
     date_of_birth: checkDateOfBirth(data.date_of_birth),
-    description: optionalText(data.description, 'description'),
-    crimes: optionalText(data.crimes, 'crimes'),
+    description: optionalText(data.description, 'description', MAX_LONG_TEXT),
+    crimes: optionalText(data.crimes, 'crimes', MAX_LONG_TEXT),
   };
 }
 
