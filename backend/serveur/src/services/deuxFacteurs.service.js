@@ -148,9 +148,3 @@ export async function reinitialiser(acteur, cibleId) {
   // qui consulte le journal juste après, ne la voit pas encore). journal() attrape déjà ses erreurs.
   await journal(acteur.id, 'TOTP_RESET', Number(cibleId), { badge_number: compte.badge_number });
 }
-
-// La double authentification est-elle active ? (connexion par mot de passe ou par GitHub)
-export async function estActive(userId) {
-  const { rows } = await db.query('SELECT totp_active FROM app_user WHERE id = $1', [userId]);
-  return rows[0]?.totp_active === true;
-}
