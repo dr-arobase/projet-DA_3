@@ -328,3 +328,18 @@ Décisions prises :
 •   Les PR de #84 partie 2 et de #220 touchent les mêmes fichiers d'alertes : la branche de #220 part de celle de #84, qui doit être fusionnée d'abord.
 •   J'attends l'approbation d'un coéquipier et je laisse le relecteur fusionner chacune de ces PR.
 •   Prochaine priorité : C37 (retirer le code mort du backend).
+**Bloc du mercredi 18 novembre 2026 — Chrysler**
+Présence : Chrysler
+Tickets suivis : #94, #84, C37, C38, FC4, FC5
+Ce qui a avancé :
+•   Fusionnées depuis le 14 novembre, après relecture : #236 (présence fiable, R6), #237 (#84 partie 2, filtres d'alertes), #238 (#220, modifier et retirer une diffusion), #239 (journal du 14).
+•   C37 (PR #240) : code mort retiré du backend (`isAccountActive`, `estActive`, calculs en commentaire, `scripts/test-socket.js`), avec la liste avant/après dans la PR. Aucun changement de comportement.
+•   C38 (PR #241, #94) : validation des champs qui restaient sur les routes qui écrivent. Noms faits de caractères invisibles refusés (dossiers, comptes); description et crimes limités à 10 000 caractères; `criminal_id` non numérique → 400 au lieu de 500 sur les signalements (partie 1 de #84, jamais fusionnée avant); mot de passe qui n'est pas du texte → 400 au lieu de 500, et 72 octets au plus (limite de bcrypt). Un test de refus par champ.
+•   FC4 (PR #242) : chaque événement reçu par Socket.IO est vérifié avant usage (`sockets/valider.js`); les identifiants acceptaient `true`, `[2]` ou `"0x10"`. Au plus 3 appels qui sonnent en même temps. Un test par événement.
+•   FC5 (PR #243) : inventaire `docs/inventaire-tests.md` (récit → test, permission → test de refus). Trous comblés : tests d'interface des statistiques (#20) et de la reconnexion du temps réel (R1); 10 routes ajoutées au test des permissions.
+Ce qui bloque :
+•   R5 (#181, test à deux navigateurs dans la CI) n'est pas encore dans `main` : c'est le seul récit sans test automatisé dans l'inventaire.
+Décisions prises :
+•   Limite de 10 000 caractères pour la description et les crimes d'un dossier : à valider par Massyle (PO).
+•   À partir d'aujourd'hui, Claude (assistant IA) écrit le code et ouvre les PR avec moi; chaque commit porte la mention `Co-Authored-By: Claude`. Je relis et teste chaque PR, et un coéquipier l'approuve avant la fusion.
+•   Prochaine priorité : C40 (ma partie de la présentation : le registre et la concurrence, avec la démonstration à deux navigateurs).
