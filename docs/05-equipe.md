@@ -28,6 +28,20 @@
 |---|---|---|---|
 | **Chrysler** | #202 (un policier diffuse une alerte), #187 (modifier un dossier sans effacer les champs absents), FC2 / #98 (conflit de version affiché à l'écran), #84 (en partie) | Diffusion d'alerte ouverte aux policiers, communiqué réservé (403), caractères invisibles refusés dans les alertes (12-13 nov.); modification partielle d'un dossier et formulaire « Modifier le dossier » avec gestion du 409 et brouillon gardé, 5 tests d'interface et un test sur PostgreSQL (13 nov.); correction du journal `TOTP_RESET` écrit sans `await` (13 nov.); `criminal_id` non numérique → 400 sur les signalements (10 nov., PR en revue); revues des PR #170, #168, #169 et #163 à #167 | [#228](https://github.com/dr-arobase/projet-DA_3/pull/228), [#229](https://github.com/dr-arobase/projet-DA_3/pull/229), [#230](https://github.com/dr-arobase/projet-DA_3/pull/230) (fusionnées le 13 nov. par l'auteur, sans relecture préalable : relecture demandée après coup) |
 
+## Sprint 3 — ligne de Massyle
+
+| Membre | Récits et tickets | Réalisé | Demandes de tirage |
+|---|---|---|---|
+| **Massyle** | R3 (#207, site final en ligne), #73 et #86 (compte 1 / 2, décision 18), #194 (Swagger fermé), #180 (HSTS), #184 (sauvegarde), #185 (mémoire), #209 (données de démonstration), #104 (README final) | **Product Owner** : engagement et ordre d'abandon du sprint 3 (3 nov.); demandes du PO transformées en tickets avec critères et points (#202, #219 à #223); tableau du Project tenu à jour. **Code** : plan de corrections fusionné le 4 nov. (#161 à #170 : TURN, Swagger complet, 404 JSON, SQLite retiré, file du géocodage, verrouillage optimiste, journal d'audit, textes invisibles); appels de groupe et photos (#203); double authentification par application pour tous les comptes, avec codes de secours, blocage et réinitialisation par la direction (#225); alertes et communiqués sans limite (#226); Swagger fermé en production, CSP et 13 dossiers fictifs (#224); HSTS, sauvegarde quotidienne, journaux limités, surveillance du site et marche à suivre sur Azure (`deploy/EXPLOITATION.md`). **Revues** : #195, #196 et #197 de Michael (corrections poussées sur #197 à sa demande). Les PR #224 à #226 ont été fusionnées sans revue d'un coéquipier | [#161](https://github.com/dr-arobase/projet-DA_3/pull/161) à [#170](https://github.com/dr-arobase/projet-DA_3/pull/170), [#201](https://github.com/dr-arobase/projet-DA_3/pull/201), [#203](https://github.com/dr-arobase/projet-DA_3/pull/203), [#224](https://github.com/dr-arobase/projet-DA_3/pull/224), [#225](https://github.com/dr-arobase/projet-DA_3/pull/225), [#226](https://github.com/dr-arobase/projet-DA_3/pull/226) |
+
+**Organisation de l'équipe (Massyle, PO)** :
+
+- **Plan de l'équipe en ligne** ([page du plan](https://claude.ai/artifact/14CDYX9ZTzaYGyy4uLLa5F)) : chaque tâche du sprint 3 a un responsable, une gravité, une échéance, un critère « Terminé quand » et l'endroit où elle se trouve (ticket, PR, fichier). Chacun coche ses tâches sur la page; l'avancement de chaque personne s'affiche (tâches terminées sur le total).
+- **Vérification des tâches contre le code** : une tâche n'est cochée que si elle est vraiment dans `main` (PR fusionnée, tests verts, site en ligne essayé). Chaque tâche porte la date et le résultat de la dernière vérification (« fait », « en partie », « pas fait »); une tâche cochée à tort est décochée.
+- **Une page de tâches par personne**, ligne par ligne, envoyée au coéquipier qui la demande (Chrysler, 100 tâches), pour savoir quoi faire sans chercher dans le plan.
+- **Les tickets suivent le plan** : un ticket ouvert pour chaque problème vu sur le site en ligne; un ticket fermé sans correction est rouvert avec ce qui manque.
+- **Chaque mercredi**, un message à l'équipe : les tâches en retard, par personne, tirées du plan.
+
 | Rituel | Quand | Durée | Comment |
 |---|---|---|---|
 | **Mêlée quotidienne** | Chaque jour de cours ensembles (en classe) + Pendant la pause commune le mardi pendant environ 1h, format : ce que j'ai fait / ce que je vais faire / ce qui bloque |

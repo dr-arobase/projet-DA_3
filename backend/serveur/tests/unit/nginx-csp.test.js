@@ -2,6 +2,7 @@
  * Politique de sécurité du contenu (CSP) envoyée par nginx (frontend/nginx.conf.template) :
  * présente sur les pages et sur les fichiers compilés, sans script en ligne permis,
  * et absente de la documentation Swagger (fermée en production), qui a besoin de scripts en ligne.
+ * HSTS (#180) est envoyé aux trois endroits où nginx pose ses propres en-têtes.
  * Un retrait ou un affaiblissement par erreur rend la CI rouge.
  */
 import { describe, test, expect } from '@jest/globals';
@@ -46,5 +47,13 @@ describe('CSP de nginx', () => {
     const swagger = bloc('location /api-docs');
     expect(swagger).not.toContain('Content-Security-Policy');
     expect(swagger).toContain('X-Frame-Options');
+  });
+
+  test('HSTS (#180) : envoyé pour les pages, les fichiers compilés et Swagger, pendant un an au moins', () => {
+    const hsts = [...conf.matchAll(/add_header Strict-Transport-Security "([^"]+)" always;/g)].map((m) => m[1]);
+    expect(hsts).toHaveLength(3);
+    for (const valeur of hsts) expect(Number(valeur.match(/max-age=(\d+)/)[1])).toBeGreaterThanOrEqual(31536000);
+    expect(bloc('location /assets/')).toContain('Strict-Transport-Security');
+    expect(bloc('location /api-docs')).toContain('Strict-Transport-Security');
   });
 });

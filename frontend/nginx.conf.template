@@ -9,6 +9,9 @@ server {
     index index.html;
     server_tokens off;
 
+    # HSTS (#180) : une fois venu en HTTPS, le navigateur refuse HTTP pendant un an. Ignoré en HTTP
+    # (http://localhost:8080) : il ne compte que derrière le HTTPS de Caddy, sur le site en ligne.
+    add_header Strict-Transport-Security "max-age=31536000" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -35,6 +38,7 @@ server {
     location /api-docs {
         proxy_pass ${API_URL};
         proxy_set_header Host $host;
+        add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "DENY" always;
     }
@@ -53,6 +57,7 @@ server {
     location /assets/ {
         expires 1y;
         add_header Cache-Control "public, immutable";
+        add_header Strict-Transport-Security "max-age=31536000" always;
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-Frame-Options "DENY" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;

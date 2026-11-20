@@ -1,0 +1,63 @@
+# Surveillance du site en ligne : toutes les 5 minutes, on vérifie que la page s'ouvre et que l'API répond.
+# S'il tombe, un ticket « Site en ligne injoignable » s'ouvre (l'équipe le reçoit par courriel);
+# il se ferme tout seul quand le site revient. Gratuit : le dépôt est public.
+# GitHub peut retarder une exécution planifiée de quelques minutes quand il est chargé.
+name: Surveillance du site en ligne
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: surveillance
+  cancel-in-progress: false
+
+env:
+  SITE: https://crimetracker-da3.westus2.cloudapp.azure.com
+  TITRE: Site en ligne injoignable
+
+jobs:
+  verifier:
+    name: Le site répond
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Page d'accueil et API
+        id: essai
+        run: |
+          # Deux essais à 20 s d'écart : un redémarrage de conteneur (mise à jour aux 5 minutes) ne compte pas
+          for essai in 1 2; do
+            page=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$SITE/" || echo 000)
+            # Sans session, l'API répond 401 : elle est vivante. 502 ou 504 : nginx ne la joint pas.
+            api=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "$SITE/api/auth/me" || echo 000)
+            echo "Essai $essai : page $page, API $api"
+            if [ "$page" = 200 ] && [ "$api" = 401 ]; then echo "etat=ok" >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep 20
+          done
+          echo "etat=panne" >> "$GITHUB_OUTPUT"
+          echo "detail=page $page, API $api" >> "$GITHUB_OUTPUT"
+
+      - name: Prévenir l'équipe (ticket ouvert) ou fermer le ticket quand le site revient
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ETAT: ${{ steps.essai.outputs.etat }}
+          DETAIL: ${{ steps.essai.outputs.detail }}
+        run: |
+          ouvert=$(gh issue list --state open --search "in:title \"$TITRE\"" --json number -q '.[0].number')
+          maintenant=$(TZ=America/Montreal date '+%Y-%m-%d %H:%M')
+          if [ "$ETAT" = panne ]; then
+            if [ -z "$ouvert" ]; then
+              gh issue create --title "$TITRE" --body "Le site $SITE ne répond pas depuis $maintenant (heure de Montréal) : $DETAIL.
+
+          À vérifier sur la machine Azure : \`cd deploy && docker compose ps\`, puis \`docker compose logs --tail 50 api\`. Voir deploy/EXPLOITATION.md.
+          Ce ticket se ferme tout seul quand le site revient."
+            fi
+            exit 1
+          elif [ -n "$ouvert" ]; then
+            gh issue close "$ouvert" --comment "Le site répond de nouveau ($maintenant, heure de Montréal)."
+          fi

@@ -4,6 +4,8 @@ CrimeTracker est une application web dédiée aux policiers pour centraliser le 
 
 **Équipe** : Massyle, Eric, Chrysler, Michael
 
+**Site en ligne** : **https://crimetracker-da3.westus2.cloudapp.azure.com** (connexion avec GitHub, ou avec un [compte de démonstration](#comptes-de-démonstration)). L'adresse GitHub Pages du dépôt y redirige.
+
 ---
 
 ## Démarrer l'application
@@ -101,29 +103,29 @@ Pour lancer la même vérification en local : `npm run verifier` à la racine. L
 
 ---
 
-## Bêta actuelle et sprint 3
+## Ce qui est simulé
 
-La bêta actuelle fonctionne avec une API Express, PostgreSQL, Socket.IO et une interface React servie par nginx. Les parcours principaux sont réels et couverts par les tests backend et la validation frontend.
+Une ligne par béquille qui reste, avec ce qui la remplacerait. La même mention est visible à l'écran.
 
-| Élément | Où | Ce qui le remplacera | Sprint |
-|---|---|---|---|
-| Mot de passe oublié | Page de connexion | Réinitialisation administrée | 3 |
-| Authentification à deux facteurs | Authentification | OIDC/2FA après choix du fournisseur | 3 |
-| TURN pour les appels sur réseau cellulaire | Appels audio/vidéo | Coturn configuré hors dépôt | 3 |
+| Béquille | Où, à l'écran | Ce qui la remplacerait |
+|---|---|---|
+| Mot de passe oublié : pas de réinitialisation; l'écran dit « Adressez-vous à votre superviseur » | Page de connexion | La direction donne un mot de passe temporaire à changer à la connexion suivante |
 
-Le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
+Les dossiers, signalements et diffusions du site en ligne sont **fictifs** (noms inventés, `backend/serveur/database/demo.sql`) : aucune vraie personne, aucun lien avec une vraie base policière.
+
+**Limite connue** : sans relais TURN configuré sur la machine (#188), un appel entre deux réseaux différents (téléphone en 4G et ordinateur sur un Wi-Fi) peut sonner sans qu'on s'entende. Le relais est prêt dans `deploy/compose.yml` (voir [`deploy/EXPLOITATION.md`](deploy/EXPLOITATION.md)).
+
+Tout le reste est réel et lit ou écrit dans la base, avec mise à jour en temps réel (Socket.IO) :
 
 - le tableau de bord (compteurs, activité récente, dernier communiqué);
-- le registre des personnes recherchées (liste, recherche, fiche, ajout, statut, retrait);
-- les alertes et les communiqués (diffusion réservée aux superviseurs et à la direction);
+- le registre des personnes recherchées (liste paginée, recherche au fil de la frappe, fiche, ajout, modification, statut, retrait), avec un message de conflit si deux agents modifient le même dossier en même temps;
+- les alertes (diffusées par tous les agents) et les communiqués (superviseurs et direction), sans limite de longueur, modifiables (mention « modifié ») et retirables : une diffusion retirée passe dans « Retirées » et peut être remise;
 - l'annuaire (agents connectés pour tous, annuaire complet pour les superviseurs et la direction);
-- les statistiques (dossiers par statut, taux de capture, alertes du jour, agents connectés);
-- la gestion des utilisateurs (création, désactivation, réactivation; promotion par la direction);
-- la messagerie privée entre agents (reçue en direct, avec les non-lus et l'accusé « Lu »);
+- les statistiques (dossiers par statut, taux de capture, évolution par semaine, alertes, agents connectés);
+- la gestion des utilisateurs (création, désactivation, réactivation; promotion et réinitialisation de la double authentification par la direction);
+- la double authentification facultative (application d'authentification, codes de secours) pour tous les comptes;
+- la messagerie privée et de groupe (reçue en direct, non-lus, accusé « Lu », pièces jointes, messages vocaux) et les appels audio et vidéo;
 - la carte des signalements terrain (OpenStreetMap; un clic sur la carte place un nouveau signalement).
-- la recherche de dossier au fil de la frappe et les états d'erreur/chargement visibles.
-
-Le sprint 3 porte sur la finition de la documentation, l'accessibilité (contraste, focus et textes lisibles), la performance mobile, les scénarios de démonstration et la fiabilisation des appels réseau. Les fonctionnalités non disponibles sont annoncées explicitement dans l'interface plutôt que présentées comme réussies.
 
 ---
 
@@ -134,7 +136,7 @@ Le sprint 3 porte sur la finition de la documentation, l'accessibilité (contras
 | `backend/`  | API Express + Socket.IO, PostgreSQL (`serveur/src`), schéma et données (`serveur/database`), tests (`serveur/tests`) |
 | `frontend/` | Application React (Vite), servie par nginx en production                                                                     |
 | `docs/`     | Vision, backlog, conception, sprints, équipe, risques, journal, maquettes, rétrospectives                                  |
-| `deploy/`   | Déploiement sur un serveur avec les images publiées sur ghcr.io                                                            |
+| `deploy/`   | Déploiement sur un serveur avec les images publiées sur ghcr.io; exploitation du site en ligne : [`EXPLOITATION.md`](deploy/EXPLOITATION.md) |
 | `scripts/`  | `demarrer.mjs` (`npm run dev`) et `verifier-avant-push.mjs` (`npm run verifier`)                                     |
 
 ## Liens

@@ -343,3 +343,21 @@ Décisions prises :
 •   Limite de 10 000 caractères pour la description et les crimes d'un dossier : à valider par Massyle (PO).
 •   À partir d'aujourd'hui, Claude (assistant IA) écrit le code et ouvre les PR avec moi; chaque commit porte la mention `Co-Authored-By: Claude`. Je relis et teste chaque PR, et un coéquipier l'approuve avant la fusion.
 •   Prochaine priorité : C40 (ma partie de la présentation : le registre et la concurrence, avec la démonstration à deux navigateurs).
+
+
+**Bloc du vendredi 20 novembre 2026 — Massyle (Product Owner)**
+Présence : Massyle (À COMPLÉTER : les autres présents)
+Tickets suivis : #207 (R3), #180, #184, #185, #104, #194, #208, #209
+Ce qui a avancé :
+•   Vérification de tout le plan contre `main` (2c7da6f) : lint sans erreur, 907 tests du backend et 35 du frontend réussis, build réussi; le site en ligne roule la même version. Les tâches de Chrysler fusionnées aujourd'hui (#240 à #244) sont vérifiées une à une dans le code : C37, C38, FC4, C54 et C77 terminées; C64 en partie (la date de naissance future est refusée, mais aucun test ne le vérifie).
+•   R3 : HSTS ajouté dans nginx, avec un test (#180); sauvegarde quotidienne de la base et des photos et vérification de la restauration, essayées sur une pile d'essai (#184); journaux des conteneurs limités; surveillance du site toutes les 5 minutes qui ouvre un ticket s'il tombe; `deploy/EXPLOITATION.md` donne les commandes à lancer sur Azure.
+•   README final (#104) : adresse du site en ligne et section « Ce qui est simulé ».
+•   Avancement du sprint mis à jour dans `04-sprints.md` : 10 points restants (R3 et R5).
+•   Préparation de la fin : déroulé de la présentation orale (`docs/presentation-orale.md`) et explication du déploiement et de la CI pour l'entretien (`docs/deploiement-et-ci.md`).
+Ce qui bloque :
+•   Sur la machine Azure, rien n'est encore appliqué : Swagger répond encore (#194), le compte 1 / 2 se connecte (#208), les données d'essai sont encore là (#209). Les commandes sont prêtes dans `deploy/EXPLOITATION.md`.
+•   Aucun commit d'Eric ni de Michael depuis le 11 novembre.
+Décisions prises :
+•   R1 est compté terminé : son test automatisé est dans `main` (PR #243).
+•   Si R5 (#181) n'est pas dans `main` au gel du vendredi 27 novembre, il est coupé selon l'ordre d'abandon.
+•   Prochaine priorité : appliquer `deploy/EXPLOITATION.md` sur Azure, puis l'essai d'un appel en 4G avec le relais TURN (#188).
