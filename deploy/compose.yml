@@ -7,9 +7,18 @@
 
 name: crimetracker-prod
 
+# Journaux des conteneurs : 3 fichiers de 10 Mo au plus par service, pour ne pas remplir
+# le disque de la machine. Sans ça, Docker les garde sans limite.
+x-journaux: &journaux
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: postgres:16
+    logging: *journaux
     restart: unless-stopped
     environment:
       POSTGRES_USER: crimetracker
@@ -26,6 +35,7 @@ services:
 
   api:
     image: ghcr.io/${OWNER:?OWNER manquant dans .env}/crimetracker-api:${TAG:-latest}
+    logging: *journaux
     restart: unless-stopped
     environment:
       DATABASE_URL: postgres://crimetracker:${POSTGRES_PASSWORD}@postgres:5432/crimetracker
@@ -49,6 +59,7 @@ services:
 
   client:
     image: ghcr.io/${OWNER}/crimetracker-client:${TAG:-latest}
+    logging: *journaux
     restart: unless-stopped
     ports:
       - "${CLIENT_PORT:-8080}:80"
@@ -64,6 +75,7 @@ services:
   #   3478 TCP et UDP, puis 49160-49200 UDP.
   turn:
     image: coturn/coturn:4.6
+    logging: *journaux
     restart: unless-stopped
     profiles: ["turn"]
     network_mode: host
