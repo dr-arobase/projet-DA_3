@@ -14,7 +14,6 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
-  isAccountActive: jest.fn(async () => true),
   getAccountAuthInfo: jest.fn(),
   publishAccountDeactivated: jest.fn(),
   listenForAccountDeactivations: jest.fn(),

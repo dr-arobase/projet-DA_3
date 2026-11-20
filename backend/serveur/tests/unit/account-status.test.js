@@ -14,7 +14,7 @@ jest.unstable_mockModule('../../src/config/db.js', () => ({
 }));
 
 const {
-  getAccountAuthInfo, isAccountActive, publishAccountDeactivated, listenForAccountDeactivations,
+  getAccountAuthInfo, publishAccountDeactivated, listenForAccountDeactivations,
 } = await import('../../src/utils/account-status.js');
 
 describe('statut des comptes dans PostgreSQL', () => {
@@ -22,17 +22,6 @@ describe('statut des comptes dans PostgreSQL', () => {
     query.mockReset();
     client.query.mockClear();
     client.release.mockClear();
-  });
-
-  test('vérifie le statut courant dans la base', async () => {
-    query.mockResolvedValueOnce({ rows: [{ is_active: true }] });
-    query.mockResolvedValueOnce({ rows: [{ is_active: false }] });
-    query.mockResolvedValueOnce({ rows: [] });
-
-    await expect(isAccountActive(7)).resolves.toBe(true);
-    await expect(isAccountActive(8)).resolves.toBe(false);
-    await expect(isAccountActive(9)).resolves.toBe(false);
-    expect(query).toHaveBeenCalledWith('SELECT is_active FROM app_user WHERE id = $1', [7]);
   });
 
   test('charge les informations d’autorisation actuelles du compte', async () => {
