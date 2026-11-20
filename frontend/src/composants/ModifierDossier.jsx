@@ -94,9 +94,9 @@ export default function ModifierDossier({ dossier, onMisAJour, desactive = false
       <label htmlFor="modif-nationalite">Nationalité</label>
       <input id="modif-nationalite" className="fiche-champ" maxLength={MAX_NOM} value={champs.nationality} onChange={changer('nationality')} />
       <label htmlFor="modif-crimes">Crimes reprochés</label>
-      <textarea id="modif-crimes" className="fiche-champ" rows={2} value={champs.crimes} onChange={changer('crimes')} />
+      <textarea id="modif-crimes" className="fiche-champ" rows={2} maxLength={10000} value={champs.crimes} onChange={changer('crimes')} />
       <label htmlFor="modif-description">Description</label>
-      <textarea id="modif-description" className="fiche-champ" rows={4} value={champs.description} onChange={changer('description')} />
+      <textarea id="modif-description" className="fiche-champ" rows={4} maxLength={10000} value={champs.description} onChange={changer('description')} />
       {message && (
         <p className={`registre-message ${message.type}`} role={message.type === 'erreur' ? 'alert' : 'status'}>
           {message.texte}

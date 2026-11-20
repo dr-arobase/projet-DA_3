@@ -3,6 +3,7 @@ import * as userModel from '../models/user.model.js';
 import * as auditLogModel from '../models/auditLog.model.js';
 import { publishAccountDeactivated } from '../utils/account-status.js';
 import { disconnectUser } from '../sockets/index.js';
+import { estVisible } from '../utils/texte.js';
 
 // Logique métier des comptes. Les erreurs prévues portent un statusCode (400, 403, 404, 409) ;
 // le contrôleur les traduit en réponse HTTP, comme pour les dossiers (criminals.service.js).
@@ -22,6 +23,9 @@ export const VALID_GRADES = Object.values(GRADES_BY_ROLE).flat();
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_MIN_LENGTH = 8;
+// bcrypt ne tient compte que des 72 premiers octets : au-delà, la fin du mot de passe
+// serait ignorée sans le dire (C38). Le même plafond vaut au changement de mot de passe.
+export const PASSWORD_MAX_BYTES = 72;
 const MAX_LENGTHS = { first_name: 100, last_name: 100, badge_number: 20, email: 255 };
 
 const httpError = (statusCode, message) => Object.assign(new Error(message), { statusCode });
@@ -65,6 +69,10 @@ export const createUser = async (data = {}, actor) => {
   if (!first_name || !last_name || !badge_number || !email || !password) {
     throw httpError(400, 'first_name, last_name, badge_number, email et password sont obligatoires');
   }
+  // Un nom fait seulement de caractères invisibles (U+200B…) s'affichait vide dans l'annuaire
+  if (!estVisible(first_name) || !estVisible(last_name) || !estVisible(badge_number)) {
+    throw httpError(400, 'first_name, last_name, badge_number, email et password sont obligatoires');
+  }
 
   const fields = { first_name, last_name, badge_number, email };
   for (const [field, max] of Object.entries(MAX_LENGTHS)) {
@@ -78,6 +86,9 @@ export const createUser = async (data = {}, actor) => {
   }
   if (typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) {
     throw httpError(400, `Le mot de passe doit contenir au moins ${PASSWORD_MIN_LENGTH} caractères`);
+  }
+  if (Buffer.byteLength(password) > PASSWORD_MAX_BYTES) {
+    throw httpError(400, `Le mot de passe est trop long (${PASSWORD_MAX_BYTES} octets au plus, soit ${PASSWORD_MAX_BYTES} caractères sans accents)`);
   }
 
   const role = data.role || 'policier';
