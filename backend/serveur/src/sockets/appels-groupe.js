@@ -6,7 +6,8 @@
 // Déroulement : le premier qui rejoint lance l'appel (les autres membres connectés sont prévenus);
 // chaque nouvel arrivant reçoit la liste des participants et leur envoie une offre; quand le dernier
 // part, l'appel se termine.
-import { nettoyerSignal } from './appels.js';
+// Les vérifications (identifiants, signal WebRTC) sont dans valider.js (FC4)
+import { lireObjet, lireId, nettoyerSignal } from './valider.js';
 
 export const MAX_PARTICIPANTS = 6;
 
@@ -15,11 +16,6 @@ const appels = new Map();
 
 // Pour les tests
 export function oublierAppelsDeGroupe() { appels.clear(); }
-
-const lireId = (valeur) => {
-  const id = Number(valeur);
-  return Number.isInteger(id) && id > 0 ? id : null;
-};
 
 // estMembre(groupId, userId) -> Promise<boolean>
 // groupe(groupId) -> Promise<{ id, name, members: [{ id }] } | null>
@@ -43,7 +39,8 @@ export function registerGroupCallHandlers(socket, { estMembre, groupe, envoyerA 
   }
 
   // Rejoindre (ou lancer) l'appel d'un groupe dont on est membre
-  socket.on('group-call:join', async (payload, ack) => {
+  socket.on('group-call:join', async (donnees, ack) => {
+    const payload = lireObjet(donnees);
     const groupId = lireId(payload?.groupId);
     if (!groupId) return repondre(ack, { error: 'Groupe invalide' });
     try {
@@ -82,7 +79,8 @@ export function registerGroupCallHandlers(socket, { estMembre, groupe, envoyerA 
   });
 
   // Qui est dans l'appel d'un groupe (pour afficher « Rejoindre l'appel » en ouvrant le groupe)
-  socket.on('group-call:status', async (payload, ack) => {
+  socket.on('group-call:status', async (donnees, ack) => {
+    const payload = lireObjet(donnees);
     const groupId = lireId(payload?.groupId);
     if (!groupId) return repondre(ack, { error: 'Groupe invalide' });
     try {
@@ -94,7 +92,8 @@ export function registerGroupCallHandlers(socket, { estMembre, groupe, envoyerA 
   });
 
   // Offre, réponse ou candidat ICE, seulement entre deux participants du même appel
-  socket.on('group-call:signal', (payload) => {
+  socket.on('group-call:signal', (donnees) => {
+    const payload = lireObjet(donnees);
     const groupId = lireId(payload?.groupId);
     const to = lireId(payload?.to);
     const data = nettoyerSignal(payload?.data);
@@ -104,8 +103,8 @@ export function registerGroupCallHandlers(socket, { estMembre, groupe, envoyerA 
     envoyerA(to, 'group-call:signal', { groupId, from: moi.id, data });
   });
 
-  socket.on('group-call:leave', (payload) => {
-    const groupId = lireId(payload?.groupId);
+  socket.on('group-call:leave', (donnees) => {
+    const groupId = lireId(lireObjet(donnees)?.groupId);
     if (groupId) quitter(groupId).catch((err) => console.error('Appel de groupe (quitter) :', err));
   });
 
