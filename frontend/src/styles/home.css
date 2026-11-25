@@ -180,3 +180,13 @@
   color: var(--danger);
   font-size: 14px;
 }
+
+/* Bandeau d'alerte urgente : 3 lignes au plus, le message complet est sur la page Alertes */
+.accueil-alerte-texte {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  overflow-wrap: anywhere;
+}

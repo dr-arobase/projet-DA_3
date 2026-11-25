@@ -267,7 +267,8 @@
   .registre-cartes-mobile .registre-tableau tbody { display: block; }
   .registre-cartes-mobile .registre-tableau tbody tr:not(.registre-vide) {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    /* Deux moitiés égales : les colonnes s'alignent d'une carte à l'autre */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 12px;
     padding: 16px;
     border-bottom: 1px solid var(--bordure);

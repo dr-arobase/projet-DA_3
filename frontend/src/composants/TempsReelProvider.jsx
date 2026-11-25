@@ -6,6 +6,8 @@ import { API_URL } from '../config.js';
 
 // Une seule connexion Socket.IO tant que l'agent est connecté.
 // Le serveur l'authentifie avec le cookie de session (même origine grâce au proxy Vite).
+export const DELAI_PREMIERE_CONNEXION = 8000;
+
 export default function TempsReelProvider({ children }) {
   const { estConnecte } = useAuth();
   const [socket, setSocket] = useState(null);
@@ -14,13 +16,20 @@ export default function TempsReelProvider({ children }) {
   const [reconnexions, setReconnexions] = useState(0);
   const [reconnexionRecuperee, setReconnexionRecuperee] = useState(false);
   const dejaConnecte = useRef(false);
+  // Juste après la connexion de l'agent, le temps réel se relie : ce n'est pas une coupure.
+  // Au-delà de DELAI_PREMIERE_CONNEXION sans y arriver, on l'annonce comme une coupure.
+  const [premiereConnexion, setPremiereConnexion] = useState(true);
 
   useEffect(() => {
     if (!estConnecte) return undefined;
 
     // Sans API_URL : même origine que la page (nginx ou proxy Vite)
     const s = API_URL ? io(API_URL, { withCredentials: true }) : io({ withCredentials: true });
+    setPremiereConnexion(true);
+    const attente = window.setTimeout(() => setPremiereConnexion(false), DELAI_PREMIERE_CONNEXION);
     s.on('connect', () => {
+      window.clearTimeout(attente);
+      setPremiereConnexion(false);
       setEnLigne(true);
       if (dejaConnecte.current) {
         setReconnexions((n) => n + 1);
@@ -35,6 +44,7 @@ export default function TempsReelProvider({ children }) {
     setSocket(s);
 
     return () => {
+      window.clearTimeout(attente);
       s.disconnect();
       setSocket(null);
       setEnLigne(false);
@@ -50,7 +60,7 @@ export default function TempsReelProvider({ children }) {
 
   return (
     <TempsReelContext.Provider value={{
-      socket, enLigne, presence, agentsConnectes, reconnexions, reconnexionRecuperee,
+      socket, enLigne, premiereConnexion, presence, agentsConnectes, reconnexions, reconnexionRecuperee,
     }}>
       {children}
     </TempsReelContext.Provider>

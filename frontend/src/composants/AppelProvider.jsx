@@ -6,14 +6,20 @@ import { useEvenement, useTempsReel } from './TempsReelContext.js';
 import Avatar from './Avatar.jsx';
 import { messageErreurMedia } from '../erreurMedia.js';
 import { jouerSonnerie } from '../sonnerie.js';
+import {
+  DELAI_COUPURE, ESSAIS_REDEMARRAGE, SERVEURS_ICE_SECOURS, TAILLE_RESERVE_ICE,
+  contraintesVideo, delaiConnexion, messageEchec, profilReseau, reglerDebits,
+} from '../reseauAppel.js';
 
 // Appels audio et vidéo à deux (#56), en WebRTC : le son et l'image vont directement d'un navigateur
 // à l'autre. Le serveur ne relaie que la signalisation (Socket.IO : call:invite, call:accept,
 // call:refuse, call:end, call:signal), et seulement entre deux agents connectés.
-// Un serveur STUN public trouve l'adresse de chaque navigateur. Quand la connexion directe est
+// Des serveurs STUN publics trouvent l'adresse de chaque navigateur. Quand la connexion directe est
 // bloquée (données mobiles, pare-feu d'entreprise), le relais TURN donné par GET /api/turn fait
 // passer le son et l'image. Sans réponse de l'API, on se contente du STUN.
-const SERVEURS_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
+// Si le chemin réseau tombe (passage du Wi-Fi à la 4G) ou ne s'établit pas, l'appelant renégocie
+// une fois (ICE restart); sinon l'appel s'arrête avec un message qui dit pourquoi.
+const SERVEURS_ICE = SERVEURS_ICE_SECOURS;
 const DELAI_SONNERIE = 30 * 1000;
 const DUREE_AVIS = 6000;
 const DUREE_AVIS_RAPPEL = 15000; // un appel manqué reste affiché plus longtemps, avec « Rappeler »
@@ -26,9 +32,8 @@ const dureeLisible = (ms) => {
 const nomDe = (agent) => (agent?.first_name ? nomAgent(agent) : agent?.badge_number ?? 'L\'agent');
 
 // Micro : suppression d'écho et de bruit (haut-parleur du téléphone, rue, voiture).
-// Caméra : avant par défaut, en qualité modérée pour passer sur un réseau mobile.
+// Caméra : avant par défaut, plus légère sur un réseau lent (reseauAppel.js).
 const CONTRAINTES_AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-const contraintesVideo = (face = 'user') => ({ facingMode: face, width: { ideal: 640 }, height: { ideal: 480 } });
 
 // Flux audio ou vidéo branché sur un élément <audio> ou <video>.
 // Sur téléphone (Safari surtout), la lecture automatique peut être refusée : onBloque le signale.
@@ -66,6 +71,9 @@ export default function AppelProvider({ children }) {
   const serveursIce = useRef(null);
   const candidatsEnAttente = useRef([]);
   const sonnerie = useRef(null);
+  const estAppelant = useRef(false); // c'est l'appelant qui renégocie le chemin réseau
+  const redemarrages = useRef(0);
+  const minuterieReseau = useRef(null); // délai de connexion, ou attente après une coupure
 
   const changerAppel = useCallback((suivant) => {
     appelRef.current = suivant;
@@ -75,6 +83,9 @@ export default function AppelProvider({ children }) {
   // Fin de l'appel, quelle qu'en soit la raison : micro et caméra coupés, connexion fermée
   const terminer = useCallback((message = '') => {
     window.clearTimeout(sonnerie.current);
+    window.clearTimeout(minuterieReseau.current);
+    estAppelant.current = false;
+    redemarrages.current = 0;
     connexion.current?.close();
     connexion.current = null;
     local.current?.getTracks().forEach((piste) => piste.stop());
@@ -115,7 +126,7 @@ export default function AppelProvider({ children }) {
     try {
       local.current = await navigator.mediaDevices.getUserMedia({
         audio: CONTRAINTES_AUDIO,
-        video: video ? contraintesVideo('user') : false,
+        video: video ? contraintesVideo('user', profilReseau()) : false,
       });
     } catch (err) {
       console.error('getUserMedia (appel) :', err?.name, err?.message);
@@ -131,17 +142,55 @@ export default function AppelProvider({ children }) {
   }
 
   const creerConnexion = useCallback(() => {
-    const conn = new RTCPeerConnection({ iceServers: serveursIce.current ?? SERVEURS_ICE });
+    // Réseau lent (3G, économie de données) : plus de temps pour se relier, vidéo plus légère
+    const profil = profilReseau();
+    const conn = new RTCPeerConnection({ iceServers: serveursIce.current ?? SERVEURS_ICE, iceCandidatePoolSize: TAILLE_RESERVE_ICE });
     local.current.getTracks().forEach((piste) => conn.addTrack(piste, local.current));
     conn.onicecandidate = (e) => {
       if (e.candidate) signaler('call:signal', { data: { candidate: e.candidate.toJSON() } });
     };
     conn.ontrack = (e) => setFluxDistant(e.streams[0]);
+
+    // L'appelant renégocie le chemin réseau une fois (ICE restart) : l'appelé répond à la nouvelle
+    // offre comme à la première. Faux si on ne peut plus réessayer.
+    const redemarrer = () => {
+      if (!estAppelant.current || redemarrages.current >= ESSAIS_REDEMARRAGE || connexion.current !== conn) return false;
+      redemarrages.current += 1;
+      conn.createOffer({ iceRestart: true })
+        .then((offre) => conn.setLocalDescription(offre).then(() => {
+          signaler('call:signal', { data: { type: offre.type, sdp: offre.sdp } });
+        }))
+        .catch(() => raccrocher(messageEchec(serveursIce.current)));
+      return true;
+    };
+    // Après un délai, toujours pas relié : un nouvel essai, puis le message d'échec.
+    // L'appelé, qui ne renégocie pas, laisse à l'appelant le temps de son essai.
+    const attendre = (delai) => {
+      window.clearTimeout(minuterieReseau.current);
+      minuterieReseau.current = window.setTimeout(() => {
+        if (connexion.current !== conn || conn.connectionState === 'connected') return;
+        if (redemarrer()) attendre(delaiConnexion(profil));
+        else if (estAppelant.current || conn.connectionState === 'failed' || appelRef.current?.phase !== 'en-cours') {
+          raccrocher(messageEchec(serveursIce.current));
+        } else attendre(delaiConnexion(profil));
+      }, delai);
+    };
+    attendre(delaiConnexion(profil));
+
     conn.onconnectionstatechange = () => {
-      if (conn.connectionState === 'connected' && appelRef.current?.phase !== 'en-cours') {
-        changerAppel({ ...appelRef.current, phase: 'en-cours', debut: Date.now() });
+      if (conn.connectionState === 'connected') {
+        window.clearTimeout(minuterieReseau.current);
+        reglerDebits(conn, profil);
+        if (appelRef.current?.phase !== 'en-cours') {
+          changerAppel({ ...appelRef.current, phase: 'en-cours', debut: Date.now() });
+        }
       }
-      if (conn.connectionState === 'failed') raccrocher('La connexion avec l\'autre agent a été perdue.');
+      // Coupure brève (Wi-Fi vers 4G, tunnel) : on laisse une chance avant de renégocier
+      if (conn.connectionState === 'disconnected') attendre(DELAI_COUPURE);
+      if (conn.connectionState === 'failed' && !redemarrer()) {
+        if (estAppelant.current) raccrocher(messageEchec(serveursIce.current));
+        else attendre(DELAI_COUPURE * 2);
+      }
     };
     connexion.current = conn;
     return conn;
@@ -165,6 +214,7 @@ export default function AppelProvider({ children }) {
       return setAvis(err.message);
     }
     const callId = crypto.randomUUID();
+    estAppelant.current = true;
     changerAppel({ phase: 'sortant', callId, agent, video });
     setAvis('');
     socket.emit('call:invite', { to: agent.id, callId, video }, (reponse) => {
@@ -331,7 +381,7 @@ export default function AppelProvider({ children }) {
   async function changerDeCamera() {
     const suivante = face === 'user' ? 'environment' : 'user';
     try {
-      const flux = await navigator.mediaDevices.getUserMedia({ video: contraintesVideo(suivante) });
+      const flux = await navigator.mediaDevices.getUserMedia({ video: contraintesVideo(suivante, profilReseau()) });
       const nouvelle = flux.getVideoTracks()[0];
       nouvelle.enabled = camera;
       const envoi = connexion.current?.getSenders().find((x) => x.track?.kind === 'video');

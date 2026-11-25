@@ -2,7 +2,7 @@
 // R6 (#206) : un agent avec plusieurs onglets compte pour un (FC5 : trou comblé)
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
-import TempsReelProvider from '../composants/TempsReelProvider.jsx';
+import TempsReelProvider, { DELAI_PREMIERE_CONNEXION } from '../composants/TempsReelProvider.jsx';
 import { useTempsReel } from '../composants/TempsReelContext.js';
 import { AuthContext } from '../composants/AuthContext.js';
 
@@ -24,10 +24,10 @@ vi.mock('socket.io-client', () => ({
 }));
 
 function Etat() {
-  const { enLigne, reconnexions, reconnexionRecuperee, agentsConnectes } = useTempsReel();
+  const { enLigne, premiereConnexion, reconnexions, reconnexionRecuperee, agentsConnectes } = useTempsReel();
   return (
     <p data-testid="etat">
-      {enLigne ? 'en ligne' : 'hors ligne'} | reconnexions {reconnexions} | {reconnexionRecuperee ? 'rattrapé' : 'à recharger'} | {agentsConnectes} agents
+      {enLigne ? 'en ligne' : 'hors ligne'} | reconnexions {reconnexions} | {reconnexionRecuperee ? 'rattrapé' : 'à recharger'} | {agentsConnectes} agents{premiereConnexion ? ' | première connexion' : ''}
     </p>
   );
 }
@@ -82,6 +82,28 @@ describe('Temps réel : coupure et reconnexion (R1)', () => {
     const { unmount } = afficher();
     unmount();
     expect(sockets[0].disconnect).toHaveBeenCalled();
+  });
+});
+
+describe('Juste après la connexion de l\'agent', () => {
+  test('pendant la première connexion, ce n\'est pas une coupure; une fois relié, c\'est fini', () => {
+    afficher();
+    expect(etat()).toContain('hors ligne');
+    expect(etat()).toContain('première connexion');
+    act(() => sockets[0].recevoir('connect'));
+    expect(etat()).not.toContain('première connexion');
+  });
+
+  test('sans réussir à se relier, au bout du délai, c\'est annoncé comme une coupure', () => {
+    vi.useFakeTimers();
+    try {
+      afficher();
+      act(() => { vi.advanceTimersByTime(DELAI_PREMIERE_CONNEXION + 1); });
+      expect(etat()).toContain('hors ligne');
+      expect(etat()).not.toContain('première connexion');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

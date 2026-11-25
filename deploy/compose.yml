@@ -50,6 +50,9 @@ services:
       # Relais TURN des appels (service turn ci-dessous) : vide = STUN seulement
       TURN_URLS: ${TURN_URLS:-}
       TURN_SECRET: ${TURN_SECRET:-}
+      # Ou un relais hébergé (identifiants fixes du fournisseur), si TURN_SECRET est vide
+      TURN_USERNAME: ${TURN_USERNAME:-}
+      TURN_PASSWORD: ${TURN_PASSWORD:-}
     volumes:
       # Les photos de profil survivent aux mises à jour de l'image
       - crimetracker-uploads:/app/serveur/src/uploads

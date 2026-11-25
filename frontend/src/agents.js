@@ -48,3 +48,8 @@ export const estAuMoins = (utilisateur, role) => (NIVEAUX[utilisateur?.role] ?? 
 
 export const nomAgent = (u) => `${u?.first_name ?? ''} ${u?.last_name ?? ''}`.trim();
 export const nomAgentCourt = (u) => [ABREVIATIONS_GRADE[u?.grade], nomAgent(u)].filter(Boolean).join(' ');
+
+// Un compte GitHub qui cache son courriel en reçoit un faux (…@users.noreply.github.com) : on ne
+// l'affiche pas et on ne propose pas d'y écrire.
+export const COURRIEL_PRIVE = 'Compte GitHub · courriel privé';
+export const courrielUtile = (email) => (email && !/@users.noreply.github.com$/i.test(email) ? email : null);

@@ -61,7 +61,18 @@ export default function Carte() {
     calqueSignalements.current = L.layerGroup().addTo(instance);
     instance.on('click', (e) => setPosition({ lat: e.latlng.lat, lng: e.latlng.lng }));
     carte.current = instance;
-    return () => instance.remove();
+    // CT-01 : si le cadre de la carte change de taille après sa création (première mise en page,
+    // menu réduit, téléphone tourné), Leaflet garde l'ancienne taille et laisse des zones grises.
+    // On lui redonne la vraie taille à chaque changement.
+    const ajuster = () => instance.invalidateSize({ pan: false });
+    const observateur = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(ajuster);
+    observateur?.observe(conteneur.current);
+    const premiere = window.setTimeout(ajuster, 0);
+    return () => {
+      window.clearTimeout(premiere);
+      observateur?.disconnect();
+      instance.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -302,7 +313,11 @@ export default function Carte() {
               {signalements.length === 0 && <li className="registre-note">Aucun signalement.</li>}
             </ul>
             {sansPosition > 0 && (
-              <p className="registre-note">{sansPosition} signalement(s) sans position ne figure(nt) pas sur la carte.</p>
+              <p className="registre-note">
+                {sansPosition === 1
+                  ? '1 signalement sans position n\'est pas sur la carte.'
+                  : `${sansPosition} signalements sans position ne sont pas sur la carte.`}
+              </p>
             )}
           </section>
         </aside>

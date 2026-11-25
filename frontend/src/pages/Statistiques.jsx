@@ -105,7 +105,12 @@ export default function Statistiques() {
               </div>
             ))}
           </div>
-          <p className="registre-note">Barres : ajoutés, capturés, alertes. Les dates indiquent le début de la semaine.</p>
+          <ul className="evolution-legende">
+            <li><span className="evolution-pastille ajoutes" aria-hidden="true" />Dossiers ajoutés</li>
+            <li><span className="evolution-pastille captures" aria-hidden="true" />Dossiers capturés</li>
+            <li><span className="evolution-pastille alertes" aria-hidden="true" />Alertes</li>
+          </ul>
+          <p className="registre-note">Chaque date est le début de la semaine.</p>
         </section>
 
         <section className="carte pages-carte">
@@ -128,12 +133,6 @@ export default function Statistiques() {
           )}
         </section>
 
-        <section className="carte pages-carte">
-          <h2 className="pages-titre">Diffusions</h2>
-          <p className="registre-note">
-            Les alertes urgentes du jour sont calculées côté serveur : {duJour}.
-          </p>
-        </section>
       </div>
     </>
   );

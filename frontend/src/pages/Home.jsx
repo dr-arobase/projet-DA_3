@@ -89,7 +89,8 @@ export default function Home() {
         {alerteUrgente && (
           <Link to="/alertes" className="accueil-alerte" role="alert">
             <IconeSirene taille={18} />
-            <span><strong>Urgent</strong> {alerteUrgente.message}</span>
+            {/* Un long message est coupé à 3 lignes : il se lit en entier sur la page Alertes */}
+            <span className="accueil-alerte-texte" title={alerteUrgente.message}><strong>Urgent</strong> {alerteUrgente.message}</span>
             <small>{alerteUrgente.heure}</small>
           </Link>
         )}
