@@ -5,7 +5,9 @@ import { useAuth } from '../composants/AuthContext.js';
 import { useTempsReel } from '../composants/TempsReelContext.js';
 import { IconeRecherche } from '../composants/Icones.jsx';
 import { useAppel } from '../composants/AppelContext.js';
-import { LIBELLES_ROLE, LIBELLES_GRADE, estAuMoins, nomAgent } from '../agents.js';
+import {
+  COURRIEL_PRIVE, LIBELLES_ROLE, LIBELLES_GRADE, courrielUtile, estAuMoins, nomAgent,
+} from '../agents.js';
 import '../styles/registre.css';
 import '../styles/pages.css';
 
@@ -125,7 +127,11 @@ export default function Annuaire() {
                     <tr key={a.id} className="annuaire-ligne">
                       <td data-label="Agent"><strong>{nomAgent(a)}</strong><small className="annuaire-matricule">{a.badge_number}</small></td>
                       <td data-label="Rôle et grade">{LIBELLES_ROLE[a.role]}<small>{LIBELLES_GRADE[a.grade]}</small></td>
-                      <td data-label="Courriel"><a href={`mailto:${a.email}`}>{a.email}</a></td>
+                      <td data-label="Courriel">
+                        {courrielUtile(a.email)
+                          ? <a href={`mailto:${a.email}`}>{a.email}</a>
+                          : <span className="registre-note">{COURRIEL_PRIVE}</span>}
+                      </td>
                       <td data-label="Présence">
                         {enLigne.has(a.id)
                           ? <span className="statut statut-capture">En ligne</span>

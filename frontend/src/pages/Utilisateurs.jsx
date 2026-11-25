@@ -3,7 +3,7 @@ import * as api from '../api.js';
 import { useAuth } from '../composants/AuthContext.js';
 import { IconeAjoutPersonne, IconeRecherche } from '../composants/Icones.jsx';
 import {
-  ROLES, LIBELLES_ROLE, LIBELLES_GRADE, GRADES_PAR_ROLE, estAuMoins, nomAgent,
+  COURRIEL_PRIVE, ROLES, LIBELLES_ROLE, LIBELLES_GRADE, GRADES_PAR_ROLE, courrielUtile, estAuMoins, nomAgent,
 } from '../agents.js';
 import { formaterDate } from '../registre.js';
 import '../styles/registre.css';
@@ -183,7 +183,7 @@ export default function Utilisateurs() {
                   <td className="utilisateurs-matricule">{a.badge_number}</td>
                   <td className="utilisateurs-agent">
                     <strong>{nomAgent(a)}</strong>
-                    <small>{a.email}</small>
+                    <small>{courrielUtile(a.email) ?? COURRIEL_PRIVE}</small>
                   </td>
                   <td data-label="Rôle">
                     {promotion?.id === a.id ? (
@@ -223,7 +223,8 @@ export default function Utilisateurs() {
                   <td className="utilisateurs-col-actions">
                     {/* Le flex va sur une div : un <td> en display:flex sort de la ligne et décale les traits */}
                     <div className="pages-actions">
-                      {peutPromouvoir && promotion?.id !== a.id && a.id !== utilisateur.id && (
+                      {/* Direction : déjà le rôle le plus haut, rien à promouvoir (M37) */}
+                      {peutPromouvoir && a.role !== 'direction' && promotion?.id !== a.id && a.id !== utilisateur.id && (
                         <button type="button" className="registre-lien" onClick={() => setPromotion({ id: a.id, role: a.role, grade: a.grade })}>
                           Promouvoir
                         </button>

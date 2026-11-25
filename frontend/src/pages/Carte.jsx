@@ -313,7 +313,11 @@ export default function Carte() {
               {signalements.length === 0 && <li className="registre-note">Aucun signalement.</li>}
             </ul>
             {sansPosition > 0 && (
-              <p className="registre-note">{sansPosition} signalement(s) sans position ne figure(nt) pas sur la carte.</p>
+              <p className="registre-note">
+                {sansPosition === 1
+                  ? '1 signalement sans position n\'est pas sur la carte.'
+                  : `${sansPosition} signalements sans position ne sont pas sur la carte.`}
+              </p>
             )}
           </section>
         </aside>

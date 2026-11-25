@@ -90,7 +90,9 @@
 .utilisateurs-agent strong { display: block; font-size: 15px; font-weight: 700; }
 .utilisateurs-agent small { overflow-wrap: anywhere; }
 .utilisateurs-tableau .utilisateurs-col-actions { text-align: right; }
-.utilisateurs-col-actions .pages-actions { justify-content: flex-end; }
+.utilisateurs-col-actions .pages-actions { justify-content: flex-end; flex-wrap: nowrap; gap: 16px; }
+/* Les actions restent sur une ligne : sinon chaque compte prend trois fois sa hauteur */
+.utilisateurs-col-actions .registre-lien { white-space: nowrap; }
 /* État : un point de couleur ET le mot, pour ne pas dépendre de la couleur seule */
 .utilisateurs-etat { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; white-space: nowrap; }
 .utilisateurs-etat > span { width: 9px; height: 9px; border-radius: 50%; background: var(--succes); }
@@ -165,6 +167,13 @@
 .evolution-barre.ajoutes { background: var(--marine-600); }
 .evolution-barre.captures { background: var(--succes); }
 .evolution-barre.alertes { background: var(--danger); }
+/* Légende des couleurs du graphique */
+.evolution-legende { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; padding: 0; list-style: none; font-size: 13px; }
+.evolution-legende li { display: inline-flex; align-items: center; gap: 6px; }
+.evolution-pastille { width: 10px; height: 10px; border-radius: 2px; }
+.evolution-pastille.ajoutes { background: var(--marine-600); }
+.evolution-pastille.captures { background: var(--succes); }
+.evolution-pastille.alertes { background: var(--danger); }
 .evolution-semaine small { color: var(--texte-doux); font-size: 12px; }
 
 /* ---------- Carte ---------- */
@@ -204,7 +213,10 @@
 .carte-liste li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
 .carte-liste li > :first-child { justify-self: start; }
 .carte-liste small { grid-column: 1; color: var(--texte-doux); font-size: 12px; }
-.carte-liste a { grid-column: 2; grid-row: 1; font-size: 13px; font-weight: 700; }
+.carte-liste a { grid-column: 2; grid-row: 1; align-self: center; font-size: 13px; font-weight: 700; }
+/* Le nom, cliquable ou non, garde la même place et la même taille sur chaque ligne */
+.carte-liste li > :first-child { min-height: 24px; display: flex; align-items: center; font-size: 14px; }
+.carte-liste .registre-lien { padding: 2px 0; text-align: left; }
 
 /* ---------- Messagerie ---------- */
 .messagerie { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; height: calc(100vh - 140px); min-height: 460px; }
