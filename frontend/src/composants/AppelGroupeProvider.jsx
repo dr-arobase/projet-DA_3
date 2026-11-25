@@ -8,15 +8,21 @@ import { useEvenement, useTempsReel } from './TempsReelContext.js';
 import Avatar from './Avatar.jsx';
 import { messageErreurMedia } from '../erreurMedia.js';
 import { jouerSonnerie } from '../sonnerie.js';
+import {
+  ESSAIS_REDEMARRAGE, SERVEURS_ICE_SECOURS, TAILLE_RESERVE_ICE, messageEchec, profilReseau, reglerDebits,
+} from '../reseauAppel.js';
 
 // Appels audio et vidéo de groupe (6 participants au plus). Chaque participant est relié directement
 // à chacun des autres (WebRTC) : le serveur ne relaie que la signalisation (group-call:*) et vérifie
 // que chacun est membre du groupe. Le nouvel arrivant envoie une offre à ceux déjà présents.
-const SERVEURS_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
+const SERVEURS_ICE = SERVEURS_ICE_SECOURS;
 const DUREE_INVITATION = 30 * 1000;
 const DUREE_AVIS = 6000;
 const CONTRAINTES_AUDIO = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
-const CONTRAINTES_VIDEO = { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 } };
+// Plusieurs vidéos à la fois : plus petites qu'à deux, et encore plus sur un réseau lent
+const contraintesVideoGroupe = () => (profilReseau() === 'lent'
+  ? { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 }, frameRate: { ideal: 12, max: 15 } }
+  : { facingMode: 'user', width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 20, max: 24 } });
 
 // Flux d'un participant branché sur <video> ou <audio>
 function Media({ flux, video, muet = false, className }) {
@@ -52,6 +58,7 @@ export default function AppelGroupeProvider({ children }) {
   const serveursIce = useRef(SERVEURS_ICE);
   const connexions = useRef(new Map()); // id -> RTCPeerConnection
   const candidatsEnAttente = useRef(new Map()); // id -> [candidat] reçus avant la description distante
+  const redemarrages = useRef(new Map()); // id -> nouveaux essais du chemin réseau déjà faits
 
   const marquerAppel = useCallback((groupId, actif) => {
     setAppelsEnCours((enCours) => {
@@ -65,6 +72,7 @@ export default function AppelGroupeProvider({ children }) {
   const fermerPair = useCallback((id) => {
     connexions.current.get(id)?.close();
     connexions.current.delete(id);
+    redemarrages.current.delete(id);
     candidatsEnAttente.current.delete(id);
     setFlux((f) => Object.fromEntries(Object.entries(f).filter(([cle]) => Number(cle) !== id)));
     setParticipants((ids) => ids.filter((x) => x !== id));
@@ -94,13 +102,27 @@ export default function AppelGroupeProvider({ children }) {
 
   // Connexion directe avec un participant; initiateur : c'est nous qui envoyons l'offre
   const creerPair = useCallback((id, initiateur) => {
-    const conn = new RTCPeerConnection({ iceServers: serveursIce.current });
+    const conn = new RTCPeerConnection({ iceServers: serveursIce.current, iceCandidatePoolSize: TAILLE_RESERVE_ICE });
     connexions.current.set(id, conn);
     local.current?.getTracks().forEach((piste) => conn.addTrack(piste, local.current));
     conn.onicecandidate = (e) => { if (e.candidate) envoyerSignal(id, { candidate: e.candidate.toJSON() }); };
     conn.ontrack = (e) => setFlux((f) => ({ ...f, [id]: e.streams[0] }));
+    // Chemin réseau perdu (Wi-Fi vers 4G) : celui qui a fait l'offre renégocie une fois (ICE restart);
+    // sinon on retire ce participant en disant pourquoi.
     conn.onconnectionstatechange = () => {
-      if (conn.connectionState === 'failed') fermerPair(id);
+      // Chaque participant reçoit une vidéo par membre : on part des débits d'un réseau lent
+      if (conn.connectionState === 'connected') reglerDebits(conn, 'lent');
+      if (conn.connectionState !== 'failed') return;
+      const essais = redemarrages.current.get(id) ?? 0;
+      if (initiateur && essais < ESSAIS_REDEMARRAGE) {
+        redemarrages.current.set(id, essais + 1);
+        conn.createOffer({ iceRestart: true })
+          .then((offre) => conn.setLocalDescription(offre).then(() => envoyerSignal(id, { type: offre.type, sdp: offre.sdp })))
+          .catch(() => fermerPair(id));
+        return;
+      }
+      fermerPair(id);
+      setAvis(messageEchec(serveursIce.current));
     };
     setParticipants((ids) => (ids.includes(id) ? ids : [...ids, id]));
     if (initiateur) {
@@ -129,7 +151,7 @@ export default function AppelGroupeProvider({ children }) {
     setInvitation(null);
     const ice = api.serveursIce().then((r) => r?.iceServers ?? SERVEURS_ICE).catch(() => SERVEURS_ICE);
     try {
-      local.current = await navigator.mediaDevices.getUserMedia({ audio: CONTRAINTES_AUDIO, video: video ? CONTRAINTES_VIDEO : false });
+      local.current = await navigator.mediaDevices.getUserMedia({ audio: CONTRAINTES_AUDIO, video: video ? contraintesVideoGroupe() : false });
     } catch (err) {
       return setAvis(messageErreurMedia(err, video));
     }

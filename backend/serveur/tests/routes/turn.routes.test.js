@@ -32,13 +32,15 @@ jest.unstable_mockModule('../../src/utils/account-status.js', () => ({
 }));
 
 const { default: app } = await import('../../src/app.js');
-const { serveursIce } = await import('../../src/routes/turn.routes.js');
+const { serveursIce, STUN } = await import('../../src/routes/turn.routes.js');
 
 const bearer = `Bearer ${jwt.sign({ id: 3, badge_number: 'PL-003', role: 'policier' }, 'test-secret')}`;
 
 afterEach(() => {
   delete process.env.TURN_URLS;
   delete process.env.TURN_SECRET;
+  delete process.env.TURN_USERNAME;
+  delete process.env.TURN_PASSWORD;
 });
 
 describe('GET /api/turn', () => {
@@ -50,7 +52,9 @@ describe('GET /api/turn', () => {
   test('sans TURN configuré : STUN seulement', async () => {
     const res = await request(app).get('/api/turn').set('Authorization', bearer);
     expect(res.status).toBe(200);
-    expect(res.body.iceServers).toEqual([{ urls: 'stun:stun.l.google.com:19302' }]);
+    expect(res.body.iceServers).toEqual([STUN]);
+    // Deux fournisseurs STUN : si l'un ne répond pas, l'autre suffit
+    expect(STUN.urls).toHaveLength(2);
   });
 
   test('avec TURN configuré : identifiants temporaires signés avec le secret', async () => {
@@ -76,7 +80,21 @@ describe('serveursIce', () => {
     expect(turn.username).toBe(`${1_000_000_000 + 12 * 3600}:7`);
   });
 
-  test('URL sans secret : pas de TURN', () => {
-    expect(serveursIce(7, { urls: 'turn:x:3478', secret: '' })).toHaveLength(1);
+  test('URL sans secret ni identifiants : pas de TURN', () => {
+    expect(serveursIce(7, { urls: 'turn:x:3478', secret: '', nom: '', motDePasse: '' })).toHaveLength(1);
+  });
+
+  test('relais hébergé : les identifiants fixes du fournisseur, y compris par le port 443', () => {
+    const [, turn] = serveursIce(7, {
+      urls: 'turn:relais.exemple:80, turns:relais.exemple:443?transport=tcp', secret: '', nom: 'equipe', motDePasse: 'mdp',
+    });
+    expect(turn).toEqual({
+      urls: ['turn:relais.exemple:80', 'turns:relais.exemple:443?transport=tcp'], username: 'equipe', credential: 'mdp',
+    });
+  });
+
+  test('avec un secret coturn, il passe avant les identifiants fixes', () => {
+    const [, turn] = serveursIce(7, { urls: 'turn:x:3478', secret: 's', nom: 'equipe', motDePasse: 'mdp', maintenant: 0 });
+    expect(turn.username).toBe(`${12 * 3600}:7`);
   });
 });
