@@ -12,7 +12,8 @@ import { lireReglage, ecrireReglage } from '../reglages.js';
 // dans le navigateur. Sur téléphone, il est remplacé par la barre du bas (NavMobile).
 export default function Menu({ reduit, onBasculer, pastilles }) {
   const { utilisateur } = useAuth();
-  const { enLigne, agentsConnectes } = useTempsReel();
+  const { enLigne, premiereConnexion, agentsConnectes } = useTempsReel();
+  const etat = etatDirect(enLigne, agentsConnectes, premiereConnexion);
   const [gestionOuverte, setGestionOuverte] = useState(() => lireReglage('menu-gestion', true));
 
   function basculerGestion() {
@@ -42,10 +43,10 @@ export default function Menu({ reduit, onBasculer, pastilles }) {
       </button>
 
       {/* L'agent sait d'un coup d'œil s'il reçoit les alertes en direct */}
-      <p className={`menu-direct${enLigne ? '' : ' coupe'}`} role="status" title={reduit ? etatDirect(enLigne, agentsConnectes) : undefined}>
+      <p className={`menu-direct${enLigne || premiereConnexion ? '' : ' coupe'}`} role="status" title={reduit ? etat : undefined}>
         <span className="menu-direct-point" aria-hidden="true" />
-        {!reduit && <span className="menu-texte">{etatDirect(enLigne, agentsConnectes)}</span>}
-        {reduit && <span className="visuellement-cache">{etatDirect(enLigne, agentsConnectes)}</span>}
+        {!reduit && <span className="menu-texte">{etat}</span>}
+        {reduit && <span className="visuellement-cache">{etat}</span>}
       </p>
 
       <nav className="menu-nav">
@@ -106,7 +107,8 @@ export default function Menu({ reduit, onBasculer, pastilles }) {
   );
 }
 
-function etatDirect(enLigne, agents) {
+function etatDirect(enLigne, agents, premiereConnexion = false) {
+  if (!enLigne && premiereConnexion) return 'Connexion au temps réel…';
   if (!enLigne) return 'Temps réel coupé · reconnexion…';
   return `Temps réel connecté · ${agents} agent${agents > 1 ? 's' : ''}`;
 }
