@@ -141,7 +141,16 @@ export default function Annuaire() {
                         {a.id === utilisateur.id ? <span className="registre-note">Vous</span> : (
                           <>
                             <Link className="registre-lien" to={`/messagerie?avec=${a.id}`}>Écrire</Link>
-                            <button type="button" className="registre-lien" onClick={() => appeler(a, false)} disabled={!enLigne.has(a.id)}>Appeler</button>
+                            {/* Comme dans la messagerie : hors ligne aussi, ça sonne s'il se connecte pendant
+                                la sonnerie, sinon un « appel manqué » l'attend dans la conversation */}
+                            <button
+                              type="button"
+                              className="registre-lien"
+                              onClick={() => appeler(a, false)}
+                              title={enLigne.has(a.id) ? undefined : 'Hors ligne : un appel manqué lui sera laissé s\'il ne répond pas'}
+                            >
+                              Appeler
+                            </button>
                           </>
                         )}
                       </td>

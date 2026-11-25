@@ -97,8 +97,9 @@ export default function Home() {
 
         <section className="cartes-stats">
           {stats.map((s) => (
-            <article key={s.libelle} className="carte carte-stat">
-              <strong className={s.ton ? `ton-${s.ton}` : undefined}>{s.valeur}</strong>
+            <article key={s.libelle} className="carte carte-stat" aria-busy={s.valeur === null}>
+              {/* « … » comme dans Statistiques : jamais un faux « 0 » pendant le chargement */}
+              <strong className={s.ton ? `ton-${s.ton}` : undefined}>{s.valeur ?? '…'}</strong>
               <span>{s.libelle}</span>
             </article>
           ))}

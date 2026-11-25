@@ -13,7 +13,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 40px;
   padding: 44px 56px;
   background: var(--marine-900);
@@ -39,7 +39,8 @@
 .auth-marque .logo-carre { width: 36px; height: 36px; border-radius: 9px; background: none; border-color: rgba(255, 255, 255, 0.2); }
 .auth-marque strong { font-family: var(--titre); font-size: 24px; font-weight: 700; letter-spacing: 0.01em; }
 
-.auth-accroche { display: grid; gap: 28px; max-width: 540px; }
+/* Le pied de page retiré, le texte n'est plus poussé en bas : il est centré sous le logo (capture du 25 novembre) */
+.auth-accroche { display: grid; gap: 28px; max-width: 540px; margin-block: auto; }
 .auth-accroche h1 {
   font-family: var(--titre);
   font-size: clamp(38px, 4.2vw, 56px);

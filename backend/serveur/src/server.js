@@ -21,7 +21,10 @@ async function startServer() {
 
     const server = app.listen(PORT, () => {
       console.log(`Serveur CrimeTracker démarré sur http://localhost:${PORT}`);
-      console.log(`Documentation Swagger disponible sur http://localhost:${PORT}/api-docs`);
+      // Comme dans app.js : API_DOCS=false ferme Swagger (production)
+      if (process.env.API_DOCS !== 'false') {
+        console.log(`Documentation Swagger disponible sur http://localhost:${PORT}/api-docs`);
+      }
     });
     
     // Socket.IO partage le même serveur HTTP que l'API (suivi en temps réel)

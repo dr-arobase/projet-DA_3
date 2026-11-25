@@ -47,6 +47,8 @@ export default function useDashboardData() {
   const [nombreAlertesDuJour, setNombreAlertesDuJour] = useState(0);
   const [activites, setActivites] = useState([]);
   const [erreur, setErreur] = useState('');
+  // Tant que les compteurs ne sont pas arrivés, on n'affiche pas un faux « 0 » (audit du 25 novembre)
+  const [charge, setCharge] = useState(false);
   const [, actualiserHorloge] = useState(0);
   const alertesConnues = useRef(new Set());
   const evenementsCriminelsRecus = useRef(new Set());
@@ -72,6 +74,7 @@ export default function useDashboardData() {
         listeAlertes.data.map(activiteAlerte),
       ));
       setErreur('');
+      setCharge(true);
     } catch (err) {
       setErreur(err.message);
     }
@@ -149,10 +152,11 @@ export default function useDashboardData() {
   return {
     erreur,
     stats: [
-      { valeur: compteurs.recherches, libelle: 'Fiches actives' },
-      { valeur: nombreAlertesDuJour, libelle: 'Alertes du jour', ton: 'danger' },
-      { valeur: compteurs.captures, libelle: 'Fiches capturées' },
-      { valeur: agentsConnectes, libelle: 'Agents connectés', ton: 'succes' },
+      // null : pas encore chargé (la page affiche « — »)
+      { valeur: charge ? compteurs.recherches : null, libelle: 'Fiches actives' },
+      { valeur: charge ? nombreAlertesDuJour : null, libelle: 'Alertes du jour', ton: 'danger' },
+      { valeur: charge ? compteurs.captures : null, libelle: 'Fiches capturées' },
+      { valeur: charge ? agentsConnectes : null, libelle: 'Agents connectés', ton: 'succes' },
     ],
     activites: activites.map((a) => ({ ...a, quand: ilYA(a.date) })),
     dernierCommunique: derniere && {
